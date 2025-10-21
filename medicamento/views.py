@@ -10,47 +10,87 @@ from datetime import date, timedelta
 
 from medicamento.models import EntradaMedicamento, Medicamento
 from medicamento.notificacoes import gerar_notificacoes_medicamentos
+from medicamento.forms import MedicamentoForm, EntradaMedicamentoForm
 from perfis.models import Fazenda
 
 
 ############ Create Medicamento ############
 class MedicamentoCreateView(LoginRequiredMixin, CreateView):
     model = Medicamento
-    fields = ["nome", "fazenda"]
-    template_name = "formularios/formulario_modelo.html"
-    success_url = reverse_lazy("pagina_index")
-    extra_context = {
-        "title": "Cadastro de Medicamentos",
-        "titulo": "Cadastro de Medicamentos",
-        "subtitulo": "Registre novos medicamentos no estoque da fazenda.",
-    }
+    form_class = MedicamentoForm
+    template_name = "medicamento/cadastro_medicamento.html"
+    success_url = reverse_lazy("medicamento_estoque")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Cadastro de Medicamentos",
+            "titulo": "Cadastro de Medicamentos",
+            "subtitulo": "Registre novos medicamentos no estoque da fazenda.",
+        })
+        return context
 
 
 ############ Create EntradaMedicamento ############
 class EntradaMedicamentoCreateView(LoginRequiredMixin, CreateView):
     model = EntradaMedicamento
-    fields = ["medicamento", "valor_medicamento", "quantidade", "validade", "cadastrada_por", "observacao"]
-    template_name = "formularios/formulario_modelo.html"
+    form_class = EntradaMedicamentoForm
+    template_name = "medicamento/cadastro_entrada.html"
     success_url = reverse_lazy("medicamento_estoque")
-    extra_context = {
-        "title": "Cadastro de Entrada de Medicamentos",
-        "titulo": "Cadastro de Entrada de Medicamentos",
-        "subtitulo": "Registre a entrada de medicamentos no estoque da fazenda.",
-    }
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def form_valid(self, form):
+        # Define o usuário logado como cadastrado_por
+        form.instance.cadastrada_por = self.request.user
+        messages.success(
+            self.request,
+            f'Entrada de {form.instance.quantidade} unidades de '
+            f'{form.instance.medicamento.nome} cadastrada com sucesso!'
+        )
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Cadastro de Entrada de Medicamentos",
+            "titulo": "Nova Entrada de Medicamento",
+            "subtitulo": "Registre a entrada de medicamentos no estoque da fazenda com informações de quantidade, valor e validade.",
+        })
+        return context
 
 
 
 ############ Update EntradaMedicamento ############
 class EntradaMedicamentoUpdateView(LoginRequiredMixin, UpdateView):
     model = EntradaMedicamento
-    fields = ["medicamento", "valor_medicamento", "quantidade", "validade", "cadastrada_por", "observacao"]
-    template_name = "formularios/formulario_modelo.html"
+    form_class = EntradaMedicamentoForm
+    template_name = "medicamento/cadastro_entrada.html"
     success_url = reverse_lazy("medicamento_estoque")
-    extra_context = {
-        "title": "Atualização de Entrada de Medicamentos",
-        "titulo": "Atualização de Entrada de Medicamentos",
-        "subtitulo": "Atualize os dados da entrada de medicamentos no estoque da fazenda.",
-    }
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'Entrada de {form.instance.medicamento.nome} atualizada com sucesso!'
+        )
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Atualização de Entrada de Medicamentos",
+            "titulo": "Atualizar Entrada de Medicamento",
+            "subtitulo": "Atualize os dados da entrada de medicamentos no estoque da fazenda.",
+        })
+        return context
 
 
 ############ Delete EntradaMedicamento ############
@@ -232,94 +272,3 @@ class NotificacoesAPIView(LoginRequiredMixin, View):
             'proximos_vencer': dados_notificacoes['proximos_vencer'],
         })
 
-
-class CriarMedicamentoTesteView(LoginRequiredMixin, View):
-    """
-    View para criar medicamentos de teste com diferentes datas de validade
-    para testar o sistema de notificações.
-    """
-    
-    def get(self, request):
-        # Pegar a primeira fazenda do usuário ou criar uma
-        fazenda = Fazenda.objects.filter(nome__icontains='fazenda').first()
-        if not fazenda:
-            fazenda = Fazenda.objects.first()
-        
-        if not fazenda:
-            messages.error(request, 'Nenhuma fazenda encontrada! Crie uma fazenda primeiro.')
-            return redirect('medicamento_estoque')
-        
-        usuario = request.user
-        hoje = date.today()
-        
-        # Lista de medicamentos de teste com diferentes validades
-        medicamentos_teste = [
-            {
-                'nome': 'Ivermectina TESTE - VENCIDO',
-                'dias': -10,  # Vencido há 10 dias
-                'quantidade': 5,
-                'valor': 150.00
-            },
-            {
-                'nome': 'Vermífugo TESTE - VENCIDO',
-                'dias': -25,  # Vencido há 25 dias
-                'quantidade': 3,
-                'valor': 80.00
-            },
-            {
-                'nome': 'Antibiótico TESTE - CRÍTICO',
-                'dias': 5,  # Vence em 5 dias
-                'quantidade': 8,
-                'valor': 200.00
-            },
-            {
-                'nome': 'Vitamina TESTE - CRÍTICO',
-                'dias': 15,  # Vence em 15 dias
-                'quantidade': 10,
-                'valor': 120.00
-            },
-            {
-                'nome': 'Vacina TESTE - CRÍTICO',
-                'dias': 28,  # Vence em 28 dias
-                'quantidade': 12,
-                'valor': 300.00
-            },
-            {
-                'nome': 'Anti-inflamatório TESTE - ATENÇÃO',
-                'dias': 45,  # Vence em 45 dias
-                'quantidade': 6,
-                'valor': 180.00
-            },
-            {
-                'nome': 'Analgésico TESTE - OK',
-                'dias': 90,  # Vence em 90 dias
-                'quantidade': 15,
-                'valor': 250.00
-            },
-        ]
-        
-        criados = 0
-        for med_data in medicamentos_teste:
-            # Criar ou pegar o medicamento
-            medicamento, created = Medicamento.objects.get_or_create(
-                nome=med_data['nome'],
-                fazenda=fazenda
-            )
-            
-            # Calcular data de validade
-            data_validade = hoje + timedelta(days=med_data['dias'])
-            
-            # Criar entrada de medicamento
-            EntradaMedicamento.objects.create(
-                medicamento=medicamento,
-                valor_medicamento=med_data['valor'],
-                quantidade=med_data['quantidade'],
-                validade=data_validade,
-                cadastrada_por=usuario,
-                observacao=f"Medicamento de TESTE criado automaticamente para testar notificações (Vence em {med_data['dias']} dias)"
-            )
-            
-            criados += 1
-        
-        messages.success(request, f'✅ {criados} medicamentos de TESTE criados com sucesso! Agora você pode testar as notificações.')
-        return redirect('medicamento_estoque')
