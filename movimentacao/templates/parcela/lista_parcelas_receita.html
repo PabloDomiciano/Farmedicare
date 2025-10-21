@@ -19,9 +19,6 @@
         {% endif %}
       </button>
     </div>
-    <button class="mobile-menu-btn">
-      <i class="fas fa-bars"></i>
-    </button>
   </header>
   {% block conteudo_admin %}{% endblock %}
 {% endblock %}
@@ -30,6 +27,81 @@
 
 {% block graficos %}
   <style>
+    /* Card de Lista */
+    .lista-card {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      padding: 0;
+      margin: 1.5rem auto;
+      max-width: 1400px;
+      overflow: hidden;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .lista-header {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .lista-title-section {
+      flex: 1;
+    }
+
+    .lista-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .lista-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .lista-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-add {
+      background-color: white;
+      color: #2e7d32;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-add:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #f5f5f5;
+    }
+
     /* Tema Verde para Parcelas de Receitas (A Receber) */
     .parcelas-filters {
       background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
@@ -215,35 +287,61 @@
       font-weight: bold;
     }
 
-    /* Card de ação rápida */
-    .action-card {
-      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-      transition: all 0.3s;
-      margin-bottom: 20px;
+    /* Botões de Ação */
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
     }
 
-    .action-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .btn-edit {
+      color: #1976d2;
+      background-color: #e3f2fd;
+    }
+
+    .btn-edit:hover {
+      background-color: #bbdefb;
+      transform: scale(1.1);
+    }
+
+    .btn-delete {
+      color: #d32f2f;
+      background-color: #ffebee;
+    }
+
+    .btn-delete:hover {
+      background-color: #ffcdd2;
+      transform: scale(1.1);
     }
   </style>
 
-  <!-- Botão de Nova Receita -->
-  <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
-    <a href="{% url 'cadastrar_movimentacao' %}" class="action-card">
-      <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
-      <span>{{ btn_cadastrar }}</span>
-    </a>
-  </div>
+  <div class="lista-card">
+    <!-- Header da Lista -->
+    <div class="lista-header">
+      <div class="lista-title-section">
+        <h2 class="lista-title">
+          <i class="fas fa-coins"></i> Parcelas a Receber
+        </h2>
+        <p class="lista-subtitle">Gerenciamento de parcelas pendentes e recebidas</p>
+      </div>
+      <div class="lista-actions">
+        <a href="{% url 'cadastrar_movimentacao' %}" class="btn-add">
+          <i class="fas fa-plus"></i>
+          Nova Receita
+        </a>
+      </div>
+    </div>
 
   <!-- Filtros e Estatísticas -->
   <div class="parcelas-filters">
@@ -362,13 +460,19 @@
                 {% endif %}
               </td>
               
-              <td class="actions">
-                <a href="{% url 'editar_parcela' parcela.id %}" class="btn-edit">
-                  <i class="fas fa-edit"></i> Editar
-                </a>
-                <a href="{% url 'excluir_parcela' parcela.id %}" class="btn-delete">
-                  <i class="fas fa-trash"></i> Excluir
-                </a>
+              <td style="text-align: center;">
+                <div class="action-buttons">
+                  <a href="{% url 'editar_parcela' parcela.id %}" 
+                     class="btn-icon btn-edit"
+                     title="Editar parcela">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'excluir_parcela' parcela.id %}" 
+                     class="btn-icon btn-delete"
+                     title="Excluir parcela">
+                    <i class="fas fa-trash-alt"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -428,7 +532,24 @@
         let valorTotal = 0;
         let valorPago = 0;
         let valorPendente = 0;
+        
+        // Contadores gerais para os badges (TODOS os registros)
+        let countTodosGeral = 0;
+        let countPagoGeral = 0;
+        let countPendenteGeral = 0;
+        let countVencidoGeral = 0;
 
+        // Primeiro loop: conta TODOS os registros para os badges dos filtros
+        parcelaRows.forEach(row => {
+          const status = row.dataset.status;
+          
+          countTodosGeral++;
+          if (status === 'pago') countPagoGeral++;
+          else if (status === 'vencido') countVencidoGeral++;
+          else if (status === 'pendente') countPendenteGeral++;
+        });
+
+        // Segundo loop: calcula estatísticas apenas das linhas VISÍVEIS
         parcelaRows.forEach(row => {
           if (row.style.display !== 'none') {
             const status = row.dataset.status;
@@ -451,11 +572,13 @@
           }
         });
 
-        document.getElementById('count-todos').textContent = totalParcelas;
-        document.getElementById('count-pago').textContent = totalPagas;
-        document.getElementById('count-pendente').textContent = totalPendentes;
-        document.getElementById('count-vencido').textContent = totalVencidas;
+        // Atualiza contadores dos filtros (sempre mostram o total geral)
+        document.getElementById('count-todos').textContent = countTodosGeral;
+        document.getElementById('count-pago').textContent = countPagoGeral;
+        document.getElementById('count-pendente').textContent = countPendenteGeral;
+        document.getElementById('count-vencido').textContent = countVencidoGeral;
 
+        // Atualiza estatísticas (mostram apenas o que está visível)
         document.getElementById('total-parcelas').textContent = totalParcelas;
         document.getElementById('valor-total').textContent = formatarMoeda(valorTotal);
         document.getElementById('valor-pago').textContent = formatarMoeda(valorPago);
@@ -467,6 +590,7 @@
       }
     });
   </script>
+  </div>
 {% endblock %}
 
 {% block ultimos_registros %}{% endblock %}

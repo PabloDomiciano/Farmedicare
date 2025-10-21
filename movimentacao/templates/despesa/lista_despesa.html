@@ -19,9 +19,6 @@
         {% endif %}
       </button>
     </div>
-    <button class="mobile-menu-btn">
-      <i class="fas fa-bars"></i>
-    </button>
   </header>
   {% block conteudo_admin %}{% endblock %}
 {% endblock %}
@@ -30,6 +27,81 @@
 
 {% block graficos %}
   <style>
+    /* Card de Lista */
+    .lista-card {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      padding: 0;
+      margin: 1.5rem auto;
+      max-width: 1400px;
+      overflow: hidden;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .lista-header {
+      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .lista-title-section {
+      flex: 1;
+    }
+
+    .lista-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .lista-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .lista-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-add {
+      background-color: white;
+      color: #c62828;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-add:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #f5f5f5;
+    }
+
     /* Estilos para filtros - Tema Vermelho para Despesas */
     .despesas-filters {
       background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
@@ -136,35 +208,61 @@
       font-weight: bold;
     }
 
-    /* Card de ação rápida */
-    .action-card-desp {
-      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(239, 83, 80, 0.3);
-      transition: all 0.3s;
-      margin-bottom: 20px;
+    /* Botões de Ação */
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
     }
 
-    .action-card-desp:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(239, 83, 80, 0.4);
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .btn-edit {
+      color: #1976d2;
+      background-color: #e3f2fd;
+    }
+
+    .btn-edit:hover {
+      background-color: #bbdefb;
+      transform: scale(1.1);
+    }
+
+    .btn-delete {
+      color: #d32f2f;
+      background-color: #ffebee;
+    }
+
+    .btn-delete:hover {
+      background-color: #ffcdd2;
+      transform: scale(1.1);
     }
   </style>
 
-  <!-- Botão de Nova Despesa -->
-  <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
-    <a href="{% url 'cadastrar_movimentacao' %}" class="action-card-desp">
-      <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
-      <span>{{ btn_cadastrar }}</span>
-    </a>
-  </div>
+  <div class="lista-card">
+    <!-- Header da Lista -->
+    <div class="lista-header">
+      <div class="lista-title-section">
+        <h2 class="lista-title">
+          <i class="fas fa-file-invoice-dollar"></i> Lista de Despesas
+        </h2>
+        <p class="lista-subtitle">Gerenciamento completo de despesas e saídas financeiras</p>
+      </div>
+      <div class="lista-actions">
+        <a href="{% url 'cadastrar_movimentacao' %}" class="btn-add">
+          <i class="fas fa-plus"></i>
+          Nova Despesa
+        </a>
+      </div>
+    </div>
 
   <!-- Filtros e Estatísticas -->
   <div class="despesas-filters">
@@ -275,13 +373,19 @@
               {{ despesa.fazenda.nome }}
             </td>
             
-            <td class="actions">
-              <a href="{% url 'editar_movimentacao' despesa.pk %}" class="btn-edit">
-                <i class="fas fa-edit"></i> Editar
-              </a>
-              <a href="{% url 'excluir_movimentacao' despesa.pk %}" class="btn-delete">
-                <i class="fas fa-trash"></i> Excluir
-              </a>
+            <td style="text-align: center;">
+              <div class="action-buttons">
+                <a href="{% url 'editar_movimentacao' despesa.pk %}" 
+                   class="btn-icon btn-edit"
+                   title="Editar despesa">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'excluir_movimentacao' despesa.pk %}" 
+                   class="btn-icon btn-delete"
+                   title="Excluir despesa">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </div>
             </td>
           </tr>
           {% empty %}
@@ -346,7 +450,20 @@
         let countParcelado = 0;
         let countVista = 0;
         let countAlta = 0;
+        let countTodasGeral = 0;
 
+        // Primeiro loop: conta TODOS os registros para os badges dos filtros
+        despesaRows.forEach(row => {
+          const parcelas = parseInt(row.dataset.parcelas);
+          const valor = parseFloat(row.dataset.valor);
+          
+          countTodasGeral++;
+          if (parcelas > 1) countParcelado++;
+          if (parcelas === 1) countVista++;
+          if (valor > 5000) countAlta++;
+        });
+
+        // Segundo loop: calcula estatísticas apenas das linhas VISÍVEIS
         despesaRows.forEach(row => {
           if (row.style.display !== 'none') {
             const parcelas = parseInt(row.dataset.parcelas);
@@ -355,20 +472,18 @@
             totalDespesas++;
             valorTotal += valor;
             totalParcelas += parcelas;
-            
-            if (parcelas > 1) countParcelado++;
-            if (parcelas === 1) countVista++;
-            if (valor > 5000) countAlta++;
           }
         });
 
         const valorMedio = totalDespesas > 0 ? valorTotal / totalDespesas : 0;
 
-        document.getElementById('count-todas').textContent = despesaRows.length;
+        // Atualiza contadores dos filtros (sempre mostram o total geral)
+        document.getElementById('count-todas').textContent = countTodasGeral;
         document.getElementById('count-parcelado').textContent = countParcelado;
         document.getElementById('count-vista').textContent = countVista;
         document.getElementById('count-alta').textContent = countAlta;
         
+        // Atualiza estatísticas (mostram apenas o que está visível)
         document.getElementById('total-despesas').textContent = totalDespesas;
         document.getElementById('valor-total').textContent = formatarMoeda(valorTotal);
         document.getElementById('valor-medio').textContent = formatarMoeda(valorMedio);
@@ -380,6 +495,7 @@
       }
     });
   </script>
+  </div>
 {% endblock %}
 
 {% block ultimos_registros %}{% endblock %}
