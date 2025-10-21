@@ -49,6 +49,21 @@ class PaginaView(TemplateView):
             if receitas_mes_anterior > 0 else 0
         )
 
+        # Calcular crescimento de despesas do mês atual comparado com mês anterior
+        despesas_mes_atual = (
+            Movimentacao.objects.filter(tipo="despesa", data__startswith=mes_atual)
+            .aggregate(total=Sum("valor_total"))["total"] or 0
+        )
+        despesas_mes_anterior = (
+            Movimentacao.objects.filter(tipo="despesa", data__startswith=mes_anterior)
+            .aggregate(total=Sum("valor_total"))["total"] or 1
+        )
+        
+        crescimento_despesas = (
+            ((despesas_mes_atual - despesas_mes_anterior) / despesas_mes_anterior) * 100
+            if despesas_mes_anterior > 0 else 0
+        )
+
         # Buscar as entradas de medicamentos
         entradas_medicamentos = EntradaMedicamento.objects.select_related(
             "medicamento"
@@ -98,6 +113,7 @@ class PaginaView(TemplateView):
         context["total_despesas"] = total_despesas
         context["saldo"] = saldo
         context["crescimento_receitas"] = round(crescimento_receitas, 1)
+        context["crescimento_despesas"] = round(crescimento_despesas, 1)
         context["total_medicamentos"] = Medicamento.objects.count()
         context["medicamentos_proximos_vencer"] = medicamentos_proximos_vencer
         context["alertas_urgentes"] = alertas_urgentes

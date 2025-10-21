@@ -38,10 +38,12 @@
             <h3>Despesas</h3>
             <p>R$ {{ total_despesas|floatformat:2|default:"0,00" }}</p>
             <small>
-                {% if total_receitas > 0 %}
-                    {{ total_despesas|floatformat:0 }} de {{ total_receitas|floatformat:0 }}
+                {% if crescimento_despesas > 0 %}
+                    <i class="fas fa-arrow-up"></i> +{{ crescimento_despesas }}% este mês
+                {% elif crescimento_despesas < 0 %}
+                    <i class="fas fa-arrow-down"></i> {{ crescimento_despesas }}% este mês
                 {% else %}
-                    Total do sistema
+                    Sem mudanças este mês
                 {% endif %}
             </small>
         </div>
