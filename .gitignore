@@ -1,0 +1,36 @@
+# Arquivos Markdown de documentação
+*.md
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Database
+db.sqlite3
+db.sqlite3-journal
+
+# Django stuff:
+*.log
+local_settings.py
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
