@@ -9,7 +9,6 @@ from medicamento.views import (
     MedicamentoEstoqueListView,
     NotificacoesListView,
     NotificacoesAPIView,
-    CriarMedicamentoTesteView
 )
 
 urlpatterns = [
@@ -25,9 +24,6 @@ urlpatterns = [
     # Notificações
     path('notificacoes/', NotificacoesListView.as_view(), name='medicamento_notificacoes'),
     path('api/notificacoes/', NotificacoesAPIView.as_view(), name='medicamento_notificacoes_api'),
-    
-    # Criar medicamentos de teste
-    path('criar-teste/', CriarMedicamentoTesteView.as_view(), name='criar_medicamento_teste'),
     
     path('editar/<int:pk>/', EntradaMedicamentoUpdateView.as_view(), name='editar_medicamento'),
     path('excluir/<int:pk>/', EntradaMedicamentoDeleteView.as_view(), name='excluir_medicamento'),

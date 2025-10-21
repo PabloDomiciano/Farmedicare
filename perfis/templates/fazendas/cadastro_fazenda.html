@@ -1,0 +1,392 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>{{ title }}</title>
+{% endblock %}
+
+{% block css_especifico %}
+<style>
+  /* Layout Grid para Formulário */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .form-field-half {
+    grid-column: span 1;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #8b5a2b;
+    font-size: 0.9rem;
+  }
+
+  .form-group .helptext {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    font-style: italic;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #efebe9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    background-color: white;
+  }
+
+  .form-control:focus {
+    border-color: #8b5a2b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.1);
+    background-color: #fffbf7;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  select.form-control[multiple] {
+    min-height: 120px;
+  }
+
+  /* Seções do formulário */
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #8b5a2b;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #efebe9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Botões */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #efebe9;
+  }
+
+  .btn {
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #8b5a2b 0%, #6d4522 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(139, 90, 43, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(139, 90, 43, 0.4);
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+  }
+
+  /* Container do formulário */
+  .modelo-container {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    padding: 2rem 2.5rem;
+    margin: 1.5rem auto;
+    max-width: 1100px;
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modelo-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid #8b5a2b;
+  }
+
+  .modelo-title {
+    font-size: 1.8rem;
+    color: #8b5a2b;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .modelo-subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* Info Box */
+  .info-box {
+    background: linear-gradient(135deg, #fff8f0 0%, #ffebda 100%);
+    border-left: 4px solid #8b5a2b;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  .info-box i {
+    color: #8b5a2b;
+    font-size: 1.25rem;
+    margin-top: 0.125rem;
+  }
+
+  .info-box-content {
+    flex: 1;
+  }
+
+  .info-box-text {
+    font-size: 0.875rem;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* Mensagens de erro */
+  .error-message {
+    color: #d32f2f;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .form-field-half {
+      grid-column: 1;
+    }
+
+    .modelo-container {
+      padding: 1.5rem;
+      margin: 1rem;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1>{{ titulo }}</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" placeholder="Pesquisar..." />
+        <i class="fas fa-search"></i>
+      </div>
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+    <button class="mobile-menu-btn">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+{% endblock %}
+
+{% block cards %}
+{% endblock %}
+
+{% block graficos %}
+<div class="modelo-container">
+  <div class="modelo-header">
+    <h2 class="modelo-title">{{ titulo }}</h2>
+    <p class="modelo-subtitle">{{ subtitulo }}</p>
+  </div>
+
+  <!-- Info Box -->
+  <div class="info-box">
+    <i class="fas fa-info-circle"></i>
+    <div class="info-box-content">
+      <div class="info-box-text">
+        <strong>💡 Dica:</strong> Você pode selecionar múltiplos usuários responsáveis segurando a tecla <kbd>Ctrl</kbd> (Windows) ou <kbd>Cmd</kbd> (Mac) enquanto clica.
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="">
+    {% csrf_token %}
+    
+    <!-- Seção: Informações da Fazenda -->
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <i class="fas fa-tractor"></i>
+        Informações da Fazenda
+      </h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="{{ form.nome.id_for_label }}">
+            {{ form.nome.label }} <span style="color: red;">*</span>
+          </label>
+          {{ form.nome }}
+          {% if form.nome.help_text %}
+          <small class="helptext">{{ form.nome.help_text }}</small>
+          {% endif %}
+          {% if form.nome.errors %}
+          <small class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.nome.errors }}
+          </small>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.cidade.id_for_label }}">
+            {{ form.cidade.label }}
+          </label>
+          {{ form.cidade }}
+          {% if form.cidade.help_text %}
+          <small class="helptext">{{ form.cidade.help_text }}</small>
+          {% endif %}
+          {% if form.cidade.errors %}
+          <small class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.cidade.errors }}
+          </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Usuários Responsáveis -->
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <i class="fas fa-users"></i>
+        Usuários Responsáveis
+      </h3>
+      <div class="form-grid">
+        <div class="form-group form-field-full">
+          <label for="{{ form.usuarios.id_for_label }}">
+            {{ form.usuarios.label }} <span style="color: red;">*</span>
+          </label>
+          {{ form.usuarios }}
+          {% if form.usuarios.help_text %}
+          <small class="helptext">{{ form.usuarios.help_text }}</small>
+          {% endif %}
+          {% if form.usuarios.errors %}
+          <small class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.usuarios.errors }}
+          </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção: Descrição -->
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <i class="fas fa-file-alt"></i>
+        Descrição
+      </h3>
+      <div class="form-grid">
+        <div class="form-group form-field-full">
+          <label for="{{ form.descricao.id_for_label }}">
+            {{ form.descricao.label }}
+          </label>
+          {{ form.descricao }}
+          {% if form.descricao.help_text %}
+          <small class="helptext">{{ form.descricao.help_text }}</small>
+          {% endif %}
+          {% if form.descricao.errors %}
+          <small class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.descricao.errors }}
+          </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="form-actions">
+      <a href="{% url 'listar_fazendas' %}" class="btn btn-secondary">
+        <i class="fas fa-times"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Salvar Fazenda
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block ultimos_registros %}
+{% endblock %}

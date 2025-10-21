@@ -1,0 +1,514 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>{{ titulo }}</title>
+{% endblock %}
+
+{% block css_especifico %}
+<style>
+  /* Card de Lista */
+  .lista-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    margin: 1.5rem auto;
+    max-width: 1400px;
+    overflow: hidden;
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .lista-header {
+    background: linear-gradient(135deg, #8b5a2b 0%, #6d4522 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .lista-title-section {
+    flex: 1;
+  }
+
+  .lista-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .lista-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  .lista-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .btn-add {
+    background-color: white;
+    color: #8b5a2b;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background-color: #f5f5f5;
+  }
+
+  /* Filtros e Busca */
+  .filter-section {
+    padding: 1.5rem 2rem;
+    background-color: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 250px;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.75rem center;
+    transition: all 0.3s;
+  }
+
+  .search-input:focus {
+    border-color: #8b5a2b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.1);
+  }
+
+  /* Tabela */
+  .tabela-container {
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .tabela {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .tabela thead {
+    background-color: #f5f5f5;
+  }
+
+  .tabela th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .tabela td {
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 0.95rem;
+  }
+
+  .tabela tbody tr {
+    transition: all 0.2s;
+  }
+
+  .tabela tbody tr:hover {
+    background-color: #fff8f0;
+    transform: scale(1.001);
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-users {
+    background-color: #e3f2fd;
+    color: #1976d2;
+  }
+
+  .badge-location {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+
+  /* Botões de Ação */
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .btn-edit {
+    color: #1976d2;
+    background-color: #e3f2fd;
+  }
+
+  .btn-edit:hover {
+    background-color: #bbdefb;
+    transform: scale(1.1);
+  }
+
+  .btn-delete {
+    color: #d32f2f;
+    background-color: #ffebee;
+  }
+
+  .btn-delete:hover {
+    background-color: #ffcdd2;
+    transform: scale(1.1);
+  }
+
+  /* Info de Estatísticas */
+  .stats-info {
+    padding: 1rem 2rem;
+    background-color: #fafafa;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+  }
+
+  .stats-total {
+    font-weight: 600;
+    color: #8b5a2b;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #999;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: #ddd;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.25rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: #999;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Lista de usuários */
+  .usuarios-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .usuario-badge {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* Descrição resumida */
+  .descricao-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #666;
+    font-style: italic;
+  }
+
+  .descricao-cell:hover {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .lista-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .lista-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .btn-add {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .filter-section {
+      flex-direction: column;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .tabela-container {
+      padding: 1rem;
+    }
+
+    .tabela {
+      font-size: 0.85rem;
+    }
+
+    .tabela th,
+    .tabela td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .stats-info {
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+
+    .usuarios-list {
+      max-width: 150px;
+    }
+
+    .descricao-cell {
+      max-width: 150px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1>{{ titulo }}</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" placeholder="Pesquisar..." />
+        <i class="fas fa-search"></i>
+      </div>
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+    <button class="mobile-menu-btn">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+{% endblock %}
+
+{% block cards %}
+{% endblock %}
+
+{% block graficos %}
+<div class="lista-card">
+  <!-- Header da Lista -->
+  <div class="lista-header">
+    <div class="lista-title-section">
+      <h2 class="lista-title">
+        <i class="fas fa-tractor"></i> Lista de Fazendas
+      </h2>
+      <p class="lista-subtitle">Gerenciamento completo de fazendas e propriedades rurais</p>
+    </div>
+    <div class="lista-actions">
+      <a href="{% url 'cadastrar_fazenda' %}" class="btn-add">
+        <i class="fas fa-plus"></i>
+        Nova Fazenda
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-section">
+    <input 
+      type="text" 
+      class="search-input" 
+      id="searchInput"
+      placeholder="🔍 Buscar por nome, cidade ou usuários..."
+    />
+  </div>
+
+  <!-- Tabela -->
+  <div class="tabela-container">
+    {% if fazendas %}
+    <table class="tabela" id="tabelaFazendas">
+      <thead>
+        <tr>
+          <th>Nome da Fazenda</th>
+          <th>Cidade</th>
+          <th>Usuários Responsáveis</th>
+          <th>Descrição</th>
+          <th style="text-align: center;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fazenda in fazendas %}
+        <tr>
+          <td>
+            <strong>
+              <i class="fas fa-map-marker-alt" style="color: #8b5a2b;"></i>
+              {{ fazenda.nome }}
+            </strong>
+          </td>
+          <td>
+            {% if fazenda.cidade %}
+              <span class="badge badge-location">
+                <i class="fas fa-city"></i> {{ fazenda.cidade }}
+              </span>
+            {% else %}
+              <span style="color: #999;">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if fazenda.usuarios.all %}
+              <div class="usuarios-list">
+                {% for usuario in fazenda.usuarios.all %}
+                  <span class="usuario-badge">
+                    <i class="fas fa-user"></i> {{ usuario.username }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span style="color: #999;">Nenhum usuário</span>
+            {% endif %}
+          </td>
+          <td class="descricao-cell">
+            {% if fazenda.descricao %}
+              {{ fazenda.descricao }}
+            {% else %}
+              <span style="color: #999;">-</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            <div class="action-buttons">
+              <a href="{% url 'editar_fazenda' fazenda.id %}" 
+                 class="btn-icon btn-edit"
+                 title="Editar fazenda">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'excluir_fazenda' fazenda.id %}" 
+                 class="btn-icon btn-delete"
+                 title="Excluir fazenda">
+                <i class="fas fa-trash-alt"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-tractor"></i>
+      <h3>Nenhuma fazenda cadastrada</h3>
+      <p>Comece adicionando sua primeira fazenda</p>
+      <a href="{% url 'cadastrar_fazenda' %}" class="btn-add">
+        <i class="fas fa-plus"></i>
+        Adicionar Primeira Fazenda
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Estatísticas -->
+  {% if fazendas %}
+  <div class="stats-info">
+    <div>
+      <strong class="stats-total">{{ fazendas|length }}</strong> 
+      fazenda{{ fazendas|length|pluralize }}
+    </div>
+    <div>
+      <i class="fas fa-clock"></i>
+      Atualizado agora
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block ultimos_registros %}
+{% endblock %}
+
+{% block javascript_especifico %}
+<script>
+  // Busca em tempo real
+  document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const table = document.getElementById('tabelaFazendas');
+    
+    if (!table) return;
+    
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(searchTerm) ? '' : 'none';
+    }
+  });
+</script>
+{% endblock %}

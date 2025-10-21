@@ -6,6 +6,28 @@
 <title>Dashboard - Farmedicare</title>
 {% endblock %}
 
+
+    <!-- Conteúdo Principal -->
+    {% block conteudo %}
+    <main class="main-content">
+      <header class="content-header">
+        <h1>Dashboard</h1>
+        <div class="header-actions">
+          
+          <!-- Botão de Notificações estilo YouTube -->
+          <button class="btn btn-notification" id="notificationBtn">
+            <i class="fas fa-bell"></i>
+            {% if notificacoes_count > 0 %}
+            <span class="badge" id="notificationBadge">{{ notificacoes_count }}</span>
+            {% endif %}
+          </button>
+        </div>
+        <button class="mobile-menu-btn">
+          <i class="fas fa-bars"></i>
+        </button>
+      </header>
+      {% endblock %}
+
 {% block cards %}
 <section class="summary-cards">
     <div class="card card-receita">
