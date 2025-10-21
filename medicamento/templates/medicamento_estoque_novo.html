@@ -1,0 +1,485 @@
+{% extends 'modelo.html' %}
+{% load static %}
+{% block titulo %}<title>{{ title }}</title>{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">{# Controle de Vencimento de Medicamentos #}
+  <header class="content-header">
+    <h1>{{ titulo }}</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Pesquisar medicamentos..." />
+        <i class="fas fa-search"></i>
+      </div>
+      {% block admin %}{% endblock %}
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+    <button class="mobile-menu-btn">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+  {% block conteudo_admin %}{% endblock %}
+{% endblock %}
+
+{% block cards %}{% endblock %}
+
+{% block graficos %}
+  <style>
+    /* Tema Azul para Medicamentos */
+    .medicamentos-filters {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+      margin: 20px auto;
+      max-width: 1200px;
+      border: 2px solid #42a5f5;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .filter-btn-med {
+      padding: 10px 20px;
+      border: 2px solid #42a5f5;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #1976d2;
+    }
+
+    .filter-btn-med:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(66, 165, 245, 0.3);
+    }
+
+    .filter-btn-med.active {
+      background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+      color: white;
+      border-color: #1976d2;
+    }
+
+    .filter-btn-med.status-vencido {
+      border-color: #d32f2f;
+    }
+
+    .filter-btn-med.status-vencido.active {
+      background: #d32f2f;
+      border-color: #d32f2f;
+    }
+
+    .filter-btn-med.status-critico {
+      border-color: #f57c00;
+    }
+
+    .filter-btn-med.status-critico.active {
+      background: #f57c00;
+      border-color: #f57c00;
+    }
+
+    .filter-btn-med.status-atencao {
+      border-color: #fbc02d;
+    }
+
+    .filter-btn-med.status-atencao.active {
+      background: #fbc02d;
+      border-color: #fbc02d;
+    }
+
+    .filter-btn-med.status-ok {
+      border-color: #388e3c;
+    }
+
+    .filter-btn-med.status-ok.active {
+      background: #388e3c;
+      border-color: #388e3c;
+    }
+
+    .filter-stats-med {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      padding-top: 15px;
+      border-top: 2px solid #42a5f5;
+    }
+
+    .stat-card-med {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #42a5f5;
+    }
+
+    .stat-label-med {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value-med {
+      font-weight: bold;
+      font-size: 20px;
+      color: #1976d2;
+    }
+
+    /* Status Badges */
+    .status-badge-med {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      display: inline-block;
+      letter-spacing: 0.5px;
+    }
+
+    .status-vencido {
+      background: #ffebee;
+      color: #c62828;
+      border: 2px solid #ef5350;
+    }
+
+    .status-critico {
+      background: #fff3e0;
+      color: #e65100;
+      border: 2px solid #ff9800;
+    }
+
+    .status-atencao {
+      background: #fffde7;
+      color: #f57f17;
+      border: 2px solid #fbc02d;
+    }
+
+    .status-ok {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 2px solid #66bb6a;
+    }
+
+    /* Cores das linhas */
+    .modelo-table tbody tr.med-vencido {
+      background: #ffebee !important;
+      border-left: 5px solid #d32f2f;
+    }
+
+    .modelo-table tbody tr.med-critico {
+      background: #fff3e0 !important;
+      border-left: 5px solid #f57c00;
+    }
+
+    .modelo-table tbody tr.med-atencao {
+      background: #fffde7 !important;
+      border-left: 5px solid #fbc02d;
+    }
+
+    .modelo-table tbody tr.med-ok {
+      background: #f1f8e9 !important;
+      border-left: 5px solid #7cb342;
+    }
+
+    .modelo-table tbody tr:hover {
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: all 0.3s;
+    }
+
+    /* Ícones de alerta */
+    .icon-vencido {
+      color: #d32f2f;
+      font-size: 20px;
+      animation: pulse 1.5s infinite;
+    }
+
+    .icon-critico {
+      color: #f57c00;
+      font-size: 18px;
+      animation: shake 2s infinite;
+    }
+
+    .icon-atencao {
+      color: #fbc02d;
+      font-size: 16px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .filter-count-med {
+      background: white;
+      color: #1976d2;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      margin-left: 5px;
+      font-weight: bold;
+    }
+
+    .action-card-med {
+      background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(66, 165, 245, 0.3);
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+
+    .action-card-med:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(66, 165, 245, 0.4);
+    }
+    
+    /* Estilo especial para botão de teste */
+    .btn-teste:hover {
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.5) !important;
+      animation: pulse 1s infinite;
+    }
+
+    .dias-vencimento {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .dias-vencido {
+      color: #d32f2f;
+    }
+
+    .dias-critico {
+      color: #f57c00;
+    }
+
+    .dias-atencao {
+      color: #fbc02d;
+    }
+
+    .dias-ok {
+      color: #388e3c;
+    }
+  </style>
+
+  <!-- Botão de Nova Entrada -->
+  <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+    <a href="{% url 'entrada_medicamento_create' %}" class="action-card-med">
+      <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
+      <span>{{ btn_cadastrar }}</span>
+    </a>
+  </div>
+
+  <!-- Filtros e Estatísticas -->
+  <div class="medicamentos-filters">
+    <div class="filter-buttons">
+      <button class="filter-btn-med active" data-filter="todos">
+        <i class="fas fa-list"></i>
+        Todos <span class="filter-count-med" id="count-todos">{{ total_medicamentos }}</span>
+      </button>
+      <button class="filter-btn-med status-vencido" data-filter="vencido">
+        <i class="fas fa-times-circle"></i>
+        Vencidos <span class="filter-count-med" id="count-vencido">{{ vencidos }}</span>
+      </button>
+      <button class="filter-btn-med status-critico" data-filter="critico">
+        <i class="fas fa-exclamation-triangle"></i>
+        Crítico (≤30d) <span class="filter-count-med" id="count-critico">{{ proximo_vencer }}</span>
+      </button>
+      <button class="filter-btn-med status-atencao" data-filter="atencao">
+        <i class="fas fa-exclamation-circle"></i>
+        Atenção (≤60d) <span class="filter-count-med" id="count-atencao">{{ atencao }}</span>
+      </button>
+      <button class="filter-btn-med status-ok" data-filter="ok">
+        <i class="fas fa-check-circle"></i>
+        OK (>60d) <span class="filter-count-med" id="count-ok">{{ ok }}</span>
+      </button>
+    </div>
+
+    <div class="filter-stats-med">
+      <div class="stat-card-med">
+        <div class="stat-label-med">💊 Total de Medicamentos</div>
+        <div class="stat-value-med">{{ total_medicamentos }}</div>
+      </div>
+      <div class="stat-card-med">
+        <div class="stat-label-med">📦 Quantidade em Estoque</div>
+        <div class="stat-value-med">{{ total_quantidade }}</div>
+      </div>
+      <div class="stat-card-med" style="border-left-color: #d32f2f;">
+        <div class="stat-label-med">🚨 Vencidos</div>
+        <div class="stat-value-med" style="color: #d32f2f;">{{ vencidos }}</div>
+      </div>
+      <div class="stat-card-med" style="border-left-color: #f57c00;">
+        <div class="stat-label-med">⚠️ Críticos (≤30 dias)</div>
+        <div class="stat-value-med" style="color: #f57c00;">{{ proximo_vencer }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Medicamentos -->
+  <div class="modelo-lista-container">
+    <div class="table-container">
+      <table class="modelo-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Medicamento</th>
+            <th>Fazenda</th>
+            <th>Quantidade</th>
+            <th>Próxima Validade</th>
+            <th>Dias para Vencer</th>
+            <th>Lote</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="medicamentos-tbody">
+          {% for med in medicamentos_data %}
+          <tr class="med-row med-{{ med.status }}"
+              data-status="{{ med.status }}"
+              data-dias="{{ med.dias_para_vencer }}"
+              data-search="{{ med.nome }} {{ med.fazenda.nome }} {{ med.lote }}">
+            
+            <td style="text-align: center;">
+              {% if med.status == 'vencido' %}
+                <i class="fas fa-times-circle icon-vencido" title="VENCIDO"></i>
+              {% elif med.status == 'critico' %}
+                <i class="fas fa-exclamation-triangle icon-critico" title="CRÍTICO"></i>
+              {% elif med.status == 'atencao' %}
+                <i class="fas fa-exclamation-circle icon-atencao" title="ATENÇÃO"></i>
+              {% else %}
+                <i class="fas fa-check-circle" style="color: #388e3c; font-size: 18px;" title="OK"></i>
+              {% endif %}
+            </td>
+            
+            <td>
+              <strong style="font-size: 15px; color: #1976d2;">{{ med.nome }}</strong>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                <i class="fas fa-box"></i> {{ med.total_entradas }} entrada(s) no estoque
+              </div>
+            </td>
+            
+            <td>
+              <i class="fas fa-home" style="color: #1976d2;"></i>
+              {{ med.fazenda.nome }}
+            </td>
+            
+            <td style="text-align: center;">
+              <strong style="font-size: 16px; color: #1976d2;">{{ med.quantidade_total }}</strong>
+              <div style="font-size: 11px; color: #666;">unidades</div>
+            </td>
+            
+            <td>
+              <strong style="font-size: 14px;">{{ med.proxima_validade|date:"d/m/Y" }}</strong>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                {{ med.proxima_validade|date:"D" }}
+              </div>
+            </td>
+            
+            <td style="text-align: center;">
+              {% if med.dias_para_vencer < 0 %}
+                <div class="dias-vencimento dias-vencido">
+                  <i class="fas fa-times-circle"></i> Há {{ med.dias_vencido_abs }} dias
+                </div>
+                <span class="status-badge-med status-vencido">VENCIDO</span>
+              {% elif med.dias_para_vencer <= 30 %}
+                <div class="dias-vencimento dias-critico">
+                  <i class="fas fa-exclamation-triangle"></i> {{ med.dias_para_vencer }} dias
+                </div>
+                <span class="status-badge-med status-critico">CRÍTICO</span>
+              {% elif med.dias_para_vencer <= 60 %}
+                <div class="dias-vencimento dias-atencao">
+                  <i class="fas fa-exclamation-circle"></i> {{ med.dias_para_vencer }} dias
+                </div>
+                <span class="status-badge-med status-atencao">ATENÇÃO</span>
+              {% else %}
+                <div class="dias-vencimento dias-ok">
+                  <i class="fas fa-check-circle"></i> {{ med.dias_para_vencer }} dias
+                </div>
+                <span class="status-badge-med status-ok">OK</span>
+              {% endif %}
+            </td>
+            
+            <td>
+              <div style="font-size: 13px;">{{ med.lote }}</div>
+            </td>
+            
+            <td class="actions">
+              <a href="{% url 'entrada_medicamento_create' %}" class="btn-edit" style="background: #42a5f5;">
+                <i class="fas fa-plus"></i> Nova Entrada
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
+              <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
+              <div>{{ registros }}</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterButtons = document.querySelectorAll('.filter-btn-med');
+      const medRows = document.querySelectorAll('.med-row');
+      const searchInput = document.getElementById('searchInput');
+      let currentFilter = 'todos';
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          currentFilter = this.dataset.filter;
+          aplicarFiltros();
+        });
+      });
+
+      searchInput.addEventListener('input', aplicarFiltros);
+
+      function aplicarFiltros() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        medRows.forEach(row => {
+          const status = row.dataset.status;
+          const searchData = row.dataset.search.toLowerCase();
+          
+          const statusMatch = currentFilter === 'todos' || status === currentFilter;
+          const searchMatch = searchTerm === '' || searchData.includes(searchTerm);
+          
+          row.style.display = (statusMatch && searchMatch) ? '' : 'none';
+        });
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block ultimos_registros %}{% endblock %}
+</main>

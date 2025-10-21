@@ -24,6 +24,311 @@
     {% endblock %}
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
+    <!-- CSS Notificações Popup -->
+    <style>
+      .notification-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .btn-notification {
+        position: relative;
+        background: transparent;
+        border: none;
+        color: #212529;
+        font-size: 20px;
+        padding: 10px 15px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-notification:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .btn-notification.active {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-notification .badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #ef5350;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        text-align: center;
+        animation: badgePulse 2s infinite;
+      }
+
+      @keyframes badgePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      .notification-popup {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        width: 380px;
+        max-height: 600px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .notification-popup.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .notification-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        border-radius: 12px 12px 0 0;
+      }
+
+      .notification-popup-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .notification-popup-header .close-popup {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+      }
+
+      .notification-popup-header .close-popup:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .notification-popup-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 450px;
+      }
+
+      .notification-popup-body::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .notification-popup-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      .notification-popup-body::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 4px;
+      }
+
+      .notification-list {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .notification-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+        background: white;
+      }
+
+      .notification-item:hover {
+        background: #f8f8f8;
+      }
+
+      .notification-item:last-child {
+        border-bottom: none;
+      }
+
+      .notification-icon {
+        font-size: 24px;
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .notification-item.vencido .notification-icon {
+        color: #ef5350;
+        animation: iconPulse 2s infinite;
+      }
+
+      .notification-item.muito_proximo .notification-icon {
+        color: #ff9800;
+        animation: iconShake 3s infinite;
+      }
+
+      .notification-item.proximo .notification-icon {
+        color: #ffa726;
+      }
+
+      @keyframes iconPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.15); opacity: 0.8; }
+      }
+
+      @keyframes iconShake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-3px); }
+        75% { transform: translateX(3px); }
+      }
+
+      .notification-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .notification-title {
+        font-weight: 600;
+        font-size: 14px;
+        color: #212121;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .notification-message {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 4px;
+        line-height: 1.4;
+      }
+
+      .notification-time {
+        font-size: 11px;
+        color: #999;
+      }
+
+      .notification-empty,
+      .notification-loading,
+      .notification-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
+        color: #666;
+      }
+
+      .notification-empty i,
+      .notification-loading i,
+      .notification-error i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.6;
+      }
+
+      .notification-empty i {
+        color: #4caf50;
+      }
+
+      .notification-loading i {
+        color: #ff9800;
+      }
+
+      .notification-error i {
+        color: #ef5350;
+      }
+
+      .notification-empty p,
+      .notification-loading p,
+      .notification-error p {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #333;
+      }
+
+      .notification-empty small,
+      .notification-loading small,
+      .notification-error small {
+        font-size: 12px;
+        color: #999;
+      }
+
+      .notification-popup-footer {
+        padding: 12px 20px;
+        border-top: 1px solid #e0e0e0;
+        background: #fafafa;
+        border-radius: 0 0 12px 12px;
+      }
+
+      .btn-view-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+      }
+
+      .btn-view-all:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(66, 165, 245, 0.4);
+      }
+
+      @media (max-width: 768px) {
+        .notification-popup {
+          position: fixed;
+          top: 60px;
+          right: 10px;
+          left: 10px;
+          width: auto;
+          max-height: calc(100vh - 80px);
+        }
+      }
+    </style>
 </head>
 
   <body>
@@ -62,9 +367,15 @@
             </a>
           </li>
           <li class="menu-item">
-            <a href="{% url 'listar_parcelas' %}">
-              <i class="fas fa-money-bill-wave"></i>
-              <span>Lançamentos Futuros</span>
+            <a href="{% url 'listar_parcelas_receita' %}">
+              <i class="fas fa-coins"></i>
+              <span>Parcelas a Receber</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="{% url 'listar_parcelas_despesa' %}">
+              <i class="fas fa-money-check-alt"></i>
+              <span>Parcelas a Pagar</span>
             </a>
           </li>
           <li class="menu-item">
@@ -119,9 +430,13 @@
             <i class="fas fa-cogs"></i> Área Admin
           </button>
           {% endif %} {% endblock %}
-          <button class="btn btn-notification">
+          
+          <!-- Botão de Notificações estilo YouTube -->
+          <button class="btn btn-notification" id="notificationBtn">
             <i class="fas fa-bell"></i>
-            <span class="badge">3</span>
+            {% if notificacoes_count > 0 %}
+            <span class="badge" id="notificationBadge">{{ notificacoes_count }}</span>
+            {% endif %}
           </button>
         </div>
         <button class="mobile-menu-btn">
@@ -323,6 +638,39 @@
       </div>
     </main>
     {% endif %}
+    
+    <!-- Popup de Notificações Global (fora dos blocos) -->
+    <div class="notification-popup" id="notificationPopup">
+      <div class="notification-popup-header">
+        <h3><i class="fas fa-bell"></i> Notificações</h3>
+        <button class="close-popup" id="closePopup">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="notification-popup-body" id="notificationPopupBody">
+        {% if notificacoes_count > 0 %}
+          <div class="notification-loading">
+            <i class="fas fa-spinner fa-spin"></i> Carregando...
+          </div>
+        {% else %}
+          <div class="notification-empty">
+            <i class="fas fa-check-circle"></i>
+            <p>Nenhuma notificação</p>
+            <small>Tudo em ordem com seus medicamentos!</small>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if notificacoes_count > 0 %}
+      <div class="notification-popup-footer">
+        <a href="{% url 'medicamento_notificacoes' %}" class="btn-view-all">
+          Ver todas as notificações <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <!-- Script principal primeiro -->
@@ -336,5 +684,174 @@
     window.graficoData = {{ grafico_data_json|safe }};
     </script>
     <script src="{% static 'js/grafico.js' %}"></script>
+    
+    <!-- Script de Notificações Inline -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationPopup = document.getElementById('notificationPopup');
+        const closePopup = document.getElementById('closePopup');
+        const notificationPopupBody = document.getElementById('notificationPopupBody');
+        
+        if (!notificationBtn || !notificationPopup) {
+            console.log('Elementos de notificação não encontrados');
+            return;
+        }
+        
+        let notificacoesCarregadas = false;
+
+        // Abrir/Fechar popup ao clicar no sino
+        notificationBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            const isOpen = notificationPopup.classList.contains('show');
+            
+            if (isOpen) {
+                fecharPopup();
+            } else {
+                abrirPopup();
+                posicionarPopup();
+            }
+        });
+
+        // Fechar com botão X
+        if (closePopup) {
+            closePopup.addEventListener('click', function(e) {
+                e.stopPropagation();
+                fecharPopup();
+            });
+        }
+
+        // Fechar ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (notificationPopup.classList.contains('show')) {
+                if (!notificationPopup.contains(e.target) && !notificationBtn.contains(e.target)) {
+                    fecharPopup();
+                }
+            }
+        });
+
+        // Prevenir fechamento ao clicar dentro do popup
+        notificationPopup.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        function abrirPopup() {
+            notificationPopup.classList.add('show');
+            notificationBtn.classList.add('active');
+            
+            // Carregar notificações apenas uma vez
+            if (!notificacoesCarregadas) {
+                carregarNotificacoes();
+                notificacoesCarregadas = true;
+            }
+        }
+
+        function posicionarPopup() {
+            const btnRect = notificationBtn.getBoundingClientRect();
+            notificationPopup.style.top = (btnRect.bottom + 10) + 'px';
+            notificationPopup.style.right = '20px';
+        }
+
+        function fecharPopup() {
+            notificationPopup.classList.remove('show');
+            notificationBtn.classList.remove('active');
+        }
+
+        function carregarNotificacoes() {
+            // Fazer requisição AJAX para buscar notificações
+            fetch('/pagina_medicamento/api/notificacoes/')
+                .then(response => response.json())
+                .then(data => {
+                    renderizarNotificacoes(data);
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar notificações:', error);
+                    notificationPopupBody.innerHTML = `
+                        <div class="notification-error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erro ao carregar notificações</p>
+                            <small>Tente novamente mais tarde</small>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderizarNotificacoes(data) {
+            if (!data.notificacoes || data.notificacoes.length === 0) {
+                notificationPopupBody.innerHTML = `
+                    <div class="notification-empty">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Nenhuma notificação</p>
+                        <small>Tudo em ordem com seus medicamentos!</small>
+                    </div>
+                `;
+                return;
+            }
+
+            // Limitar a 5 notificações no popup (as mais urgentes)
+            const notificacoesLimitadas = data.notificacoes.slice(0, 5);
+            
+            let html = '<div class="notification-list">';
+            
+            notificacoesLimitadas.forEach(notif => {
+                const icone = getIconeNotificacao(notif.tipo);
+                const cor = getCorNotificacao(notif.tipo);
+                
+                html += `
+                    <div class="notification-item ${notif.tipo}" data-tipo="${notif.tipo}">
+                        <div class="notification-icon" style="color: ${cor};">
+                            <i class="fas ${icone}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">${notif.medicamento}</div>
+                            <div class="notification-message">${getMensagemCurta(notif)}</div>
+                            <div class="notification-time">${getTempoRelativo(notif.validade)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            notificationPopupBody.innerHTML = html;
+        }
+
+        function getIconeNotificacao(tipo) {
+            const icones = {
+                'vencido': 'fa-times-circle',
+                'muito_proximo': 'fa-exclamation-triangle',
+                'proximo': 'fa-clock'
+            };
+            return icones[tipo] || 'fa-bell';
+        }
+
+        function getCorNotificacao(tipo) {
+            const cores = {
+                'vencido': '#ef5350',
+                'muito_proximo': '#ff9800',
+                'proximo': '#ffa726'
+            };
+            return cores[tipo] || '#42a5f5';
+        }
+
+        function getMensagemCurta(notif) {
+            if (notif.dias_para_vencer < 0) {
+                return `Venceu há ${notif.dias_vencido_abs} dias`;
+            } else if (notif.dias_para_vencer === 0) {
+                return 'Vence hoje!';
+            } else if (notif.dias_para_vencer === 1) {
+                return 'Vence amanhã!';
+            } else {
+                return `Vence em ${notif.dias_para_vencer} dias`;
+            }
+        }
+
+        function getTempoRelativo(validade) {
+            const dataValidade = new Date(validade);
+            return `Validade: ${dataValidade.toLocaleDateString('pt-BR')}`;
+        }
+    });
+    </script>
   </body>
 </html>
