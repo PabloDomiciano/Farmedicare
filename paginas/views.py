@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.views.generic import TemplateView
-from django.db.models import Sum
-from movimentacao.models import Movimentacao
-from medicamento.models import EntradaMedicamento
+from django.db.models import Sum, Count
+from movimentacao.models import Movimentacao, Parcela
+from medicamento.models import EntradaMedicamento, Medicamento
 import json
 
 
@@ -31,6 +31,24 @@ class PaginaView(TemplateView):
         # Saldo (receitas - despesas)
         saldo = total_receitas - total_despesas
 
+        # Calcular crescimento de receitas do mês atual comparado com mês anterior
+        mes_atual = datetime.now().strftime("%Y-%m")
+        mes_anterior = (datetime.now() - timedelta(days=30)).strftime("%Y-%m")
+        
+        receitas_mes_atual = (
+            Movimentacao.objects.filter(tipo="receita", data__startswith=mes_atual)
+            .aggregate(total=Sum("valor_total"))["total"] or 0
+        )
+        receitas_mes_anterior = (
+            Movimentacao.objects.filter(tipo="receita", data__startswith=mes_anterior)
+            .aggregate(total=Sum("valor_total"))["total"] or 1
+        )
+        
+        crescimento_receitas = (
+            ((receitas_mes_atual - receitas_mes_anterior) / receitas_mes_anterior) * 100
+            if receitas_mes_anterior > 0 else 0
+        )
+
         # Buscar as entradas de medicamentos
         entradas_medicamentos = EntradaMedicamento.objects.select_related(
             "medicamento"
@@ -44,11 +62,50 @@ class PaginaView(TemplateView):
             total_quantidade += entrada.quantidade
             total_valor += entrada.valor_medicamento
 
+        # Medicamentos próximos de vencer (próximos 30 dias)
+        data_limite = date.today() + timedelta(days=30)
+        medicamentos_proximos_vencer = EntradaMedicamento.objects.filter(
+            validade__lte=data_limite,
+            validade__gte=date.today()
+        ).count()
+
+        # Contar alertas urgentes (medicamentos vencidos + próximos 7 dias)
+        data_urgente = date.today() + timedelta(days=7)
+        alertas_urgentes = EntradaMedicamento.objects.filter(
+            validade__lte=data_urgente
+        ).count()
+
+        # Total de alertas (parcelas pendentes + medicamentos próximos de vencer)
+        parcelas_pendentes = Parcela.objects.filter(status_pagamento="Pendente").count()
+        total_alertas = parcelas_pendentes + medicamentos_proximos_vencer
+
+        # Últimas receitas (3 mais recentes)
+        ultimas_receitas = Movimentacao.objects.filter(tipo="receita").order_by("-data")[:3]
+
+        # Últimas despesas (3 mais recentes)
+        ultimas_despesas = Movimentacao.objects.filter(tipo="despesa").order_by("-data")[:3]
+
+        # Medicamentos próximos de vencer para listagem (3 mais urgentes)
+        medicamentos_vencimento = EntradaMedicamento.objects.select_related(
+            "medicamento"
+        ).filter(
+            validade__gte=date.today()
+        ).order_by("validade")[:3]
+
         context["total_quantidade"] = total_quantidade
         context["total_valor"] = total_valor
         context["total_receitas"] = total_receitas
         context["total_despesas"] = total_despesas
         context["saldo"] = saldo
+        context["crescimento_receitas"] = round(crescimento_receitas, 1)
+        context["total_medicamentos"] = Medicamento.objects.count()
+        context["medicamentos_proximos_vencer"] = medicamentos_proximos_vencer
+        context["alertas_urgentes"] = alertas_urgentes
+        context["total_alertas"] = total_alertas
+        context["ultimas_receitas"] = ultimas_receitas
+        context["ultimas_despesas"] = ultimas_despesas
+        context["medicamentos_vencimento"] = medicamentos_vencimento
+        context["today"] = date.today()
 
         # Dados para os gráficos
         grafico_linhas = self.get_dados_grafico_linhas()
