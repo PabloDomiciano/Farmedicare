@@ -9,7 +9,13 @@ from movimentacao.views import MovimentacaoUpdateView, ParcelaUpdateView, Catego
 from movimentacao.views import MovimentacaoDeleteView, ParcelaDeleteView, CategoriaDeleteView
 
 # Importação das views de Listagem
-from movimentacao.views import MovimentacaoReceitaListView, MovimentacaoDespesaListView, ParcelasListView
+from movimentacao.views import (
+    MovimentacaoReceitaListView, 
+    MovimentacaoDespesaListView, 
+    ParcelasListView,
+    ParcelasReceitaListView,
+    ParcelasDespesaListView
+)
 
 urlpatterns = [
     path('cadastrar/movimentacao/', MovimentacaoCreateView.as_view(), name='cadastrar_movimentacao'),
@@ -26,6 +32,12 @@ urlpatterns = [
 
     path('listar/movimentacao/receita/', MovimentacaoReceitaListView.as_view(), name='listar_movimentacao_receita'),
     path('listar/movimentacao/despesa/', MovimentacaoDespesaListView.as_view(), name='listar_movimentacao_despesa'),
+    
+    # Novas URLs - Parcelas separadas por tipo
+    path('listar/parcelas/receita/', ParcelasReceitaListView.as_view(), name='listar_parcelas_receita'),
+    path('listar/parcelas/despesa/', ParcelasDespesaListView.as_view(), name='listar_parcelas_despesa'),
+    
+    # URL antiga mantida para compatibilidade
     path('listar/todas-parcelas/', ParcelasListView.as_view(), name='listar_parcelas'),
 
 ]

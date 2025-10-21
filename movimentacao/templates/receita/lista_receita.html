@@ -1,124 +1,417 @@
-{% extends 'modelo.html' %} {% load static %} {% block titulo %}
-<title>{{title}}</title>
-{% endblock %} {% block conteudo %}
+{% extends 'modelo.html' %}
+{% load static %}
+{% block titulo %}<title>{{ title }}</title>{% endblock %}
+
+{% block conteudo %}
 <main class="main-content">
   <header class="content-header">
-    <h1>{{titulo}}</h1>
+    <h1>{{ titulo }}</h1>
     <div class="header-actions">
       <div class="search-box">
-        <input type="text" placeholder="Pesquisar..." />
+        <input type="text" id="searchInput" placeholder="Pesquisar receitas..." />
         <i class="fas fa-search"></i>
       </div>
-      {% block admin %} {%endblock%}
-      <button class="btn btn-notification">
+      {% block admin %}{% endblock %}
+      <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
-        <span class="badge">3</span>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
       </button>
     </div>
     <button class="mobile-menu-btn">
       <i class="fas fa-bars"></i>
     </button>
   </header>
+  {% block conteudo_admin %}{% endblock %}
+{% endblock %}
 
-  {% block conteudo_admin %} {% endblock %} {% endblock %} {% block cards %}
-  {%endblock %} {% block graficos %}
-  <div class="modelo-lista-container">
-    <div class="lista-header">
-      <div class="search-and-actions">
-        <a href="{% url 'cadastrar_movimentacao' %}" class="btn btn-primary">
-          <i class="fas fa-plus"></i> {{btn_cadastrar}}
-        </a>
-      </div>
+{% block cards %}{% endblock %}
+
+{% block graficos %}
+  <style>
+    /* Estilos para filtros */
+    .receitas-filters {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+      margin: 20px auto;
+      max-width: 1200px;
+      border: 2px solid #81c784;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      border: 2px solid #4caf50;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #2e7d32;
+    }
+
+    .filter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+      border-color: #2e7d32;
+    }
+
+    .filter-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      padding-top: 15px;
+      border-top: 2px solid #81c784;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #4caf50;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      font-size: 20px;
+      color: #2e7d32;
+    }
+
+    /* Badges */
+    .badge-ir {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-ir.sim {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge-ir.nao {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    /* Destaque nas linhas */
+    .modelo-table tbody tr {
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .modelo-table tbody tr:hover {
+      background: #e8f5e9 !important;
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+    }
+
+    .modelo-table tbody tr.receita-ir {
+      background: #fffbf0 !important;
+      border-left: 4px solid #ff9800;
+    }
+
+    /* Valores em destaque */
+    .valor-grande {
+      font-weight: bold;
+      font-size: 16px;
+      color: #2e7d32;
+    }
+
+    .info-categoria {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .filter-count {
+      background: white;
+      color: #2e7d32;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      margin-left: 5px;
+      font-weight: bold;
+    }
+
+    /* Card de ação rápida */
+    .action-card {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+
+    .action-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+  </style>
+
+  <!-- Botão de Nova Receita -->
+  <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+    <a href="{% url 'cadastrar_movimentacao' %}" class="action-card">
+      <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
+      <span>{{ btn_cadastrar }}</span>
+    </a>
+  </div>
+
+  <!-- Filtros e Estatísticas -->
+  <div class="receitas-filters">
+    <div class="filter-buttons">
+      <button class="filter-btn active" data-filter="todas">
+        <i class="fas fa-list"></i>
+        Todas <span class="filter-count" id="count-todas">0</span>
+      </button>
+      <button class="filter-btn" data-filter="parcelado">
+        <i class="fas fa-credit-card"></i>
+        Parceladas <span class="filter-count" id="count-parcelado">0</span>
+      </button>
+      <button class="filter-btn" data-filter="vista">
+        <i class="fas fa-money-bill-wave"></i>
+        À Vista <span class="filter-count" id="count-vista">0</span>
+      </button>
+      <button class="filter-btn" data-filter="ir">
+        <i class="fas fa-file-invoice-dollar"></i>
+        Com IR <span class="filter-count" id="count-ir">0</span>
+      </button>
     </div>
 
-    <br />
+    <div class="filter-stats">
+      <div class="stat-card">
+        <div class="stat-label">📊 Total de Receitas</div>
+        <div class="stat-value" id="total-receitas">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💰 Valor Total</div>
+        <div class="stat-value" id="valor-total">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📈 Valor Médio</div>
+        <div class="stat-value" id="valor-medio">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💳 Total em Parcelas</div>
+        <div class="stat-value" id="total-parcelas">0</div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Tabela de Receitas -->
+  <div class="modelo-lista-container">
     <div class="table-container">
       <table class="modelo-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Tipo</th>
             <th>Parceiro</th>
-            <th>Valor Total</th>
+            <th>Categoria</th>
+            <th>Valor</th>
             <th>Parcelas</th>
-            <th>Imposto de Renda</th>
-            <th>Descrição</th>
-            <th>Data para Recebimento</th>
+            <th>IR</th>
+            <th>Data</th>
             <th>Fazenda</th>
-            <th>Cadastrada Por</th>
-            <th>Cadastrado Em</th>
-            <th>Opções</th>
+            <th>Ações</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="receitas-tbody">
           {% for receita in object_list %}
-          <tr>
-            <td>{{ receita.pk }}</td>
-            <td>{{ receita.tipo }}</td>
-            <td>{{ receita.parceiros }}</td>
-            <td>R$ {{ receita.valor_total|floatformat:2 }}</td>
-            <td>{{ receita.parcelas }}</td>
+          <tr class="receita-row {% if receita.imposto_renda %}receita-ir{% endif %}"
+              data-parcelas="{{ receita.parcelas }}"
+              data-ir="{% if receita.imposto_renda %}sim{% else %}nao{% endif %}"
+              data-valor="{{ receita.valor_total }}"
+              data-search="{{ receita.parceiros.nome }} {{ receita.categoria.nome }} {{ receita.fazenda.nome }}">
+            
             <td>
-              {% if receita.imposto_renda %} Sim {% else %} Não {% endif %}
+              <strong style="color: #2e7d32;">{{ receita.parceiros.nome }}</strong>
             </td>
-            <td>{{ receita.descricao }}</td>
-            <td>{{ receita.data|date:"d/m/Y" }}</td>
-            <td>{{ receita.fazenda }}</td>
-            <td>{{ receita.cadastrada_por }}</td>
-            <td>{{ receita.cadastrado_em|date:"d/m/Y" }}</td>
+            
+            <td>
+              <span style="font-weight: 500;">{{ receita.categoria.nome }}</span>
+              {% if receita.descricao %}
+              <div class="info-categoria">{{ receita.descricao|truncatewords:8 }}</div>
+              {% endif %}
+            </td>
+            
+            <td class="valor-grande">
+              R$ {{ receita.valor_total|floatformat:2 }}
+            </td>
+            
+            <td style="text-align: center;">
+              {% if receita.parcelas == 1 %}
+                <span style="background: #e8f5e9; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #2e7d32;">
+                  <i class="fas fa-money-bill-wave"></i> À Vista
+                </span>
+              {% else %}
+                <span style="background: #fff3e0; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #e65100;">
+                  <i class="fas fa-credit-card"></i> {{ receita.parcelas }}x
+                </span>
+              {% endif %}
+            </td>
+            
+            <td style="text-align: center;">
+              {% if receita.imposto_renda %}
+                <span class="badge-ir sim">
+                  <i class="fas fa-check"></i> Sim
+                </span>
+              {% else %}
+                <span class="badge-ir nao">
+                  <i class="fas fa-times"></i> Não
+                </span>
+              {% endif %}
+            </td>
+            
+            <td>
+              <strong>{{ receita.data|date:"d/m/Y" }}</strong>
+              <div class="info-categoria">{{ receita.data|date:"D" }}</div>
+            </td>
+            
+            <td>
+              <i class="fas fa-home" style="color: #4caf50;"></i>
+              {{ receita.fazenda.nome }}
+            </td>
+            
             <td class="actions">
-              <a
-                href="{% url 'editar_movimentacao' receita.pk %}"
-                class="btn-edit"
-              >
+              <a href="{% url 'editar_movimentacao' receita.pk %}" class="btn-edit">
                 <i class="fas fa-edit"></i> Editar
               </a>
-              <a
-                href="{% url 'excluir_movimentacao' receita.pk %}"
-                class="btn-delete"
-              >
+              <a href="{% url 'excluir_movimentacao' receita.pk %}" class="btn-delete">
                 <i class="fas fa-trash"></i> Excluir
               </a>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="12">{{registros}}</td>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
+              <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
+              <div>{{ registros }}</div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-
-    <!-- TOTAIS FORA DA TABELA - RECEITAS -->
-    {% if object_list %}
-    <div
-      class="totais-container"
-      style="
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #e7f3e7;
-        border-radius: 5px;
-        border: 1px solid #c3e6c3;
-      "
-    >
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        "
-      >
-        <div style="font-weight: bold; font-size: 16px; color: #2e7d32">
-          TOTAL DE RECEITAS:
-        </div>
-        <div style="font-weight: bold; font-size: 18px; color: #2e7d32">
-          R$ {{ total_receitas|floatformat:2 }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
   </div>
-  {% endblock %} {% block ultimos_registros %} {% endblock %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const receitaRows = document.querySelectorAll('.receita-row');
+      const searchInput = document.getElementById('searchInput');
+      let currentFilter = 'todas';
+
+      calcularEstatisticas();
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          currentFilter = this.dataset.filter;
+          aplicarFiltros();
+        });
+      });
+
+      searchInput.addEventListener('input', aplicarFiltros);
+
+      function aplicarFiltros() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        receitaRows.forEach(row => {
+          const parcelas = parseInt(row.dataset.parcelas);
+          const ir = row.dataset.ir;
+          const searchData = row.dataset.search.toLowerCase();
+          
+          let filterMatch = false;
+          if (currentFilter === 'todas') filterMatch = true;
+          else if (currentFilter === 'parcelado') filterMatch = parcelas > 1;
+          else if (currentFilter === 'vista') filterMatch = parcelas === 1;
+          else if (currentFilter === 'ir') filterMatch = ir === 'sim';
+          
+          const searchMatch = searchTerm === '' || searchData.includes(searchTerm);
+          
+          row.style.display = (filterMatch && searchMatch) ? '' : 'none';
+        });
+        
+        calcularEstatisticas();
+      }
+
+      function calcularEstatisticas() {
+        let totalReceitas = 0;
+        let totalParcelas = 0;
+        let valorTotal = 0;
+        let countParcelado = 0;
+        let countVista = 0;
+        let countIR = 0;
+
+        receitaRows.forEach(row => {
+          if (row.style.display !== 'none') {
+            const parcelas = parseInt(row.dataset.parcelas);
+            const valor = parseFloat(row.dataset.valor);
+            const ir = row.dataset.ir;
+
+            totalReceitas++;
+            valorTotal += valor;
+            totalParcelas += parcelas;
+            
+            if (parcelas > 1) countParcelado++;
+            if (parcelas === 1) countVista++;
+            if (ir === 'sim') countIR++;
+          }
+        });
+
+        const valorMedio = totalReceitas > 0 ? valorTotal / totalReceitas : 0;
+
+        document.getElementById('count-todas').textContent = receitaRows.length;
+        document.getElementById('count-parcelado').textContent = countParcelado;
+        document.getElementById('count-vista').textContent = countVista;
+        document.getElementById('count-ir').textContent = countIR;
+        
+        document.getElementById('total-receitas').textContent = totalReceitas;
+        document.getElementById('valor-total').textContent = formatarMoeda(valorTotal);
+        document.getElementById('valor-medio').textContent = formatarMoeda(valorMedio);
+        document.getElementById('total-parcelas').textContent = totalParcelas;
+      }
+
+      function formatarMoeda(valor) {
+        return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block ultimos_registros %}{% endblock %}
 </main>

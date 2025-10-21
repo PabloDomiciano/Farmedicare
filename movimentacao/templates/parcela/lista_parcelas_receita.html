@@ -1,0 +1,473 @@
+{% extends 'modelo.html' %}
+{% load static %}
+{% block titulo %}<title>{{ title }}</title>{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1>{{ titulo }}</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Pesquisar parcelas a receber..." />
+        <i class="fas fa-search"></i>
+      </div>
+      {% block admin %}{% endblock %}
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+    <button class="mobile-menu-btn">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+  {% block conteudo_admin %}{% endblock %}
+{% endblock %}
+
+{% block cards %}{% endblock %}
+
+{% block graficos %}
+  <style>
+    /* Tema Verde para Parcelas de Receitas (A Receber) */
+    .parcelas-filters {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+      margin: 20px auto;
+      max-width: 1200px;
+      border: 2px solid #4caf50;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      border: 2px solid #4caf50;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #2e7d32;
+    }
+
+    .filter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+      border-color: #2e7d32;
+    }
+
+    .filter-btn.status-recebido {
+      border-color: #10b981;
+    }
+
+    .filter-btn.status-recebido.active {
+      background: #10b981;
+      border-color: #10b981;
+    }
+
+    .filter-btn.status-pendente {
+      border-color: #f59e0b;
+    }
+
+    .filter-btn.status-pendente.active {
+      background: #f59e0b;
+      border-color: #f59e0b;
+    }
+
+    .filter-btn.status-vencido {
+      border-color: #ef4444;
+    }
+
+    .filter-btn.status-vencido.active {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    .filter-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      padding-top: 15px;
+      border-top: 2px solid #4caf50;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #4caf50;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      font-size: 20px;
+      color: #2e7d32;
+    }
+
+    /* Badges de status */
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      display: inline-block;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pago, .status-recebido {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-pendente {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-vencido {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Destaque visual nas linhas */
+    .modelo-table tbody tr.parcela-vencida {
+      background: #fff3e0 !important;
+      border-left: 4px solid #ff9800;
+    }
+
+    .modelo-table tbody tr.parcela-paga, .modelo-table tbody tr.parcela-recebida {
+      background: #f0fdf4 !important;
+      opacity: 0.85;
+    }
+
+    .modelo-table tbody tr.parcela-paga:hover, .modelo-table tbody tr.parcela-recebida:hover {
+      opacity: 1 !important;
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+    }
+
+    .modelo-table tbody tr.parcela-pendente {
+      background: white !important;
+    }
+
+    .modelo-table tbody tr:hover {
+      background: #e8f5e9 !important;
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+      transition: all 0.3s;
+    }
+
+    /* Valor destacado */
+    .valor-destaque {
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    .valor-pago, .valor-recebido {
+      color: #10b981;
+    }
+
+    .valor-pendente {
+      color: #f59e0b;
+    }
+
+    /* Informação da movimentação */
+    .info-movimentacao {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* Contador de filtros */
+    .filter-count {
+      background: white;
+      color: #2e7d32;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      margin-left: 5px;
+      font-weight: bold;
+    }
+
+    /* Card de ação rápida */
+    .action-card {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+
+    .action-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+  </style>
+
+  <!-- Botão de Nova Receita -->
+  <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+    <a href="{% url 'cadastrar_movimentacao' %}" class="action-card">
+      <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
+      <span>{{ btn_cadastrar }}</span>
+    </a>
+  </div>
+
+  <!-- Filtros e Estatísticas -->
+  <div class="parcelas-filters">
+    <div class="filter-buttons">
+      <button class="filter-btn active" data-filter="todos">
+        <i class="fas fa-list"></i>
+        Todas <span class="filter-count" id="count-todos">0</span>
+      </button>
+      <button class="filter-btn status-recebido" data-filter="pago">
+        <i class="fas fa-check-circle"></i>
+        Recebidas <span class="filter-count" id="count-pago">0</span>
+      </button>
+      <button class="filter-btn status-pendente" data-filter="pendente">
+        <i class="fas fa-clock"></i>
+        Pendentes <span class="filter-count" id="count-pendente">0</span>
+      </button>
+      <button class="filter-btn status-vencido" data-filter="vencido">
+        <i class="fas fa-exclamation-triangle"></i>
+        Vencidas <span class="filter-count" id="count-vencido">0</span>
+      </button>
+    </div>
+
+    <div class="filter-stats">
+      <div class="stat-card">
+        <div class="stat-label">💰 Total de Parcelas</div>
+        <div class="stat-value" id="total-parcelas">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📊 Valor Total</div>
+        <div class="stat-value" id="valor-total">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">✅ Valor Recebido</div>
+        <div class="stat-value" style="color: #10b981;" id="valor-pago">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">⏳ Valor a Receber</div>
+        <div class="stat-value" style="color: #f59e0b;" id="valor-pendente">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Parcelas a Receber -->
+  <div class="modelo-lista-container">
+    <div class="table-container">
+      <table class="modelo-table">
+        <thead>
+          <tr>
+            <th>Cliente/Parceiro</th>
+            <th>Parcela</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Valor Recebido</th>
+            <th>Status</th>
+            <th>Recebimento</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="parcelas-tbody">
+          {% for parcela in object_list %}
+            {% now "Y-m-d" as today %}
+            <tr class="parcela-row {% if parcela.status_pagamento == 'Pago' %}parcela-recebida{% elif parcela.data_vencimento|date:'Y-m-d' < today and parcela.status_pagamento != 'Pago' %}parcela-vencida{% else %}parcela-pendente{% endif %}" 
+                data-status="{% if parcela.status_pagamento == 'Pago' %}pago{% elif parcela.data_vencimento|date:'Y-m-d' < today and parcela.status_pagamento != 'Pago' %}vencido{% else %}pendente{% endif %}"
+                data-valor="{{ parcela.valor_parcela }}"
+                data-valor-pago="{{ parcela.valor_pago }}"
+                data-search="{{ parcela.movimentacao.tipo }} {{ parcela.movimentacao.parceiros.nome }} {{ parcela.ordem_parcela }}">
+              
+              <td>
+                <strong style="color: #2e7d32;">{{ parcela.movimentacao.parceiros.nome }}</strong>
+                <div class="info-movimentacao">
+                  <i class="fas fa-tag" style="color: #4caf50;"></i> {{ parcela.movimentacao.categoria.nome }}
+                  | <i class="fas fa-home" style="color: #4caf50;"></i> {{ parcela.movimentacao.fazenda.nome }}
+                </div>
+              </td>
+              
+              <td style="text-align: center;">
+                <strong style="font-size: 16px; color: #2e7d32;">{{ parcela.ordem_parcela }}/{{ parcela.movimentacao.parcelas }}</strong>
+              </td>
+              
+              <td class="valor-destaque" style="color: #2e7d32;">
+                R$ {{ parcela.valor_parcela|floatformat:2 }}
+              </td>
+              
+              <td>
+                <strong>{{ parcela.data_vencimento|date:"d/m/Y" }}</strong>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                  {{ parcela.data_vencimento|date:"D" }}
+                </div>
+              </td>
+              
+              <td class="valor-destaque {% if parcela.valor_pago >= parcela.valor_parcela %}valor-recebido{% else %}valor-pendente{% endif %}">
+                R$ {{ parcela.valor_pago|floatformat:2 }}
+              </td>
+              
+              <td>
+                {% if parcela.status_pagamento == 'Pago' %}
+                  <span class="status-badge status-recebido">
+                    <i class="fas fa-check-circle"></i> Recebido
+                  </span>
+                {% elif parcela.data_vencimento|date:'Y-m-d' < today %}
+                  <span class="status-badge status-vencido">
+                    <i class="fas fa-exclamation-triangle"></i> Vencida
+                  </span>
+                {% else %}
+                  <span class="status-badge status-pendente">
+                    <i class="fas fa-clock"></i> Pendente
+                  </span>
+                {% endif %}
+              </td>
+              
+              <td>
+                {% if parcela.data_quitacao %}
+                  <strong style="color: #10b981;">{{ parcela.data_quitacao|date:"d/m/Y" }}</strong>
+                {% else %}
+                  <span style="color: #999;">-</span>
+                {% endif %}
+              </td>
+              
+              <td class="actions">
+                <a href="{% url 'editar_parcela' parcela.id %}" class="btn-edit">
+                  <i class="fas fa-edit"></i> Editar
+                </a>
+                <a href="{% url 'excluir_parcela' parcela.id %}" class="btn-delete">
+                  <i class="fas fa-trash"></i> Excluir
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
+                <div>{{ registros }}</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const parcelaRows = document.querySelectorAll('.parcela-row');
+      const searchInput = document.getElementById('searchInput');
+      let currentFilter = 'todos';
+
+      calcularEstatisticas();
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          currentFilter = this.dataset.filter;
+          aplicarFiltros();
+        });
+      });
+
+      searchInput.addEventListener('input', aplicarFiltros);
+
+      function aplicarFiltros() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        parcelaRows.forEach(row => {
+          const status = row.dataset.status;
+          const searchData = row.dataset.search.toLowerCase();
+          
+          const statusMatch = currentFilter === 'todos' || status === currentFilter;
+          const searchMatch = searchTerm === '' || searchData.includes(searchTerm);
+          
+          row.style.display = (statusMatch && searchMatch) ? '' : 'none';
+        });
+        
+        calcularEstatisticas();
+      }
+
+      function calcularEstatisticas() {
+        let totalParcelas = 0;
+        let totalPagas = 0;
+        let totalPendentes = 0;
+        let totalVencidas = 0;
+        let valorTotal = 0;
+        let valorPago = 0;
+        let valorPendente = 0;
+
+        parcelaRows.forEach(row => {
+          if (row.style.display !== 'none') {
+            const status = row.dataset.status;
+            const valor = parseFloat(row.dataset.valor);
+            const valorPg = parseFloat(row.dataset.valorPago);
+
+            totalParcelas++;
+            valorTotal += valor;
+            valorPago += valorPg;
+
+            if (status === 'pago') {
+              totalPagas++;
+            } else if (status === 'vencido') {
+              totalVencidas++;
+              valorPendente += (valor - valorPg);
+            } else if (status === 'pendente') {
+              totalPendentes++;
+              valorPendente += (valor - valorPg);
+            }
+          }
+        });
+
+        document.getElementById('count-todos').textContent = totalParcelas;
+        document.getElementById('count-pago').textContent = totalPagas;
+        document.getElementById('count-pendente').textContent = totalPendentes;
+        document.getElementById('count-vencido').textContent = totalVencidas;
+
+        document.getElementById('total-parcelas').textContent = totalParcelas;
+        document.getElementById('valor-total').textContent = formatarMoeda(valorTotal);
+        document.getElementById('valor-pago').textContent = formatarMoeda(valorPago);
+        document.getElementById('valor-pendente').textContent = formatarMoeda(valorPendente);
+      }
+
+      function formatarMoeda(valor) {
+        return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block ultimos_registros %}{% endblock %}
+</main>
