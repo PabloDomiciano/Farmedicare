@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -496,10 +497,18 @@
           </div>
           <div class="card-info">
             <h3>Receitas</h3>
-            <p>R$ 85.420,00</p>
-            <small>+12% este mês</small>
+            <p>R$ {{ total_receitas|floatformat:2|default:"0,00" }}</p>
+            <small>
+              {% if crescimento_receitas > 0 %}
+                <i class="fas fa-arrow-up"></i> +{{ crescimento_receitas }}% este mês
+              {% elif crescimento_receitas < 0 %}
+                <i class="fas fa-arrow-down"></i> {{ crescimento_receitas }}% este mês
+              {% else %}
+                Sem mudanças este mês
+              {% endif %}
+            </small>
           </div>
-          <a href="" class="card-link">Ver tudo</a>
+          <a href="{% url 'listar_movimentacao_receita' %}" class="card-link">Ver tudo</a>
         </div>
 
         <div class="card card-medicamento">
@@ -508,10 +517,16 @@
           </div>
           <div class="card-info">
             <h3>Medicamentos</h3>
-            <p>32 itens</p>
-            <small>5 próximos de vencer</small>
+            <p>{{ total_medicamentos|default:"0" }} itens</p>
+            <small>
+              {% if medicamentos_proximos_vencer > 0 %}
+                <i class="fas fa-exclamation-circle"></i> {{ medicamentos_proximos_vencer }} próximos de vencer
+              {% else %}
+                <i class="fas fa-check-circle"></i> Tudo em ordem
+              {% endif %}
+            </small>
           </div>
-          <a href="medicamentos.html" class="card-link">Ver tudo</a>
+          <a href="{% url 'medicamento_estoque' %}" class="card-link">Ver tudo</a>
         </div>
 
         <div class="card card-alerta">
@@ -520,10 +535,16 @@
           </div>
           <div class="card-info">
             <h3>Alertas</h3>
-            <p>5 pendências</p>
-            <small>3 urgentes</small>
+            <p>{{ total_alertas|default:"0" }} pendências</p>
+            <small>
+              {% if alertas_urgentes > 0 %}
+                <i class="fas fa-bell"></i> {{ alertas_urgentes }} urgentes
+              {% else %}
+                <i class="fas fa-check"></i> Nenhum urgente
+              {% endif %}
+            </small>
           </div>
-          <a href="alertas.html" class="card-link">Ver tudo</a>
+          <a href="{% url 'medicamento_notificacoes' %}" class="card-link">Ver tudo</a>
         </div>
       </section>
       {% endblock %}
@@ -549,82 +570,97 @@
         <div class="activity-section">
           <h3>Últimas Receitas</h3>
           <div class="activity-list">
-            <div class="activity-item">
-              <i class="fas fa-hand-holding-usd"></i>
-              <div>
-                <strong>Venda de Soja</strong>
-                <p>Fazenda Boa Esperança - R$ 15.000,00</p>
-                <small>15/06/2023</small>
+            {% if ultimas_receitas %}
+              {% for receita in ultimas_receitas %}
+                <div class="activity-item">
+                  <i class="fas fa-hand-holding-usd"></i>
+                  <div>
+                    <strong>{{ receita.categoria.nome }}</strong>
+                    <p>{{ receita.parceiros.nome }} - R$ {{ receita.valor_total|floatformat:2 }}</p>
+                    <small>{{ receita.data|date:"d/m/Y" }}</small>
+                  </div>
+                  <span class="btn btn-sm" style="background: #4caf50; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none;">
+                    {{ receita.parcelas }} parcela{{ receita.parcelas|pluralize }}
+                  </span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="activity-item">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                  <strong>Nenhuma receita cadastrada</strong>
+                  <p>Comece cadastrando suas receitas</p>
+                </div>
               </div>
-              <a href="receita-detalhes.html" class="btn btn-sm">Detalhes</a>
-            </div>
-            <div class="activity-item">
-              <i class="fas fa-hand-holding-usd"></i>
-              <div>
-                <strong>Subsídio Governamental</strong>
-                <p>Programa de Incentivo - R$ 8.750,00</p>
-                <small>10/06/2023</small>
-              </div>
-              <a href="receita-detalhes.html" class="btn btn-sm">Detalhes</a>
-            </div>
+            {% endif %}
           </div>
-          <a href="receitas.html" class="see-all">Ver todas as receitas →</a>
+          <a href="{% url 'listar_movimentacao_receita' %}" class="see-all">Ver todas as receitas →</a>
         </div>
 
         <div class="activity-section">
           <h3>Últimas Despesas</h3>
           <div class="activity-list">
-            <div class="activity-item">
-              <i class="fas fa-file-invoice-dollar"></i>
-              <div>
-                <strong>Compra de Insumos</strong>
-                <p>Agropecuária Santa Maria - R$ 3.200,00</p>
-                <small>14/06/2023</small>
+            {% if ultimas_despesas %}
+              {% for despesa in ultimas_despesas %}
+                <div class="activity-item">
+                  <i class="fas fa-file-invoice-dollar"></i>
+                  <div>
+                    <strong>{{ despesa.categoria.nome }}</strong>
+                    <p>{{ despesa.parceiros.nome }} - R$ {{ despesa.valor_total|floatformat:2 }}</p>
+                    <small>{{ despesa.data|date:"d/m/Y" }}</small>
+                  </div>
+                  <span class="btn btn-sm" style="background: #ef5350; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none;">
+                    {{ despesa.parcelas }} parcela{{ despesa.parcelas|pluralize }}
+                  </span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="activity-item">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                  <strong>Nenhuma despesa cadastrada</strong>
+                  <p>Comece cadastrando suas despesas</p>
+                </div>
               </div>
-              <a href="despesa-detalhes.html" class="btn btn-sm">Detalhes</a>
-            </div>
-            <div class="activity-item">
-              <i class="fas fa-file-invoice-dollar"></i>
-              <div>
-                <strong>Manutenção de Equipamentos</strong>
-                <p>Trator JD 7250 - R$ 1.850,00</p>
-                <small>12/06/2023</small>
-              </div>
-              <a href="despesa-detalhes.html" class="btn btn-sm">Detalhes</a>
-            </div>
+            {% endif %}
           </div>
-          <a href="despesas.html" class="see-all">Ver todas as despesas →</a>
+          <a href="{% url 'listar_movimentacao_despesa' %}" class="see-all">Ver todas as despesas →</a>
         </div>
 
         <div class="activity-section">
           <h3>Medicamentos Próximos de Vencer</h3>
           <div class="activity-list">
-            <div class="activity-item">
-              <i class="fas fa-pills"></i>
-              <div>
-                <strong>Ivermectina</strong>
-                <p>Lote: #IVM2023 - Quantidade: 15</p>
-                <small>Vence em: 30/06/2023</small>
+            {% if medicamentos_vencimento %}
+              {% for entrada in medicamentos_vencimento %}
+                {% with dias=entrada.validade|dias_ate %}
+                  <div class="activity-item">
+                    <i class="fas fa-pills" style="color: {% if dias < 0 %}#ef5350{% elif dias <= 7 %}#ff9800{% else %}#ffa726{% endif %};"></i>
+                    <div>
+                      <strong>{{ entrada.medicamento.nome }}</strong>
+                      <p>Fazenda: {{ entrada.medicamento.fazenda.nome }} - Quantidade: {{ entrada.quantidade }}</p>
+                      <small>
+                        {% if dias < 0 %}
+                          <span style="color: #ef5350; font-weight: bold;">Vencido em: {{ entrada.validade|date:"d/m/Y" }}</span>
+                        {% else %}
+                          Vence em: {{ entrada.validade|date:"d/m/Y" }} ({{ entrada.validade|dias_ate_texto }})
+                        {% endif %}
+                      </small>
+                    </div>
+                    <a href="{% url 'medicamento_estoque' %}" class="btn btn-sm">Ver</a>
+                  </div>
+                {% endwith %}
+              {% endfor %}
+            {% else %}
+              <div class="activity-item">
+                <i class="fas fa-check-circle" style="color: #4caf50;"></i>
+                <div>
+                  <strong>Tudo em ordem!</strong>
+                  <p>Nenhum medicamento próximo de vencer</p>
+                </div>
               </div>
-              <a href="medicamento-detalhes.html" class="btn btn-sm"
-                >Detalhes</a
-              >
-            </div>
-            <div class="activity-item">
-              <i class="fas fa-pills"></i>
-              <div>
-                <strong>Oxitetraciclina</strong>
-                <p>Lote: #OXT2023 - Quantidade: 8</p>
-                <small>Vence em: 15/07/2023</small>
-              </div>
-              <a href="medicamento-detalhes.html" class="btn btn-sm"
-                >Detalhes</a
-              >
-            </div>
+            {% endif %}
           </div>
-          <a href="medicamentos.html" class="see-all"
-            >Ver todos os medicamentos →</a
-          >
+          <a href="{% url 'medicamento_estoque' %}" class="see-all">Ver todos os medicamentos →</a>
         </div>
       </section>
     </main>
