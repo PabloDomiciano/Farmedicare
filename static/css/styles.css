@@ -145,6 +145,14 @@ a {
   font-size: 0.7rem;
 }
 
+/* Divisor de menu */
+.menu-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--light-gray), transparent);
+  margin: 1rem 1.5rem;
+  list-style: none;
+}
+
 /* Footer da Sidebar */
 .sidebar-footer {
   padding: 1rem;

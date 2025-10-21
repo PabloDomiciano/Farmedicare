@@ -349,12 +349,15 @@
 
       <nav class="sidebar-menu">
         <ul>
+          <!-- Dashboard -->
           <li class="menu-item">
             <a href="{% url 'pagina_index' %}">
               <i class="fas fa-home"></i>
               <span>Dashboard</span>
             </a>
           </li>
+          
+          <!-- Seção Financeira -->
           <li class="menu-item">
             <a href="{% url 'listar_movimentacao_receita' %}">
               <i class="fas fa-hand-holding-usd"></i>
@@ -379,16 +382,49 @@
               <span>Parcelas a Pagar</span>
             </a>
           </li>
+          
+          <!-- Seção de Medicamentos -->
           <li class="menu-item">
             <a href="{% url 'medicamento_estoque' %}">
               <i class="fas fa-pills"></i>
-              <span>Medicamentos</span>
+              <span>Estoque de Medicamentos</span>
             </a>
           </li>
+          
+          <!-- Relatórios -->
           <li class="menu-item">
             <a href="relatorios.html">
               <i class="fas fa-chart-bar"></i>
               <span>Relatórios</span>
+            </a>
+          </li>
+          
+          <!-- Divisor Visual -->
+          <li class="menu-divider"></li>
+          
+          <!-- Seção Administrativa -->
+          <li class="menu-item">
+            <a href="{% url 'cadastro_medicamento' %}">
+              <i class="fas fa-cog"></i>
+              <span>Cadastrar Medicamentos</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="relatorios.html">
+              <i class="fas fa-tags"></i>
+              <span>Gerenciar Categorias</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="relatorios.html">
+              <i class="fas fa-users"></i>
+              <span>Gerenciar Usuários</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="#">
+              <i class="fas fa-tractor"></i>
+              <span>Gerenciar Fazendas</span>
             </a>
           </li>
         </ul>
@@ -424,13 +460,6 @@
             <input type="text" placeholder="Pesquisar..." />
             <i class="fas fa-search"></i>
           </div>
-          {% block admin %}
-          <!-- Botão de acesso à área admin (apenas para superusers) -->
-          {% if request.user.is_superuser %}
-          <button class="admin-toggle">
-            <i class="fas fa-cogs"></i> Área Admin
-          </button>
-          {% endif %} {% endblock %}
           
           <!-- Botão de Notificações estilo YouTube -->
           <button class="btn btn-notification" id="notificationBtn">
@@ -444,49 +473,7 @@
           <i class="fas fa-bars"></i>
         </button>
       </header>
-      {% endblock %} {% block conteudo_admin %}
-      <!-- Seção de Administração (apenas para superusers) -->
-      {% if request.user.is_superuser %}
-      <section class="admin-section">
-        <h2><i class="fas fa-user-shield"></i> Área de Administração</h2>
-        <div class="admin-cards">
-          <div class="admin-card">
-            <i class="fas fa-user-shield"></i>
-            <h3>Painel Admin</h3>
-            <p>Painel completo do Django</p>
-            <a href="/admin/" target="_blank">Acessar</a>
-          </div>
-
-          <div class="admin-card">
-            <i class="fas fa-pills"></i>
-            <h3>Medicamentos</h3>
-            <p>Gerenciar medicamentos</p>
-            <a href="{% url 'cadastro_medicamento' %}">Gerenciar</a>
-          </div>
-
-          <div class="admin-card">
-            <i class="fas fa-tags"></i>
-            <h3>Categorias</h3>
-            <p>Gerenciar categorias</p>
-            <a href="#">Gerenciar</a>
-          </div>
-
-          <div class="admin-card">
-            <i class="fas fa-users"></i>
-            <h3>Usuários</h3>
-            <p>Gerenciar usuários</p>
-            <a href="#">Gerenciar</a>
-          </div>
-
-          <div class="admin-card">
-            <i class="fas fa-tractor"></i>
-            <h3>Fazendas</h3>
-            <p>Gerenciar fazendas</p>
-            <a href="#">Gerenciar</a>
-          </div>
-        </div>
-      </section>
-      {% endif %} {%endblock%}
+      {% endblock %}
 
       <!-- Cards Resumo -->
       {% block cards %}
