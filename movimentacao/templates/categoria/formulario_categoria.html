@@ -7,7 +7,7 @@
 
 {% block css_especifico %}
 <style>
-  /* Estilo simplificado para cadastro de medicamento */
+  /* Estilo para cadastro/edição de categoria */
   .form-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -24,7 +24,7 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: #1976d2;
+    color: #9c27b0;
     font-size: 0.9rem;
   }
 
@@ -38,7 +38,7 @@
   .form-control {
     width: 100%;
     padding: 0.85rem;
-    border: 2px solid #e3f2fd;
+    border: 2px solid #f3e5f5;
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s;
@@ -46,16 +46,16 @@
   }
 
   .form-control:focus {
-    border-color: #42a5f5;
+    border-color: #ba68c8;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.1);
-    background-color: #f3f9ff;
+    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
+    background-color: #faf8fb;
   }
 
   select.form-control {
     cursor: pointer;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231976d2' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239c27b0' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     padding-right: 2.5rem;
@@ -68,7 +68,7 @@
     justify-content: flex-end;
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px solid #e3f2fd;
+    border-top: 2px solid #f3e5f5;
   }
 
   .btn {
@@ -86,14 +86,14 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+    background: linear-gradient(135deg, #ba68c8 0%, #9c27b0 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(66, 165, 245, 0.3);
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
   }
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(66, 165, 245, 0.4);
+    box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4);
   }
 
   .btn-secondary {
@@ -132,13 +132,13 @@
   .modelo-header {
     margin-bottom: 2rem;
     padding-bottom: 1rem;
-    border-bottom: 3px solid #42a5f5;
+    border-bottom: 3px solid #ba68c8;
     text-align: center;
   }
 
   .modelo-title {
     font-size: 1.8rem;
-    color: #1976d2;
+    color: #9c27b0;
     font-weight: 600;
     margin-bottom: 0.5rem;
   }
@@ -151,8 +151,8 @@
 
   /* Info Box */
   .info-box {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-left: 4px solid #42a5f5;
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    border-left: 4px solid #ba68c8;
     padding: 1rem 1.25rem;
     border-radius: 8px;
     margin-bottom: 2rem;
@@ -162,7 +162,7 @@
   }
 
   .info-box i {
-    color: #1976d2;
+    color: #9c27b0;
     font-size: 1.25rem;
     margin-top: 0.125rem;
   }
@@ -232,7 +232,7 @@
 <div class="modelo-container">
   <div class="modelo-header">
     <h2 class="modelo-title">
-      <i class="fas fa-pills"></i> {{ titulo }}
+      <i class="fas fa-tags"></i> {{ titulo }}
     </h2>
     <p class="modelo-subtitle">{{ subtitulo }}</p>
   </div>
@@ -242,8 +242,8 @@
     <i class="fas fa-info-circle"></i>
     <div class="info-box-content">
       <div class="info-box-text">
-        Após cadastrar o medicamento, você poderá adicionar entradas no estoque 
-        com informações de quantidade, valor e validade.
+        As categorias ajudam a organizar e classificar suas receitas e despesas, 
+        facilitando o controle financeiro e a geração de relatórios.
       </div>
     </div>
   </div>
@@ -252,7 +252,7 @@
     {% csrf_token %}
     
     <div class="form-grid">
-      <!-- Nome do Medicamento -->
+      <!-- Nome da Categoria -->
       <div class="form-group">
         <label for="{{ form.nome.id_for_label }}">
           {{ form.nome.label }} <span style="color: red;">*</span>
@@ -269,19 +269,19 @@
         {% endif %}
       </div>
 
-      <!-- Fazenda -->
+      <!-- Tipo de Categoria -->
       <div class="form-group">
-        <label for="{{ form.fazenda.id_for_label }}">
-          {{ form.fazenda.label }} <span style="color: red;">*</span>
+        <label for="{{ form.tipo.id_for_label }}">
+          {{ form.tipo.label }} <span style="color: red;">*</span>
         </label>
-        {{ form.fazenda }}
-        {% if form.fazenda.help_text %}
-        <small class="helptext">{{ form.fazenda.help_text }}</small>
+        {{ form.tipo }}
+        {% if form.tipo.help_text %}
+        <small class="helptext">{{ form.tipo.help_text }}</small>
         {% endif %}
-        {% if form.fazenda.errors %}
+        {% if form.tipo.errors %}
         <small class="error-message">
           <i class="fas fa-exclamation-circle"></i>
-          {{ form.fazenda.errors }}
+          {{ form.tipo.errors }}
         </small>
         {% endif %}
       </div>
@@ -289,11 +289,11 @@
 
     <!-- Botões de Ação -->
     <div class="form-actions">
-      <a href="{% url 'medicamento_estoque' %}" class="btn btn-secondary">
+      <a href="{% url 'listar_categorias' %}" class="btn btn-secondary">
         <i class="fas fa-times"></i> Cancelar
       </a>
       <button type="submit" class="btn btn-primary">
-        <i class="fas fa-save"></i> Cadastrar Medicamento
+        <i class="fas fa-save"></i> Salvar Categoria
       </button>
     </div>
   </form>

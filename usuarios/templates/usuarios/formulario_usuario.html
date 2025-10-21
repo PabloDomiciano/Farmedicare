@@ -7,10 +7,10 @@
 
 {% block css_especifico %}
 <style>
-  /* Estilo simplificado para cadastro de medicamento */
+  /* Estilo para edição de usuário */
   .form-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 1rem;
   }
@@ -20,11 +20,15 @@
     flex-direction: column;
   }
 
+  .form-group-full {
+    grid-column: 1 / -1;
+  }
+
   .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: #1976d2;
+    color: #3f51b5;
     font-size: 0.9rem;
   }
 
@@ -38,7 +42,7 @@
   .form-control {
     width: 100%;
     padding: 0.85rem;
-    border: 2px solid #e3f2fd;
+    border: 2px solid #e8eaf6;
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s;
@@ -46,19 +50,41 @@
   }
 
   .form-control:focus {
-    border-color: #42a5f5;
+    border-color: #5c6bc0;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.1);
-    background-color: #f3f9ff;
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+    background-color: #fafbff;
   }
 
-  select.form-control {
+  /* Checkbox personalizado */
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: #f5f7ff;
+    border-radius: 8px;
+    border: 2px solid #e8eaf6;
+    transition: all 0.3s;
+  }
+
+  .form-check:hover {
+    border-color: #5c6bc0;
+    background-color: #eef1ff;
+  }
+
+  .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
     cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231976d2' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    padding-right: 2.5rem;
+    accent-color: #3f51b5;
+  }
+
+  .form-check-label {
+    color: #3f51b5;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0;
   }
 
   /* Botões */
@@ -68,7 +94,7 @@
     justify-content: flex-end;
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px solid #e3f2fd;
+    border-top: 2px solid #e8eaf6;
   }
 
   .btn {
@@ -86,14 +112,14 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+    background: linear-gradient(135deg, #5c6bc0 0%, #3f51b5 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(66, 165, 245, 0.3);
+    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.3);
   }
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(66, 165, 245, 0.4);
+    box-shadow: 0 4px 16px rgba(63, 81, 181, 0.4);
   }
 
   .btn-secondary {
@@ -114,7 +140,7 @@
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
     padding: 2rem 2.5rem;
     margin: 1.5rem auto;
-    max-width: 700px;
+    max-width: 900px;
     animation: fadeInUp 0.5s ease-out;
   }
 
@@ -132,13 +158,13 @@
   .modelo-header {
     margin-bottom: 2rem;
     padding-bottom: 1rem;
-    border-bottom: 3px solid #42a5f5;
+    border-bottom: 3px solid #5c6bc0;
     text-align: center;
   }
 
   .modelo-title {
     font-size: 1.8rem;
-    color: #1976d2;
+    color: #3f51b5;
     font-weight: 600;
     margin-bottom: 0.5rem;
   }
@@ -151,8 +177,8 @@
 
   /* Info Box */
   .info-box {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-left: 4px solid #42a5f5;
+    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+    border-left: 4px solid #5c6bc0;
     padding: 1rem 1.25rem;
     border-radius: 8px;
     margin-bottom: 2rem;
@@ -162,7 +188,7 @@
   }
 
   .info-box i {
-    color: #1976d2;
+    color: #3f51b5;
     font-size: 1.25rem;
     margin-top: 0.125rem;
   }
@@ -192,6 +218,10 @@
     .modelo-container {
       padding: 1.5rem;
       margin: 1rem;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
     }
 
     .form-actions {
@@ -232,7 +262,7 @@
 <div class="modelo-container">
   <div class="modelo-header">
     <h2 class="modelo-title">
-      <i class="fas fa-pills"></i> {{ titulo }}
+      <i class="fas fa-user-edit"></i> {{ titulo }}
     </h2>
     <p class="modelo-subtitle">{{ subtitulo }}</p>
   </div>
@@ -242,8 +272,8 @@
     <i class="fas fa-info-circle"></i>
     <div class="info-box-content">
       <div class="info-box-text">
-        Após cadastrar o medicamento, você poderá adicionar entradas no estoque 
-        com informações de quantidade, valor e validade.
+        Edite as informações do usuário abaixo. Para alterar a senha, 
+        é necessário acessar as configurações de segurança separadamente.
       </div>
     </div>
   </div>
@@ -252,36 +282,89 @@
     {% csrf_token %}
     
     <div class="form-grid">
-      <!-- Nome do Medicamento -->
+      <!-- Nome de Usuário -->
       <div class="form-group">
-        <label for="{{ form.nome.id_for_label }}">
-          {{ form.nome.label }} <span style="color: red;">*</span>
+        <label for="{{ form.username.id_for_label }}">
+          {{ form.username.label }} <span style="color: red;">*</span>
         </label>
-        {{ form.nome }}
-        {% if form.nome.help_text %}
-        <small class="helptext">{{ form.nome.help_text }}</small>
+        {{ form.username }}
+        {% if form.username.help_text %}
+        <small class="helptext">{{ form.username.help_text }}</small>
         {% endif %}
-        {% if form.nome.errors %}
+        {% if form.username.errors %}
         <small class="error-message">
           <i class="fas fa-exclamation-circle"></i>
-          {{ form.nome.errors }}
+          {{ form.username.errors }}
         </small>
         {% endif %}
       </div>
 
-      <!-- Fazenda -->
+      <!-- E-mail -->
       <div class="form-group">
-        <label for="{{ form.fazenda.id_for_label }}">
-          {{ form.fazenda.label }} <span style="color: red;">*</span>
+        <label for="{{ form.email.id_for_label }}">
+          {{ form.email.label }}
         </label>
-        {{ form.fazenda }}
-        {% if form.fazenda.help_text %}
-        <small class="helptext">{{ form.fazenda.help_text }}</small>
+        {{ form.email }}
+        {% if form.email.help_text %}
+        <small class="helptext">{{ form.email.help_text }}</small>
         {% endif %}
-        {% if form.fazenda.errors %}
+        {% if form.email.errors %}
         <small class="error-message">
           <i class="fas fa-exclamation-circle"></i>
-          {{ form.fazenda.errors }}
+          {{ form.email.errors }}
+        </small>
+        {% endif %}
+      </div>
+
+      <!-- Primeiro Nome -->
+      <div class="form-group">
+        <label for="{{ form.first_name.id_for_label }}">
+          {{ form.first_name.label }}
+        </label>
+        {{ form.first_name }}
+        {% if form.first_name.help_text %}
+        <small class="helptext">{{ form.first_name.help_text }}</small>
+        {% endif %}
+        {% if form.first_name.errors %}
+        <small class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ form.first_name.errors }}
+        </small>
+        {% endif %}
+      </div>
+
+      <!-- Sobrenome -->
+      <div class="form-group">
+        <label for="{{ form.last_name.id_for_label }}">
+          {{ form.last_name.label }}
+        </label>
+        {{ form.last_name }}
+        {% if form.last_name.help_text %}
+        <small class="helptext">{{ form.last_name.help_text }}</small>
+        {% endif %}
+        {% if form.last_name.errors %}
+        <small class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ form.last_name.errors }}
+        </small>
+        {% endif %}
+      </div>
+
+      <!-- Usuário Ativo -->
+      <div class="form-group form-group-full">
+        <div class="form-check">
+          {{ form.is_active }}
+          <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+            {{ form.is_active.label }}
+          </label>
+        </div>
+        {% if form.is_active.help_text %}
+        <small class="helptext">{{ form.is_active.help_text }}</small>
+        {% endif %}
+        {% if form.is_active.errors %}
+        <small class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ form.is_active.errors }}
         </small>
         {% endif %}
       </div>
@@ -289,11 +372,11 @@
 
     <!-- Botões de Ação -->
     <div class="form-actions">
-      <a href="{% url 'medicamento_estoque' %}" class="btn btn-secondary">
+      <a href="{% url 'listar_usuarios' %}" class="btn btn-secondary">
         <i class="fas fa-times"></i> Cancelar
       </a>
       <button type="submit" class="btn btn-primary">
-        <i class="fas fa-save"></i> Cadastrar Medicamento
+        <i class="fas fa-save"></i> Salvar Alterações
       </button>
     </div>
   </form>

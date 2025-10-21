@@ -31,7 +31,7 @@
   }
 
   .lista-header {
-    background: linear-gradient(135deg, #7cb342 0%, #689f38 100%);
+    background: linear-gradient(135deg, #3f51b5 0%, #283593 100%);
     color: white;
     padding: 1.5rem 2rem;
     display: flex;
@@ -64,7 +64,7 @@
 
   .btn-add {
     background-color: white;
-    color: #7cb342;
+    color: #283593;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     text-decoration: none;
@@ -107,9 +107,9 @@
   }
 
   .search-input:focus {
-    border-color: #7cb342;
+    border-color: #3f51b5;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.1);
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
   }
 
   /* Tabela */
@@ -150,7 +150,7 @@
   }
 
   .tabela tbody tr:hover {
-    background-color: #f9fff5;
+    background-color: #e8eaf6;
     transform: scale(1.001);
   }
 
@@ -165,9 +165,29 @@
     letter-spacing: 0.5px;
   }
 
-  .badge-info {
+  .badge-active {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .badge-inactive {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+
+  .badge-admin {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+
+  .badge-staff {
     background-color: #e3f2fd;
     color: #1976d2;
+  }
+
+  .badge-user {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
   }
 
   /* Botões de Ação */
@@ -222,7 +242,7 @@
 
   .stats-total {
     font-weight: 600;
-    color: #7cb342;
+    color: #3f51b5;
   }
 
   /* Empty State */
@@ -293,20 +313,6 @@
       align-items: flex-start;
     }
   }
-
-  /* Tooltip para emails longos */
-  .email-cell {
-    max-width: 250px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .email-cell:hover {
-    overflow: visible;
-    white-space: normal;
-    word-break: break-all;
-  }
 </style>
 {% endblock %}
 
@@ -338,14 +344,14 @@
   <div class="lista-header">
     <div class="lista-title-section">
       <h2 class="lista-title">
-        <i class="fas fa-handshake"></i> Lista de Parceiros
+        <i class="fas fa-users"></i> Lista de Usuários
       </h2>
-      <p class="lista-subtitle">Gerenciamento completo de parceiros comerciais</p>
+      <p class="lista-subtitle">Gerenciamento completo de usuários do sistema</p>
     </div>
     <div class="lista-actions">
-      <a href="{% url 'cadastrar_parceiro' %}" class="btn-add">
-        <i class="fas fa-plus"></i>
-        Novo Parceiro
+      <a href="{% url 'registrar' %}" class="btn-add">
+        <i class="fas fa-user-plus"></i>
+        Novo Usuário
       </a>
     </div>
   </div>
@@ -356,66 +362,92 @@
       type="text" 
       class="search-input" 
       id="searchInput"
-      placeholder="Buscar por nome, telefone ou email..."
+      placeholder="Buscar por nome de usuário ou email..."
     />
   </div>
 
   <!-- Tabela -->
   <div class="tabela-container">
-    {% if parceiros %}
-    <table class="tabela" id="tabelaParceiros">
+    {% if usuarios %}
+    <table class="tabela" id="tabelaUsuarios">
       <thead>
         <tr>
-          <th>Nome</th>
-          <th>Telefone</th>
+          <th>Nome de Usuário</th>
+          <th>Nome Completo</th>
           <th>Email</th>
-          <th>Informações</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Data de Cadastro</th>
           <th style="text-align: center;">Ações</th>
         </tr>
       </thead>
       <tbody>
-        {% for parceiro in parceiros %}
+        {% for usuario in usuarios %}
         <tr>
           <td>
-            <strong>{{ parceiro.nome }}</strong>
+            <strong>
+              <i class="fas fa-user" style="color: #3f51b5;"></i>
+              {{ usuario.username }}
+            </strong>
           </td>
           <td>
-            {% if parceiro.telefone %}
-              <i class="fas fa-phone" style="color: #7cb342;"></i>
-              {{ parceiro.telefone }}
-            {% else %}
-              <span style="color: #999;">-</span>
-            {% endif %}
-          </td>
-          <td class="email-cell">
-            {% if parceiro.email %}
-              <i class="fas fa-envelope" style="color: #7cb342;"></i>
-              {{ parceiro.email }}
+            {% if usuario.first_name or usuario.last_name %}
+              {{ usuario.first_name }} {{ usuario.last_name }}
             {% else %}
               <span style="color: #999;">-</span>
             {% endif %}
           </td>
           <td>
-            {% if parceiro.if_adicionais %}
-              <span class="badge badge-info">
-                <i class="fas fa-info-circle"></i> Tem informações
+            {% if usuario.email %}
+              <i class="fas fa-envelope" style="color: #3f51b5;"></i>
+              {{ usuario.email }}
+            {% else %}
+              <span style="color: #999;">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if usuario.is_superuser %}
+              <span class="badge badge-admin">
+                <i class="fas fa-crown"></i> Admin
+              </span>
+            {% elif usuario.is_staff %}
+              <span class="badge badge-staff">
+                <i class="fas fa-user-tie"></i> Staff
               </span>
             {% else %}
-              <span style="color: #999;">-</span>
+              <span class="badge badge-user">
+                <i class="fas fa-user"></i> Usuário
+              </span>
             {% endif %}
+          </td>
+          <td>
+            {% if usuario.is_active %}
+              <span class="badge badge-active">
+                <i class="fas fa-check-circle"></i> Ativo
+              </span>
+            {% else %}
+              <span class="badge badge-inactive">
+                <i class="fas fa-times-circle"></i> Inativo
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            {{ usuario.date_joined|date:"d/m/Y" }}
           </td>
           <td style="text-align: center;">
             <div class="action-buttons">
-              <a href="{% url 'editar_parceiro' parceiro.id %}" 
+              <a href="{% url 'editar_usuario' usuario.id %}" 
                  class="btn-icon btn-edit"
-                 title="Editar parceiro">
+                 title="Editar usuário">
                 <i class="fas fa-edit"></i>
               </a>
-              <a href="{% url 'excluir_parceiro' parceiro.id %}" 
+              {% if not usuario.is_superuser %}
+              <a href="{% url 'excluir_usuario' usuario.id %}" 
                  class="btn-icon btn-delete"
-                 title="Excluir parceiro">
+                 title="Excluir usuário">
                 <i class="fas fa-trash-alt"></i>
               </a>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -424,23 +456,23 @@
     </table>
     {% else %}
     <div class="empty-state">
-      <i class="fas fa-handshake"></i>
-      <h3>Nenhum parceiro cadastrado</h3>
-      <p>Comece adicionando seu primeiro parceiro comercial</p>
-      <a href="{% url 'cadastrar_parceiro' %}" class="btn-add">
-        <i class="fas fa-plus"></i>
-        Adicionar Primeiro Parceiro
+      <i class="fas fa-users"></i>
+      <h3>Nenhum usuário cadastrado</h3>
+      <p>Comece adicionando o primeiro usuário</p>
+      <a href="{% url 'registrar' %}" class="btn-add">
+        <i class="fas fa-user-plus"></i>
+        Adicionar Primeiro Usuário
       </a>
     </div>
     {% endif %}
   </div>
 
   <!-- Estatísticas -->
-  {% if parceiros %}
+  {% if usuarios %}
   <div class="stats-info">
     <div>
-      <strong class="stats-total">{{ parceiros|length }}</strong> 
-      parceiro{{ parceiros|length|pluralize }}
+      <strong class="stats-total">{{ usuarios|length }}</strong> 
+      usuário{{ usuarios|length|pluralize }}
     </div>
     <div>
       <i class="fas fa-clock"></i>
@@ -459,7 +491,7 @@
   // Busca em tempo real
   document.getElementById('searchInput').addEventListener('keyup', function() {
     const searchTerm = this.value.toLowerCase();
-    const table = document.getElementById('tabelaParceiros');
+    const table = document.getElementById('tabelaUsuarios');
     
     if (!table) return;
     

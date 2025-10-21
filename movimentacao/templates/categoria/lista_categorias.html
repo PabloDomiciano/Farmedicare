@@ -31,7 +31,7 @@
   }
 
   .lista-header {
-    background: linear-gradient(135deg, #7cb342 0%, #689f38 100%);
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
     color: white;
     padding: 1.5rem 2rem;
     display: flex;
@@ -64,7 +64,7 @@
 
   .btn-add {
     background-color: white;
-    color: #7cb342;
+    color: #7b1fa2;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     text-decoration: none;
@@ -107,9 +107,9 @@
   }
 
   .search-input:focus {
-    border-color: #7cb342;
+    border-color: #9c27b0;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.1);
+    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
   }
 
   /* Tabela */
@@ -150,7 +150,7 @@
   }
 
   .tabela tbody tr:hover {
-    background-color: #f9fff5;
+    background-color: #f3e5f5;
     transform: scale(1.001);
   }
 
@@ -165,9 +165,14 @@
     letter-spacing: 0.5px;
   }
 
-  .badge-info {
-    background-color: #e3f2fd;
-    color: #1976d2;
+  .badge-receita {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .badge-despesa {
+    background-color: #ffebee;
+    color: #c62828;
   }
 
   /* Botões de Ação */
@@ -222,7 +227,7 @@
 
   .stats-total {
     font-weight: 600;
-    color: #7cb342;
+    color: #9c27b0;
   }
 
   /* Empty State */
@@ -247,6 +252,21 @@
   .empty-state p {
     color: #999;
     margin-bottom: 1.5rem;
+  }
+
+  /* Seções de Categorias */
+  .categoria-section {
+    margin-bottom: 2rem;
+  }
+
+  .categoria-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #f5f5f5;
+    border-left: 4px solid #9c27b0;
   }
 
   /* Responsividade */
@@ -293,20 +313,6 @@
       align-items: flex-start;
     }
   }
-
-  /* Tooltip para emails longos */
-  .email-cell {
-    max-width: 250px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .email-cell:hover {
-    overflow: visible;
-    white-space: normal;
-    word-break: break-all;
-  }
 </style>
 {% endblock %}
 
@@ -338,14 +344,14 @@
   <div class="lista-header">
     <div class="lista-title-section">
       <h2 class="lista-title">
-        <i class="fas fa-handshake"></i> Lista de Parceiros
+        <i class="fas fa-tags"></i> Lista de Categorias
       </h2>
-      <p class="lista-subtitle">Gerenciamento completo de parceiros comerciais</p>
+      <p class="lista-subtitle">Gerenciamento completo de categorias de receitas e despesas</p>
     </div>
     <div class="lista-actions">
-      <a href="{% url 'cadastrar_parceiro' %}" class="btn-add">
+      <a href="{% url 'cadastrar_categoria' %}" class="btn-add">
         <i class="fas fa-plus"></i>
-        Novo Parceiro
+        Nova Categoria
       </a>
     </div>
   </div>
@@ -356,91 +362,131 @@
       type="text" 
       class="search-input" 
       id="searchInput"
-      placeholder="Buscar por nome, telefone ou email..."
+      placeholder="Buscar por nome ou tipo..."
     />
   </div>
 
   <!-- Tabela -->
   <div class="tabela-container">
-    {% if parceiros %}
-    <table class="tabela" id="tabelaParceiros">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Telefone</th>
-          <th>Email</th>
-          <th>Informações</th>
-          <th style="text-align: center;">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for parceiro in parceiros %}
-        <tr>
-          <td>
-            <strong>{{ parceiro.nome }}</strong>
-          </td>
-          <td>
-            {% if parceiro.telefone %}
-              <i class="fas fa-phone" style="color: #7cb342;"></i>
-              {{ parceiro.telefone }}
-            {% else %}
-              <span style="color: #999;">-</span>
-            {% endif %}
-          </td>
-          <td class="email-cell">
-            {% if parceiro.email %}
-              <i class="fas fa-envelope" style="color: #7cb342;"></i>
-              {{ parceiro.email }}
-            {% else %}
-              <span style="color: #999;">-</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if parceiro.if_adicionais %}
-              <span class="badge badge-info">
-                <i class="fas fa-info-circle"></i> Tem informações
+    {% if categorias %}
+    
+    <!-- Categorias de Receita -->
+    <div class="categoria-section">
+      <h3 class="categoria-section-title">
+        <i class="fas fa-arrow-up"></i> Categorias de Receita
+      </h3>
+      {% if categorias_receita %}
+      <table class="tabela" id="tabelaCategoriasReceita">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for categoria in categorias_receita %}
+          <tr>
+            <td>
+              <strong>{{ categoria.nome }}</strong>
+            </td>
+            <td>
+              <span class="badge badge-receita">
+                <i class="fas fa-arrow-up"></i> Receita
               </span>
-            {% else %}
-              <span style="color: #999;">-</span>
-            {% endif %}
-          </td>
-          <td style="text-align: center;">
-            <div class="action-buttons">
-              <a href="{% url 'editar_parceiro' parceiro.id %}" 
-                 class="btn-icon btn-edit"
-                 title="Editar parceiro">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="{% url 'excluir_parceiro' parceiro.id %}" 
-                 class="btn-icon btn-delete"
-                 title="Excluir parceiro">
-                <i class="fas fa-trash-alt"></i>
-              </a>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            </td>
+            <td style="text-align: center;">
+              <div class="action-buttons">
+                <a href="{% url 'editar_categoria' categoria.id %}" 
+                   class="btn-icon btn-edit"
+                   title="Editar categoria">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'excluir_categoria' categoria.id %}" 
+                   class="btn-icon btn-delete"
+                   title="Excluir categoria">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="text-align: center; color: #999; padding: 2rem;">Nenhuma categoria de receita cadastrada</p>
+      {% endif %}
+    </div>
+
+    <!-- Categorias de Despesa -->
+    <div class="categoria-section">
+      <h3 class="categoria-section-title">
+        <i class="fas fa-arrow-down"></i> Categorias de Despesa
+      </h3>
+      {% if categorias_despesa %}
+      <table class="tabela" id="tabelaCategoriasDespesa">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for categoria in categorias_despesa %}
+          <tr>
+            <td>
+              <strong>{{ categoria.nome }}</strong>
+            </td>
+            <td>
+              <span class="badge badge-despesa">
+                <i class="fas fa-arrow-down"></i> Despesa
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <div class="action-buttons">
+                <a href="{% url 'editar_categoria' categoria.id %}" 
+                   class="btn-icon btn-edit"
+                   title="Editar categoria">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'excluir_categoria' categoria.id %}" 
+                   class="btn-icon btn-delete"
+                   title="Excluir categoria">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="text-align: center; color: #999; padding: 2rem;">Nenhuma categoria de despesa cadastrada</p>
+      {% endif %}
+    </div>
+
     {% else %}
     <div class="empty-state">
-      <i class="fas fa-handshake"></i>
-      <h3>Nenhum parceiro cadastrado</h3>
-      <p>Comece adicionando seu primeiro parceiro comercial</p>
-      <a href="{% url 'cadastrar_parceiro' %}" class="btn-add">
+      <i class="fas fa-tags"></i>
+      <h3>Nenhuma categoria cadastrada</h3>
+      <p>Comece adicionando sua primeira categoria</p>
+      <a href="{% url 'cadastrar_categoria' %}" class="btn-add">
         <i class="fas fa-plus"></i>
-        Adicionar Primeiro Parceiro
+        Adicionar Primeira Categoria
       </a>
     </div>
     {% endif %}
   </div>
 
   <!-- Estatísticas -->
-  {% if parceiros %}
+  {% if categorias %}
   <div class="stats-info">
     <div>
-      <strong class="stats-total">{{ parceiros|length }}</strong> 
-      parceiro{{ parceiros|length|pluralize }}
+      <strong class="stats-total">{{ categorias|length }}</strong> 
+      categoria{{ categorias|length|pluralize }}
+      ({{ categorias_receita|length }} receita{{ categorias_receita|length|pluralize }} / 
+       {{ categorias_despesa|length }} despesa{{ categorias_despesa|length|pluralize }})
     </div>
     <div>
       <i class="fas fa-clock"></i>
@@ -459,16 +505,18 @@
   // Busca em tempo real
   document.getElementById('searchInput').addEventListener('keyup', function() {
     const searchTerm = this.value.toLowerCase();
-    const table = document.getElementById('tabelaParceiros');
+    const tables = [document.getElementById('tabelaCategoriasReceita'), document.getElementById('tabelaCategoriasDespesa')];
     
-    if (!table) return;
-    
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-    
-    for (let row of rows) {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(searchTerm) ? '' : 'none';
-    }
+    tables.forEach(table => {
+      if (!table) return;
+      
+      const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+      
+      for (let row of rows) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      }
+    });
   });
 </script>
 {% endblock %}
