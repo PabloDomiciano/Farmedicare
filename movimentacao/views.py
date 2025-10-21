@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView, ListView
 from django.utils import timezone
 from .models import Categoria, Movimentacao, Parcela
+from .forms import MovimentacaoForm
 
 
 # Create your views here.
@@ -15,54 +16,31 @@ from .models import Categoria, Movimentacao, Parcela
 ############ Create Movimentacao ############
 class MovimentacaoCreateView(LoginRequiredMixin, CreateView):
     model = Movimentacao
-    fields = [
-        "tipo",
-        "parceiros",
-        "categoria",
-        "valor_total",
-        "parcelas",
-        "imposto_renda",
-        "descricao",
-        "data",
-        "fazenda",
-        "cadastrada_por",
-    ]
-    template_name = "formularios/formulario_modelo.html"
+    form_class = MovimentacaoForm
+    template_name = "movimentacao/cadastro_movimentacao.html"
     success_url = reverse_lazy("pagina_index")
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    login_url = reverse_lazy("login")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         # Define o usuário logado como cadastrado_por
         form.instance.cadastrada_por = self.request.user
         response = super().form_valid(form)
-        return response
-
-    extra_context = {
-        "title": "Cadastro de Movimentações",
-        "titulo": "Cadastro de Movimentações",
-        "subtitulo": "Movimentações são usadas para registrar entradas e saídas de dinheiro na fazenda. As parcelas serão geradas automaticamente.",
-    }
-
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        form.fields["cadastrada_por"].widget.attrs["readonly"] = True
-        form.fields["cadastrada_por"].initial = self.request.user
-
-        # Filtro da categoria baseado no tipo
-        if "tipo" in self.request.GET:
-            tipo = self.request.GET.get("tipo")
-            form.fields["categoria"].queryset = Categoria.objects.filter(tipo=tipo)
-        else:
-            # Se não tiver filtro ainda, pode iniciar vazio ou com todas
-            form.fields["categoria"].queryset = Categoria.objects.none()
-
-        return form
-
-    def form_valid(self, form):
-        form.instance.cadastrada_por = self.request.user
-        response = super().form_valid(form)
         self.criar_parcelas(form.instance)
         return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Cadastro de Movimentações",
+            "titulo": "Cadastro de Movimentações",
+            "subtitulo": "Movimentações são usadas para registrar entradas e saídas de dinheiro na fazenda. As parcelas serão geradas automaticamente.",
+        })
+        return context
 
 
 ############ Create Parcela ############
