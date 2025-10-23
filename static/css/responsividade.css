@@ -1,20 +1,84 @@
+/* ============================================
+   RESPONSIVIDADE COMPLETA - FARMEDICARE
+   Sistema totalmente responsivo para mobile
+   ============================================ */
+
+/* Botão de menu mobile */
 .mobile-menu-btn {
-  display: none;
-  background: none;
+  display: none; /* Escondido por padrão */
+  position: fixed;
+  top: 1rem;
+  right: 1rem; /* Mudado para direita */
+  background: var(--primary, #4a8f29);
+  color: white;
   border: none;
-  font-size: 1.5rem;
-  color: var(--primary);
+  border-radius: 8px;
+  width: 45px;
+  height: 45px;
+  font-size: 1.25rem;
   cursor: pointer;
-  padding: 0.5rem;
-  margin-right: 1rem;
   z-index: 1001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  align-items: center;
+  justify-content: center;
 }
 
+.mobile-menu-btn i {
+  transition: all 0.3s ease;
+}
+
+/* Efeito X quando menu está aberto */
+.mobile-menu-btn.active i.fa-bars {
+  display: none;
+}
+
+.mobile-menu-btn.active::before {
+  content: "\f00d"; /* Código do ícone X (fa-times) */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 1.25rem;
+}
+
+.mobile-menu-btn:hover {
+  background: var(--primary-dark, #3a7320);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.95);
+}
+
+/* Overlay para fechar sidebar em mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ============================================
+   TABLET E MOBILE (< 992px)
+   ============================================ */
 @media (max-width: 992px) {
+  /* Mostrar botão hambúrguer */
   .mobile-menu-btn {
-    display: block;
+    display: flex;
   }
 
+  /* Sidebar escondida por padrão */
   .sidebar {
     position: fixed;
     top: 0;
@@ -26,16 +90,57 @@
     overflow-y: auto;
     transition: transform 0.3s ease;
     z-index: 999;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   }
 
+  /* Sidebar ativa (visível) */
   .sidebar.active {
     transform: translateX(0);
   }
 
+  /* Conteúdo principal ocupa toda largura */
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100%;
+    padding-top: 1rem;
   }
 
+  /* Header do conteúdo responsivo */
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .content-header h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Ações do header em coluna */
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .search-box input {
+    width: 100%;
+  }
+
+  /* Cards de resumo em grid responsivo */
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Gráficos em coluna única */
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  /* Menu da sidebar alinhado à esquerda */
   .sidebar-menu {
     text-align: left;
     padding-left: 15px;
@@ -52,34 +157,303 @@
     display: inline-block;
     margin-left: 10px;
   }
+
+  /* Listas responsivas */
+  .lista-card {
+    margin: 1rem;
+  }
+
+  .lista-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lista-actions {
+    width: 100%;
+  }
+
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tabelas com scroll horizontal */
+  .tabela-container,
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Formulários responsivos */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modelo-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
 }
 
+/* ============================================
+   TABLET MÉDIO (< 768px)
+   ============================================ */
 @media (max-width: 768px) {
-  .charts-section {
-    grid-template-columns: 1fr;
-  }
-
-  .recent-activity {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 576px) {
+  /* Cards de resumo em coluna única */
   .summary-cards {
     grid-template-columns: 1fr;
   }
 
+  /* Gráficos em coluna única */
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  /* Atividades recentes em coluna */
+  .recent-activity {
+    grid-template-columns: 1fr;
+  }
+
+  /* Filtros em coluna */
+  .filter-section {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .search-input,
+  .filter-select {
+    width: 100%;
+  }
+
+  /* Botões de filtro em wrap */
+  .filter-buttons {
+    justify-content: flex-start;
+  }
+
+  .filter-btn,
+  .filter-btn-med,
+  .filter-btn-desp {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Stats em grid de 2 colunas */
+  .filter-stats,
+  .filter-stats-med,
+  .filter-stats-desp {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Tabela compacta */
+  .tabela,
+  .modelo-table {
+    font-size: 0.85rem;
+  }
+
+  .tabela th,
+  .tabela td,
+  .modelo-table th,
+  .modelo-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Botões de ação menores */
+  .action-buttons {
+    gap: 0.25rem;
+  }
+
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  /* Lista header compacto */
+  .lista-header {
+    padding: 1rem;
+  }
+
+  .lista-title {
+    font-size: 1.25rem;
+  }
+
+  .lista-subtitle {
+    font-size: 0.85rem;
+  }
+}
+
+/* ============================================
+   MOBILE PEQUENO (< 576px)
+   ============================================ */
+@media (max-width: 576px) {
+  /* Padding reduzido */
+  .main-content {
+    padding: 1rem;
+  }
+
+  /* Header compacto */
   .content-header {
-    flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
 
+  .content-header h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Cards de resumo em coluna */
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  /* Ações do header em coluna */
   .header-actions {
+    flex-direction: column;
     width: 100%;
-    order: 3;
-    margin-top: 1rem;
+    gap: 0.5rem;
   }
 
-  .search-box input {
+  .search-box,
+  .btn-notification {
     width: 100%;
+  }
+
+  /* Filtros compactos */
+  .filter-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-btn,
+  .filter-btn-med,
+  .filter-btn-desp {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Stats em coluna única */
+  .filter-stats,
+  .filter-stats-med,
+  .filter-stats-desp {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sidebar mais estreita */
+  .sidebar {
+    width: 260px;
+  }
+
+  /* Tabela muito compacta */
+  .tabela-container,
+  .table-container {
+    padding: 0.5rem;
+  }
+
+  .tabela,
+  .modelo-table {
+    font-size: 0.8rem;
+  }
+
+  .tabela th,
+  .tabela td,
+  .modelo-table th,
+  .modelo-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Esconder colunas menos importantes em mobile */
+  .tabela th:nth-child(n+5),
+  .tabela td:nth-child(n+5),
+  .modelo-table th:nth-child(n+5),
+  .modelo-table td:nth-child(n+5) {
+    display: none;
+  }
+
+  /* Manter sempre visível a última coluna (ações) */
+  .tabela th:last-child,
+  .tabela td:last-child,
+  .modelo-table th:last-child,
+  .modelo-table td:last-child {
+    display: table-cell !important;
+  }
+
+  /* Formulários compactos */
+  .modelo-container,
+  .lista-card {
+    margin: 0.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Lista header muito compacto */
+  .lista-header {
+    padding: 0.75rem;
+  }
+
+  .lista-title {
+    font-size: 1.1rem;
+  }
+
+  /* Badges menores */
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Stats info compacto */
+  .stats-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Empty state compacto */
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE (altura < 500px)
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .sidebar-header {
+    padding: 1rem;
+  }
+
+  .logo h2 {
+    font-size: 1.25rem;
+  }
+
+  .sidebar-menu .menu-item {
+    padding: 0.5rem 1rem;
   }
 }

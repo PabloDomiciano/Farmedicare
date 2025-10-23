@@ -1,0 +1,1086 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>Relatórios Gerenciais - Farmedicare</title>
+{% endblock %}
+
+{% block css_especifico %}
+<style>
+  /* Container principal */
+  .relatorios-container {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Seção de filtros */
+  .filtros-relatorio {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 2px solid #e0e0e0;
+  }
+
+  .filtros-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .filtros-header h2 {
+    color: #2e7d32;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  /* Botões de período rápido */
+  .periodo-rapido {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-periodo {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #4a8f29;
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #2e7d32;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-periodo:hover {
+    background: #4a8f29;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 143, 41, 0.3);
+  }
+
+  .btn-periodo.active {
+    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    color: white;
+    border-color: #2e7d32;
+  }
+
+  /* Seletor de período personalizado */
+  .periodo-personalizado {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f9f9f9;
+    border-radius: 10px;
+    border: 1px dashed #4a8f29;
+  }
+
+  .date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .date-input-group label {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9rem;
+  }
+
+  .date-input-group input {
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s;
+  }
+
+  .date-input-group input:focus {
+    outline: none;
+    border-color: #4a8f29;
+    box-shadow: 0 0 0 3px rgba(74, 143, 41, 0.1);
+  }
+
+  .btn-aplicar-filtro {
+    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    color: white;
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-aplicar-filtro:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 143, 41, 0.4);
+  }
+
+  /* Ações do relatório */
+  .acoes-relatorio {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-acao {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    border: 2px solid transparent;
+  }
+
+  .btn-pdf {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+  }
+
+  .btn-pdf:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+  }
+
+  .btn-print {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    color: white;
+  }
+
+  .btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+  }
+
+  /* Cards de resumo */
+  .resumo-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .resumo-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid;
+    transition: all 0.3s;
+  }
+
+  .resumo-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  }
+
+  .resumo-card.receita {
+    border-left-color: #4caf50;
+  }
+
+  .resumo-card.despesa {
+    border-left-color: #ef5350;
+  }
+
+  .resumo-card.saldo {
+    border-left-color: #2196f3;
+  }
+
+  .resumo-card.medicamento {
+    border-left-color: #ff9800;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .card-icon.receita {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    color: white;
+  }
+
+  .card-icon.despesa {
+    background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+    color: white;
+  }
+
+  .card-icon.saldo {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    color: white;
+  }
+
+  .card-icon.medicamento {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+  }
+
+  .card-info h3 {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card-valor {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .card-valor.receita {
+    color: #2e7d32;
+  }
+
+  .card-valor.despesa {
+    color: #c62828;
+  }
+
+  .card-valor.saldo {
+    color: #1976d2;
+  }
+
+  .card-valor.medicamento {
+    color: #f57c00;
+  }
+
+  .card-detalhes {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  /* Seções de dados */
+  .secao-dados {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .secao-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .secao-header h3 {
+    font-size: 1.3rem;
+    color: #2e7d32;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  /* Gráficos */
+  .graficos-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .grafico-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden; /* Evita overflow do canvas */
+  }
+
+  .grafico-card h4 {
+    margin: 0 0 1.5rem 0;
+    color: #2e7d32;
+    font-weight: 700;
+  }
+
+  .grafico-card canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  /* Tabelas de top 5 */
+  .top-lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  }
+
+  .top-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .top-card h4 {
+    margin: 0 0 1rem 0;
+    color: #2e7d32;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .top-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s;
+  }
+
+  .top-item:hover {
+    background: #e8f5e9;
+    transform: translateX(5px);
+  }
+
+  .top-item-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .top-item-rank {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .top-item-nome {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .top-item-valor {
+    font-weight: 700;
+    color: #2e7d32;
+    font-size: 1.1rem;
+  }
+
+  /* Responsividade */
+  @media (max-width: 1200px) {
+    .graficos-container {
+      grid-template-columns: 1fr;
+    }
+    
+    .top-lists {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .relatorios-container {
+      padding: 1rem;
+    }
+
+    .filtros-relatorio {
+      padding: 1.5rem;
+    }
+
+    .filtros-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .filtros-header h2 {
+      font-size: 1.2rem;
+    }
+
+    .acoes-relatorio {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .btn-acao {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .periodo-rapido {
+      flex-direction: column;
+    }
+
+    .btn-periodo {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .periodo-personalizado {
+      grid-template-columns: 1fr;
+      padding: 1rem;
+    }
+
+    .btn-aplicar-filtro {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .graficos-container {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .grafico-card {
+      padding: 1.5rem;
+    }
+
+    .top-lists {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .resumo-cards {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .card-valor {
+      font-size: 1.5rem !important;
+    }
+
+    .secao-dados {
+      padding: 1.5rem;
+    }
+
+    .top-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .top-item-valor {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .relatorios-container {
+      padding: 0.5rem;
+    }
+
+    .filtros-relatorio {
+      padding: 1rem;
+      border-radius: 12px;
+    }
+
+    .periodo-personalizado {
+      padding: 0.75rem;
+    }
+
+    .grafico-card {
+      padding: 1rem;
+    }
+
+    .card-valor {
+      font-size: 1.3rem !important;
+    }
+
+    .top-card {
+      padding: 1rem;
+    }
+
+    .top-item {
+      padding: 0.75rem;
+    }
+  }
+
+  @media print {
+    .filtros-relatorio,
+    .acoes-relatorio,
+    .sidebar,
+    .mobile-menu-btn,
+    .btn-notification {
+      display: none !important;
+    }
+
+    .relatorios-container {
+      padding: 0;
+    }
+
+    .secao-dados {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1>📊 Relatórios Gerenciais</h1>
+    <div class="header-actions">
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+  </header>
+
+  <div class="relatorios-container">
+    <!-- Seção de Filtros -->
+    <div class="filtros-relatorio">
+      <div class="filtros-header">
+        <h2>🔍 Filtros de Período</h2>
+        <div class="acoes-relatorio">
+          <a href="{% url 'gerar_pdf_relatorio' %}?periodo={{ periodo_selecionado }}&data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}" 
+             class="btn-acao btn-pdf" target="_blank">
+            <i class="fas fa-file-pdf"></i>
+            Exportar PDF
+          </a>
+          <button onclick="window.print()" class="btn-acao btn-print">
+            <i class="fas fa-print"></i>
+            Imprimir
+          </button>
+        </div>
+      </div>
+
+      <!-- Botões de Período Rápido -->
+      <div class="periodo-rapido">
+        <button class="btn-periodo {% if periodo_selecionado == '30' %}active{% endif %}" 
+                onclick="aplicarPeriodo(30)">
+          <i class="fas fa-calendar-day"></i>
+          Últimos 30 dias
+        </button>
+        <button class="btn-periodo {% if periodo_selecionado == '60' %}active{% endif %}" 
+                onclick="aplicarPeriodo(60)">
+          <i class="fas fa-calendar-week"></i>
+          Últimos 60 dias
+        </button>
+        <button class="btn-periodo {% if periodo_selecionado == '90' %}active{% endif %}" 
+                onclick="aplicarPeriodo(90)">
+          <i class="fas fa-calendar-alt"></i>
+          Últimos 90 dias
+        </button>
+        <button class="btn-periodo {% if periodo_selecionado == '120' %}active{% endif %}" 
+                onclick="aplicarPeriodo(120)">
+          <i class="fas fa-calendar"></i>
+          Últimos 120 dias
+        </button>
+      </div>
+
+      <!-- Período Personalizado -->
+      <form method="GET" action="{% url 'dashboard_relatorios' %}">
+        <div class="periodo-personalizado">
+          <div class="date-input-group">
+            <label for="data_inicio">📅 Data Início</label>
+            <input type="date" 
+                   id="data_inicio" 
+                   name="data_inicio" 
+                   value="{{ data_inicio|date:'Y-m-d' }}"
+                   max="{{ data_fim|date:'Y-m-d' }}">
+          </div>
+          <div class="date-input-group">
+            <label for="data_fim">📅 Data Fim</label>
+            <input type="date" 
+                   id="data_fim" 
+                   name="data_fim" 
+                   value="{{ data_fim|date:'Y-m-d' }}"
+                   min="{{ data_inicio|date:'Y-m-d' }}">
+          </div>
+          <button type="submit" class="btn-aplicar-filtro">
+            <i class="fas fa-check"></i>
+            Aplicar Filtro
+          </button>
+        </div>
+      </form>
+
+      <div style="margin-top: 1rem; padding: 0.75rem; background: #e3f2fd; border-radius: 8px; color: #1976d2; font-weight: 500;">
+        <i class="fas fa-info-circle"></i>
+        Período atual: <strong>{{ data_inicio|date:'d/m/Y' }}</strong> até <strong>{{ data_fim|date:'d/m/Y' }}</strong>
+        ({{ data_inicio|timesince:data_fim }})
+      </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="resumo-cards">
+      <div class="resumo-card receita">
+        <div class="card-header">
+          <div class="card-info">
+            <h3>💰 Total de Receitas</h3>
+            <p class="card-valor receita">R$ {{ total_receitas|floatformat:2 }}</p>
+            <p class="card-detalhes">{{ count_receitas }} lançamento(s)</p>
+          </div>
+          <div class="card-icon receita">
+            <i class="fas fa-arrow-up"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="resumo-card despesa">
+        <div class="card-header">
+          <div class="card-info">
+            <h3>💸 Total de Despesas</h3>
+            <p class="card-valor despesa">R$ {{ total_despesas|floatformat:2 }}</p>
+            <p class="card-detalhes">{{ count_despesas }} lançamento(s)</p>
+          </div>
+          <div class="card-icon despesa">
+            <i class="fas fa-arrow-down"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="resumo-card saldo">
+        <div class="card-header">
+          <div class="card-info">
+            <h3>💵 Saldo do Período</h3>
+            <p class="card-valor saldo">R$ {{ saldo|floatformat:2 }}</p>
+            <p class="card-detalhes">
+              {% if saldo >= 0 %}
+              <span style="color: #4caf50;">⬆ Positivo</span>
+              {% else %}
+              <span style="color: #ef5350;">⬇ Negativo</span>
+              {% endif %}
+            </p>
+          </div>
+          <div class="card-icon saldo">
+            <i class="fas fa-balance-scale"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="resumo-card medicamento">
+        <div class="card-header">
+          <div class="card-info">
+            <h3>💊 Total Medicamentos</h3>
+            <p class="card-valor medicamento">{{ total_medicamentos }}</p>
+            <p class="card-detalhes">{{ medicamentos_baixo_estoque }} com estoque baixo</p>
+          </div>
+          <div class="card-icon medicamento">
+            <i class="fas fa-pills"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos de Colunas -->
+    <div class="graficos-container">
+      <!-- Gráfico Top 5 Receitas -->
+      <div class="grafico-card">
+        <h4>📊 Top 5 Receitas por Categoria</h4>
+        <canvas id="chartTopReceitas"></canvas>
+      </div>
+
+      <!-- Gráfico Top 5 Despesas -->
+      <div class="grafico-card">
+        <h4>📊 Top 5 Despesas por Categoria</h4>
+        <canvas id="chartTopDespesas"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfico Top 5 Medicamentos -->
+    <div class="secao-dados">
+      <div class="grafico-card" style="margin: 0;">
+        <h4>📊 Top 5 Medicamentos Mais Movimentados</h4>
+        <canvas id="chartTopMedicamentos"></canvas>
+      </div>
+    </div>
+
+    <!-- Top 5 Categorias -->
+    <div class="top-lists">
+      <!-- Top 5 Receitas -->
+      <div class="top-card">
+        <h4>
+          <i class="fas fa-trophy" style="color: #ffd700;"></i>
+          Top 5 Categorias de Receita
+        </h4>
+        {% if top_receitas_categoria %}
+          {% for item in top_receitas_categoria %}
+          <div class="top-item">
+            <div class="top-item-info">
+              <div class="top-item-rank">{{ forloop.counter }}</div>
+              <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
+            </div>
+            <div class="top-item-valor">R$ {{ item.total|floatformat:2 }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma receita no período</p>
+        {% endif %}
+      </div>
+
+      <!-- Top 5 Despesas -->
+      <div class="top-card">
+        <h4>
+          <i class="fas fa-trophy" style="color: #c62828;"></i>
+          Top 5 Categorias de Despesa
+        </h4>
+        {% if top_despesas_categoria %}
+          {% for item in top_despesas_categoria %}
+          <div class="top-item">
+            <div class="top-item-info">
+              <div class="top-item-rank" style="background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);">
+                {{ forloop.counter }}
+              </div>
+              <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
+            </div>
+            <div class="top-item-valor" style="color: #c62828;">R$ {{ item.total|floatformat:2 }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma despesa no período</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Seção de Medicamentos -->
+    <div class="secao-dados">
+      <div class="secao-header">
+        <h3>💊 Análise de Medicamentos</h3>
+      </div>
+
+      <div class="resumo-cards">
+        <div class="resumo-card medicamento">
+          <div class="card-info">
+            <h3>📦 Total de Entradas</h3>
+            <p class="card-valor medicamento">{{ total_entradas }}</p>
+            <p class="card-detalhes">no período selecionado</p>
+          </div>
+        </div>
+
+        <div class="resumo-card" style="border-left-color: #ff9800;">
+          <div class="card-info">
+            <h3>⚠️ Próximos ao Vencimento</h3>
+            <p class="card-valor" style="color: #ff9800;">{{ medicamentos_vencer }}</p>
+            <p class="card-detalhes">nos próximos 30 dias</p>
+          </div>
+        </div>
+
+        <div class="resumo-card" style="border-left-color: #f44336;">
+          <div class="card-info">
+            <h3>❌ Medicamentos Vencidos</h3>
+            <p class="card-valor" style="color: #f44336;">{{ medicamentos_vencidos }}</p>
+            <p class="card-detalhes">com estoque disponível</p>
+          </div>
+        </div>
+
+        <div class="resumo-card" style="border-left-color: #2196f3;">
+          <div class="card-info">
+            <h3>📊 Valor do Estoque</h3>
+            <p class="card-valor" style="color: #2196f3;">R$ {{ valor_total_estoque|floatformat:2 }}</p>
+            <p class="card-detalhes">entradas no período</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 5 Medicamentos -->
+      <div class="top-card" style="margin-top: 2rem;">
+        <h4>
+          <i class="fas fa-star" style="color: #ffd700;"></i>
+          Top 5 Medicamentos Mais Movimentados
+        </h4>
+        {% if top_medicamentos %}
+          {% for item in top_medicamentos %}
+          <div class="top-item">
+            <div class="top-item-info">
+              <div class="top-item-rank" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
+                {{ forloop.counter }}
+              </div>
+              <div class="top-item-nome">{{ item.medicamento__nome }} - {{ item.medicamento__fazenda__nome }}</div>
+            </div>
+            <div class="top-item-valor" style="color: #f57c00;">
+              {{ item.quantidade_total }} unidades
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma movimentação no período</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Função para aplicar período rápido
+  function aplicarPeriodo(dias) {
+    window.location.href = `{% url 'dashboard_relatorios' %}?periodo=${dias}`;
+  }
+
+  // Configuração base responsiva
+  const configBase = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: window.innerWidth < 768 ? 1.2 : 2,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleFont: {
+          size: 14,
+          weight: 'bold'
+        },
+        bodyFont: {
+          size: 13
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          font: {
+            size: window.innerWidth < 768 ? 10 : 12
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            size: window.innerWidth < 768 ? 10 : 12
+          },
+          maxRotation: window.innerWidth < 768 ? 45 : 0,
+          minRotation: window.innerWidth < 768 ? 45 : 0
+        }
+      }
+    }
+  };
+
+  // ========== GRÁFICO TOP 5 RECEITAS ==========
+  const ctxReceitas = document.getElementById('chartTopReceitas').getContext('2d');
+  const chartReceitas = new Chart(ctxReceitas, {
+    type: 'bar',
+    data: {
+      labels: {{ top_5_receitas_labels|safe }},
+      datasets: [{
+        label: 'Receitas',
+        data: {{ top_5_receitas_valores|safe }},
+        backgroundColor: [
+          'rgba(76, 175, 80, 0.8)',
+          'rgba(102, 187, 106, 0.8)',
+          'rgba(129, 199, 132, 0.8)',
+          'rgba(156, 204, 101, 0.8)',
+          'rgba(174, 213, 129, 0.8)'
+        ],
+        borderColor: [
+          'rgba(76, 175, 80, 1)',
+          'rgba(102, 187, 106, 1)',
+          'rgba(129, 199, 132, 1)',
+          'rgba(156, 204, 101, 1)',
+          'rgba(174, 213, 129, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      ...configBase,
+      plugins: {
+        ...configBase.plugins,
+        tooltip: {
+          ...configBase.plugins.tooltip,
+          callbacks: {
+            label: function(context) {
+              return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              });
+            }
+          }
+        }
+      },
+      scales: {
+        ...configBase.scales,
+        y: {
+          ...configBase.scales.y,
+          ticks: {
+            ...configBase.scales.y.ticks,
+            callback: function(value) {
+              return 'R$ ' + value.toLocaleString('pt-BR');
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ========== GRÁFICO TOP 5 DESPESAS ==========
+  const ctxDespesas = document.getElementById('chartTopDespesas').getContext('2d');
+  const chartDespesas = new Chart(ctxDespesas, {
+    type: 'bar',
+    data: {
+      labels: {{ top_5_despesas_labels|safe }},
+      datasets: [{
+        label: 'Despesas',
+        data: {{ top_5_despesas_valores|safe }},
+        backgroundColor: [
+          'rgba(239, 83, 80, 0.8)',
+          'rgba(229, 115, 115, 0.8)',
+          'rgba(239, 154, 154, 0.8)',
+          'rgba(255, 138, 128, 0.8)',
+          'rgba(255, 171, 145, 0.8)'
+        ],
+        borderColor: [
+          'rgba(239, 83, 80, 1)',
+          'rgba(229, 115, 115, 1)',
+          'rgba(239, 154, 154, 1)',
+          'rgba(255, 138, 128, 1)',
+          'rgba(255, 171, 145, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      ...configBase,
+      plugins: {
+        ...configBase.plugins,
+        tooltip: {
+          ...configBase.plugins.tooltip,
+          callbacks: {
+            label: function(context) {
+              return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              });
+            }
+          }
+        }
+      },
+      scales: {
+        ...configBase.scales,
+        y: {
+          ...configBase.scales.y,
+          ticks: {
+            ...configBase.scales.y.ticks,
+            callback: function(value) {
+              return 'R$ ' + value.toLocaleString('pt-BR');
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ========== GRÁFICO TOP 5 MEDICAMENTOS ==========
+  const ctxMedicamentos = document.getElementById('chartTopMedicamentos').getContext('2d');
+  const chartMedicamentos = new Chart(ctxMedicamentos, {
+    type: 'bar',
+    data: {
+      labels: {{ top_5_medicamentos_labels|safe }},
+      datasets: [{
+        label: 'Quantidade',
+        data: {{ top_5_medicamentos_valores|safe }},
+        backgroundColor: [
+          'rgba(255, 152, 0, 0.8)',
+          'rgba(255, 167, 38, 0.8)',
+          'rgba(255, 183, 77, 0.8)',
+          'rgba(255, 202, 40, 0.8)',
+          'rgba(255, 213, 79, 0.8)'
+        ],
+        borderColor: [
+          'rgba(255, 152, 0, 1)',
+          'rgba(255, 167, 38, 1)',
+          'rgba(255, 183, 77, 1)',
+          'rgba(255, 202, 40, 1)',
+          'rgba(255, 213, 79, 1)'
+        ],
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      ...configBase,
+      plugins: {
+        ...configBase.plugins,
+        tooltip: {
+          ...configBase.plugins.tooltip,
+          callbacks: {
+            label: function(context) {
+              return context.parsed.y + ' unidades';
+            }
+          }
+        }
+      },
+      scales: {
+        ...configBase.scales,
+        y: {
+          ...configBase.scales.y,
+          ticks: {
+            ...configBase.scales.y.ticks,
+            callback: function(value) {
+              return value + ' un';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ========== ATUALIZAÇÃO RESPONSIVA ==========
+  window.addEventListener('resize', function() {
+    const newAspectRatio = window.innerWidth < 768 ? 1.2 : 2;
+    const fontSize = window.innerWidth < 768 ? 10 : 12;
+    const rotation = window.innerWidth < 768 ? 45 : 0;
+    
+    [chartReceitas, chartDespesas, chartMedicamentos].forEach(chart => {
+      chart.options.aspectRatio = newAspectRatio;
+      chart.options.scales.y.ticks.font.size = fontSize;
+      chart.options.scales.x.ticks.font.size = fontSize;
+      chart.options.scales.x.ticks.maxRotation = rotation;
+      chart.options.scales.x.ticks.minRotation = rotation;
+      chart.update();
+    });
+  });
+
+</script>
+{% endblock %}
+
+{% block ultimos_registros %}{% endblock %}

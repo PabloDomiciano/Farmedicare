@@ -1,16 +1,22 @@
 document.addEventListener("DOMContentLoaded", function () {
   const sidebar = document.querySelector(".sidebar");
-  const overlay = document.querySelector(".overlay");
+  const overlay = document.querySelector(".sidebar-overlay");
   const mobileBtn = document.querySelector(".mobile-menu-btn");
 
-  if (!sidebar || !overlay || !mobileBtn) {
-    console.error("Elementos essenciais não encontrados");
+  if (!sidebar) {
+    return;
+  }
+
+  if (!mobileBtn) {
     return;
   }
 
   function toggleMenu() {
     sidebar.classList.toggle("active");
-    overlay.classList.toggle("active");
+    mobileBtn.classList.toggle("active"); // Adiciona/remove classe active no botão
+    if (overlay) {
+      overlay.classList.toggle("active");
+    }
     document.body.style.overflow = sidebar.classList.contains("active")
       ? "hidden"
       : "";
@@ -41,7 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Event listeners para menu mobile
   mobileBtn.addEventListener("click", toggleMenu);
-  overlay.addEventListener("click", toggleMenu);
+  if (overlay) {
+    overlay.addEventListener("click", toggleMenu);
+  }
 
   // Event listeners para submenus
   document.querySelectorAll(".submenu-toggle").forEach(function (toggle) {
@@ -83,7 +91,10 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("resize", function () {
     if (window.innerWidth > 992) {
       sidebar.classList.remove("active");
-      overlay.classList.remove("active");
+      mobileBtn.classList.remove("active");
+      if (overlay) {
+        overlay.classList.remove("active");
+      }
       document.body.style.overflow = "";
       // Opcional: fecha submenus ao redimensionar para desktop
       closeAllSubmenus();

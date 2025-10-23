@@ -3,6 +3,48 @@ from .models import Movimentacao, Categoria
 from perfis.models import Parceiros, Fazenda
 
 
+class CategoriaForm(forms.ModelForm):
+    """
+    Formulário personalizado para cadastro e edição de categorias.
+    Categorias são utilizadas para classificar receitas e despesas.
+    """
+    
+    class Meta:
+        model = Categoria
+        fields = ['nome', 'tipo']
+        
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Venda de Produtos, Salários, Manutenção...',
+                'required': True,
+            }),
+            'tipo': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True,
+            }),
+        }
+        
+        labels = {
+            'nome': 'Nome da Categoria',
+            'tipo': 'Tipo de Categoria',
+        }
+        
+        help_texts = {
+            'nome': 'Digite um nome descritivo para identificar esta categoria',
+            'tipo': 'Selecione se esta categoria será usada para receitas ou despesas',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Adiciona autocomplete off para todos os campos
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'autocomplete': 'off'
+            })
+
+
 class MovimentacaoForm(forms.ModelForm):
     """
     Formulário personalizado para cadastro de movimentações.

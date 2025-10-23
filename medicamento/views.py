@@ -19,7 +19,7 @@ class MedicamentoCreateView(LoginRequiredMixin, CreateView):
     model = Medicamento
     form_class = MedicamentoForm
     template_name = "medicamento/cadastro_medicamento.html"
-    success_url = reverse_lazy("medicamento_estoque")
+    success_url = reverse_lazy("listar_medicamentos")
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -28,6 +28,56 @@ class MedicamentoCreateView(LoginRequiredMixin, CreateView):
             "titulo": "Cadastro de Medicamentos",
             "subtitulo": "Registre novos medicamentos no estoque da fazenda.",
         })
+        return context
+
+
+############ Update Medicamento ############
+class MedicamentoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Medicamento
+    form_class = MedicamentoForm
+    template_name = "medicamento/cadastro_medicamento.html"
+    success_url = reverse_lazy("listar_medicamentos")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Atualização de Medicamento",
+            "titulo": "Atualizar Medicamento",
+            "subtitulo": "Atualize os dados do medicamento.",
+        })
+        return context
+
+
+############ Delete Medicamento ############
+class MedicamentoDeleteView(LoginRequiredMixin, DeleteView):
+    model = Medicamento
+    template_name = "formularios/formulario_excluir.html"
+    success_url = reverse_lazy("listar_medicamentos")
+    
+    extra_context = {
+        "title": "Exclusão de Medicamento",
+        "titulo_excluir": "Exclusão de Medicamento",
+    }
+
+
+############ List Medicamentos ############
+class MedicamentoListView(LoginRequiredMixin, ListView):
+    model = Medicamento
+    template_name = "medicamento/lista_medicamentos.html"
+    context_object_name = "medicamentos"
+    login_url = reverse_lazy("login")
+
+    def get_queryset(self):
+        return Medicamento.objects.all().order_by("nome").select_related("fazenda")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Lista de Medicamentos"
+        context["titulo"] = "Medicamentos"
+        
+        # Calcular total de medicamentos
+        context["total_medicamentos"] = self.get_queryset().count()
+        
         return context
 
 

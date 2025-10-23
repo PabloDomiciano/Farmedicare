@@ -12,8 +12,9 @@
     {% endblock %}
 
     <!-- CSS principal -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/responsividade.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=3.0" />
+    <link rel="stylesheet" href="{% static 'css/responsividade.css' %}?v=3.0" />
+    <link rel="stylesheet" href="{% static 'css/tabelas_interativas.css' %}?v=3.0" />
 
     <!-- Bloco para CSS específico de cada página -->
     {% block css_especifico %}
@@ -339,7 +340,7 @@
     {% block menu %}
 
     <!-- Overlay para menu mobile -->
-    <div class="overlay"></div>
+    <div class="sidebar-overlay"></div>
 
     <aside class="sidebar">
       <div class="sidebar-header">
@@ -393,9 +394,9 @@
           
           <!-- Relatórios -->
           <li class="menu-item">
-            <a href="relatorios.html">
-              <i class="fas fa-chart-bar"></i>
-              <span>Relatórios</span>
+            <a href="{% url 'dashboard_relatorios' %}">
+              <i class="fas fa-chart-line"></i>
+              <span>Relatórios Gerenciais</span>
             </a>
           </li>
           
@@ -404,19 +405,19 @@
           
           <!-- Seção Administrativa -->
           <li class="menu-item">
-            <a href="{% url 'cadastro_medicamento' %}">
-              <i class="fas fa-cog"></i>
-              <span>Cadastrar Medicamentos</span>
+            <a href="{% url 'listar_medicamentos' %}">
+              <i class="fas fa-pills"></i>
+              <span>Gerenciar Medicamentos</span>
             </a>
           </li>
           <li class="menu-item">
-            <a href="relatorios.html">
+            <a href="{% url 'listar_categorias' %}">
               <i class="fas fa-tags"></i>
               <span>Gerenciar Categorias</span>
             </a>
           </li>
           <li class="menu-item">
-            <a href="relatorios.html">
+            <a href="{% url 'listar_usuarios' %}">
               <i class="fas fa-users"></i>
               <span>Gerenciar Usuários</span>
             </a>
@@ -456,17 +457,17 @@
     </aside>
     {% endblock %}
 
+    <!-- Botão Menu Mobile (fora do bloco para aparecer em todas páginas) -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <i class="fas fa-bars"></i>
+    </button>
+
     <!-- Conteúdo Principal -->
     {% block conteudo %}
     <main class="main-content">
       <header class="content-header">
         <h1>Dashboard</h1>
-        <div class="header-actions">
-          <div class="search-box">
-            <input type="text" placeholder="Pesquisar..." />
-            <i class="fas fa-search"></i>
-          </div>
-          
+        <div class="header-actions">          
           <!-- Botão de Notificações estilo YouTube -->
           <button class="btn btn-notification" id="notificationBtn">
             <i class="fas fa-bell"></i>
@@ -475,86 +476,15 @@
             {% endif %}
           </button>
         </div>
-        <button class="mobile-menu-btn">
-          <i class="fas fa-bars"></i>
-        </button>
       </header>
       {% endblock %}
 
       <!-- Cards Resumo -->
       {% block cards %}
-      <section class="summary-cards">
-        <div class="card card-receita">
-          <div class="card-icon">
-            <i class="fas fa-hand-holding-usd"></i>
-          </div>
-          <div class="card-info">
-            <h3>Receitas</h3>
-            <p>R$ {{ total_receitas|floatformat:2|default:"0,00" }}</p>
-            <small>
-              {% if crescimento_receitas > 0 %}
-                <i class="fas fa-arrow-up"></i> +{{ crescimento_receitas }}% este mês
-              {% elif crescimento_receitas < 0 %}
-                <i class="fas fa-arrow-down"></i> {{ crescimento_receitas }}% este mês
-              {% else %}
-                Sem mudanças este mês
-              {% endif %}
-            </small>
-          </div>
-          <a href="{% url 'listar_movimentacao_receita' %}" class="card-link">Ver tudo</a>
-        </div>
-
-        <div class="card card-medicamento">
-          <div class="card-icon">
-            <i class="fas fa-pills"></i>
-          </div>
-          <div class="card-info">
-            <h3>Medicamentos</h3>
-            <p>{{ total_medicamentos|default:"0" }} itens</p>
-            <small>
-              {% if medicamentos_proximos_vencer > 0 %}
-                <i class="fas fa-exclamation-circle"></i> {{ medicamentos_proximos_vencer }} próximos de vencer
-              {% else %}
-                <i class="fas fa-check-circle"></i> Tudo em ordem
-              {% endif %}
-            </small>
-          </div>
-          <a href="{% url 'medicamento_estoque' %}" class="card-link">Ver tudo</a>
-        </div>
-
-        <div class="card card-alerta">
-          <div class="card-icon">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <div class="card-info">
-            <h3>Alertas</h3>
-            <p>{{ total_alertas|default:"0" }} pendências</p>
-            <small>
-              {% if alertas_urgentes > 0 %}
-                <i class="fas fa-bell"></i> {{ alertas_urgentes }} urgentes
-              {% else %}
-                <i class="fas fa-check"></i> Nenhum urgente
-              {% endif %}
-            </small>
-          </div>
-          <a href="{% url 'medicamento_notificacoes' %}" class="card-link">Ver tudo</a>
-        </div>
-      </section>
       {% endblock %}
 
       <!-- Seção de Gráficos -->
       {% block graficos %}
-      <section class="charts-section">
-        <div class="chart-container">
-          <h3>Receitas vs Despesas (Últimos 6 meses)</h3>
-          <canvas id="lineChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-          <h3>Distribuição de Despesas</h3>
-          <canvas id="pieChart"></canvas>
-        </div>
-      </section>
       {% endblock %}
 
       <!-- Últimos Registros -->
@@ -701,9 +631,10 @@
     </div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
     
     <!-- Script principal primeiro -->
-    <script src="{% static 'js/mobile.js' %}"></script>
+    <script src="{% static 'js/mobile.js' %}?v=4.0"></script>
     
     <!-- Depois os outros scripts -->
     <script src="{% static 'js/admin_menu.js' %}"></script>
@@ -722,10 +653,7 @@
         const closePopup = document.getElementById('closePopup');
         const notificationPopupBody = document.getElementById('notificationPopupBody');
         
-        if (!notificationBtn || !notificationPopup) {
-            console.log('Elementos de notificação não encontrados');
-            return;
-        }
+
         
         let notificacoesCarregadas = false;
 
@@ -882,5 +810,8 @@
         }
     });
     </script>
+    
+    <!-- Script para tabelas interativas -->
+    <script src="{% static 'js/tabelas_interativas.js' %}"></script>
   </body>
 </html>

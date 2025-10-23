@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'perfis.apps.PerfisConfig',
     'movimentacao.apps.MovimentacaoConfig',
     'medicamento.apps.MedicamentoConfig',
+    'relatorios.apps.RelatoriosConfig',
 ]
 
 

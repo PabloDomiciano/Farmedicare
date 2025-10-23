@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView, ListView
 from django.utils import timezone
 from .models import Categoria, Movimentacao, Parcela
-from .forms import MovimentacaoForm
+from .forms import MovimentacaoForm, CategoriaForm
 
 
 # Create your views here.
@@ -69,14 +69,14 @@ class ParcelaCreateView(LoginRequiredMixin, CreateView):
 ############ Create Categoria ############
 class CategoriaCreateView(LoginRequiredMixin, CreateView):
     model = Categoria
-    fields = ["nome", "tipo"]
-    template_name = "formularios/formulario_modelo.html"
-    success_url = reverse_lazy("pagina_index")
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    form_class = CategoriaForm
+    template_name = "categoria/formulario_categoria.html"
+    success_url = reverse_lazy("listar_categorias")
+    login_url = reverse_lazy("login")
 
     extra_context = {
-        "title": "Cadastro de Categorias",
-        "titulo": "Cadastro de Categorias",
+        "title": "Cadastro de Categoria",
+        "titulo": "Cadastro de Categoria",
         "subtitulo": "Categorias são usadas para classificar as movimentações financeiras.",
     }
 
@@ -136,14 +136,15 @@ class ParcelaUpdateView(LoginRequiredMixin, UpdateView):
 ############ Update Categoria ############
 class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     model = Categoria
-    fields = ["nome", "tipo"]
-    template_name = "formularios/formulario_modelo.html"
-    success_url = reverse_lazy("pagina_index")
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    form_class = CategoriaForm
+    template_name = "categoria/formulario_categoria.html"
+    success_url = reverse_lazy("listar_categorias")
+    login_url = reverse_lazy("login")
 
     extra_context = {
-        "title": "Atualização de Categorias",
-        "titulo": "Atualização de Categorias",
+        "title": "Edição de Categoria",
+        "titulo": "Edição de Categoria",
+        "subtitulo": "Edite as informações da categoria abaixo.",
     }
 
 
@@ -183,7 +184,7 @@ class ParcelaDeleteView(LoginRequiredMixin, DeleteView):
 class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
     model = Categoria
     template_name = "formularios/formulario_excluir.html"
-    success_url = reverse_lazy("pagina_index")
+    success_url = reverse_lazy("listar_categorias")
     login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
 
     extra_context = {
@@ -360,4 +361,26 @@ class ParcelasListView(LoginRequiredMixin, ListView):
         context["registros"] = "Nenhuma parcela encontrada."
         context["btn_cadastrar"] = "Nova Movimentação"
         context["today"] = timezone.now().date()
+        return context
+
+
+############ List Categorias ###########
+class CategoriaListView(LoginRequiredMixin, ListView):
+    model = Categoria
+    template_name = "categoria/lista_categorias.html"
+    context_object_name = "categorias"
+    login_url = reverse_lazy("login")
+
+    def get_queryset(self):
+        return Categoria.objects.all().order_by("tipo", "nome")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Lista de Categorias"
+        context["titulo"] = "Categorias"
+        
+        # Separar por tipo
+        context["categorias_receita"] = Categoria.objects.filter(tipo="receita").order_by("nome")
+        context["categorias_despesa"] = Categoria.objects.filter(tipo="despesa").order_by("nome")
+        
         return context

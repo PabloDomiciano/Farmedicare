@@ -14,7 +14,8 @@ from movimentacao.views import (
     MovimentacaoDespesaListView, 
     ParcelasListView,
     ParcelasReceitaListView,
-    ParcelasDespesaListView
+    ParcelasDespesaListView,
+    CategoriaListView
 )
 
 urlpatterns = [
@@ -39,5 +40,8 @@ urlpatterns = [
     
     # URL antiga mantida para compatibilidade
     path('listar/todas-parcelas/', ParcelasListView.as_view(), name='listar_parcelas'),
+    
+    # Lista de Categorias
+    path('listar/categorias/', CategoriaListView.as_view(), name='listar_categorias'),
 
 ]

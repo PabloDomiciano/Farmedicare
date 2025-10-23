@@ -162,24 +162,7 @@ a {
   color: var(--gray);
 }
 
-/* Botão de menu mobile */
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1000;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
+/* Botão de menu mobile - REMOVIDO DAQUI, agora está em responsividade.css */
 
 /* Conteúdo Principal */
 .main-content {
@@ -487,68 +470,11 @@ a {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Responsividade */
-@media (max-width: 992px) {
-  .charts-section {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --sidebar-width: 240px;
-  }
-  
-  .sidebar {
-    transform: translateX(-100%);
-  }
-  
-  .sidebar.active {
-    transform: translateX(0);
-  }
-  
-  .main-content {
-    margin-left: 0;
-    padding: 1rem;
-  }
-  
-  .mobile-menu-btn {
-    display: flex;
-  }
-  
-  .content-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .search-box input {
-    width: 100%;
-  }
-  
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 576px) {
-  .recent-activity {
-    grid-template-columns: 1fr;
-  }
-  
-  .chart-placeholder {
-    height: 200px;
-  }
-  
-  .btn {
-    width: 100%;
-    margin-bottom: 0.5rem;
-  }
-}
+/* ============================================
+   RESPONSIVIDADE MOVIDA PARA responsividade.css
+   As regras de responsividade foram centralizadas
+   no arquivo responsividade.css para melhor manutenção
+   ============================================ */
 
 /* Animações */
 @keyframes fadeIn {

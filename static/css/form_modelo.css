@@ -196,10 +196,48 @@
   }
   
   /* Responsividade */
+  @media (max-width: 992px) {
+    .modelo-container {
+      margin: 1.5rem;
+      padding: 1.5rem;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr !important;
+      gap: 1rem;
+    }
+
+    .modelo-info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 768px) {
     .modelo-container {
       padding: 1rem;
       margin: 1rem;
+      border-radius: 8px;
+    }
+
+    .modelo-header {
+      padding-bottom: 0.75rem;
+    }
+
+    .modelo-title {
+      font-size: 1.5rem;
+    }
+
+    .modelo-subtitle {
+      font-size: 0.9rem;
+    }
+
+    .modelo-section {
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
     }
   
     .modelo-info-grid {
@@ -213,6 +251,75 @@
   
     .btn {
       width: 100%;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+    }
+
+    .form-group label {
+      font-size: 0.9rem;
+    }
+
+    .form-control,
+    .form-select {
+      font-size: 1rem; /* Previne zoom no iOS */
+    }
+  }
+
+  @media (max-width: 576px) {
+    .modelo-container {
+      margin: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .modelo-header {
+      margin-bottom: 1rem;
+    }
+
+    .modelo-title {
+      font-size: 1.25rem;
+    }
+
+    .modelo-section {
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+    }
+
+    .form-control,
+    .form-select,
+    .form-textarea {
+      padding: 0.625rem 0.875rem;
+    }
+
+    .btn {
+      padding: 0.65rem 1.25rem;
+      font-size: 0.95rem;
+    }
+
+    .info-item {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Touch devices - áreas de toque maiores */
+  @media (hover: none) and (pointer: coarse) {
+    .form-control,
+    .form-select,
+    .btn {
+      min-height: 44px; /* Área mínima recomendada para toque */
+    }
+
+    .checkbox-input {
+      width: 24px;
+      height: 24px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
     }
   }
   
