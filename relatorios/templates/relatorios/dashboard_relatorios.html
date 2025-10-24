@@ -1,5 +1,6 @@
 {% extends 'modelo.html' %}
 {% load static %}
+{% load relatorios_filters %}
 
 {% block titulo %}
 <title>Relatórios Gerenciais - Farmedicare</title>
@@ -7,6 +8,25 @@
 
 {% block css_especifico %}
 <style>
+  /* Variáveis CSS para consistência */
+  :root {
+    --primary-color: #2e7d32;
+    --primary-light: #4caf50;
+    --primary-dark: #1b5e20;
+    --secondary-color: #2196f3;
+    --danger-color: #ef5350;
+    --warning-color: #ff9800;
+    --info-color: #2196f3;
+    --success-color: #4caf50;
+    --text-primary: #2c3e50;
+    --text-secondary: #546e7a;
+    --bg-light: #f8f9fa;
+    --border-radius: 16px;
+    --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   /* Container principal */
   .relatorios-container {
     padding: 2rem;
@@ -16,12 +36,13 @@
 
   /* Seção de filtros */
   .filtros-relatorio {
-    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-    border-radius: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: var(--border-radius);
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 2px solid #e0e0e0;
+    box-shadow: var(--shadow-light);
+    border: 1px solid rgba(46, 125, 50, 0.1);
+    backdrop-filter: blur(10px);
   }
 
   .filtros-header {
@@ -32,10 +53,275 @@
   }
 
   .filtros-header h2 {
-    color: #2e7d32;
+    color: var(--primary-color);
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Ações do relatório */
+  .acoes-relatorio {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .btn-acao {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-acao::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-acao:hover::before {
+    left: 100%;
+  }
+
+  .btn-pdf {
+    background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+    color: white;
+    border-color: #c62828;
+  }
+
+  .btn-pdf:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(198, 40, 40, 0.4);
+  }
+
+  /* Botão de notificação */
+  .btn-notification {
+    position: relative;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-notification:hover {
+    background: var(--bg-light);
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+  }
+
+  .btn-notification .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef5350;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(239, 83, 80, 0.4);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Painel de notificações */
+  .notification-panel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 450px;
+    max-height: 80vh;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+    transition: var(--transition);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notification-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .notification-header {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .notification-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-close-notification {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: var(--transition);
+  }
+
+  .btn-close-notification:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .notification-body {
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: calc(80vh - 70px);
+  }
+
+  .notification-item {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: var(--transition);
+    border: 1px solid transparent;
+  }
+
+  .notification-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .notification-item.danger {
+    background: #ffebee;
+    border-color: #ffcdd2;
+  }
+
+  .notification-item.warning {
+    background: #fff3e0;
+    border-color: #ffe0b2;
+  }
+
+  .notification-item.info {
+    background: #e3f2fd;
+    border-color: #bbdefb;
+  }
+
+  .notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+  }
+
+  .notification-item.danger .notification-icon {
+    background: #ef5350;
+    color: white;
+  }
+
+  .notification-item.warning .notification-icon {
+    background: #ff9800;
+    color: white;
+  }
+
+  .notification-item.info .notification-icon {
+    background: #2196f3;
+    color: white;
+  }
+
+  .notification-content {
+    flex: 1;
+  }
+
+  .notification-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+
+  .notification-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .notification-count {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+  }
+
+  .no-notifications {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-secondary);
+  }
+
+  .no-notifications i {
+    font-size: 3rem;
+    color: #e0e0e0;
+    margin-bottom: 1rem;
   }
 
   /* Botões de período rápido */
@@ -48,40 +334,59 @@
 
   .btn-periodo {
     padding: 0.75rem 1.5rem;
-    border: 2px solid #4a8f29;
+    border: 2px solid var(--primary-light);
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     font-weight: 600;
-    color: #2e7d32;
-    transition: all 0.3s;
+    color: var(--primary-color);
+    transition: var(--transition);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-periodo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-periodo:hover::before {
+    left: 100%;
   }
 
   .btn-periodo:hover {
-    background: #4a8f29;
+    background: var(--primary-light);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(74, 143, 41, 0.3);
+    box-shadow: 0 6px 20px rgba(74, 143, 41, 0.3);
   }
 
   .btn-periodo.active {
-    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
     color: white;
-    border-color: #2e7d32;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
   }
 
   /* Seletor de período personalizado */
   .periodo-personalizado {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
     padding: 1.5rem;
-    background: #f9f9f9;
-    border-radius: 10px;
-    border: 1px dashed #4a8f29;
+    background: rgba(248, 249, 250, 0.8);
+    border-radius: 12px;
+    border: 2px dashed var(--primary-light);
+    backdrop-filter: blur(5px);
   }
 
   .date-input-group {
@@ -92,120 +397,120 @@
 
   .date-input-group label {
     font-weight: 600;
-    color: #555;
+    color: var(--text-secondary);
     font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .date-input-group input {
-    padding: 0.75rem;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     font-size: 1rem;
-    transition: all 0.3s;
+    transition: var(--transition);
+    background: white;
+    font-family: inherit;
   }
 
   .date-input-group input:focus {
     outline: none;
-    border-color: #4a8f29;
-    box-shadow: 0 0 0 3px rgba(74, 143, 41, 0.1);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    transform: translateY(-1px);
   }
 
   .btn-aplicar-filtro {
-    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
     color: white;
     padding: 0.75rem 2rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     align-self: flex-end;
-    transition: all 0.3s;
+    transition: var(--transition);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-aplicar-filtro::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-aplicar-filtro:hover::before {
+    left: 100%;
   }
 
   .btn-aplicar-filtro:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(74, 143, 41, 0.4);
-  }
-
-  /* Ações do relatório */
-  .acoes-relatorio {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-acao {
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    border: 2px solid transparent;
-  }
-
-  .btn-pdf {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-  }
-
-  .btn-pdf:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
-  }
-
-  .btn-print {
-    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-    color: white;
-  }
-
-  .btn-print:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+    box-shadow: 0 8px 25px rgba(74, 143, 41, 0.4);
   }
 
   /* Cards de resumo */
   .resumo-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
   }
 
   .resumo-card {
     background: white;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-light);
     border-left: 4px solid;
-    transition: all 0.3s;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .resumo-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, currentColor, transparent);
+    opacity: 0.3;
   }
 
   .resumo-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-medium);
   }
 
   .resumo-card.receita {
-    border-left-color: #4caf50;
+    border-left-color: var(--success-color);
+    color: var(--success-color);
   }
 
   .resumo-card.despesa {
-    border-left-color: #ef5350;
+    border-left-color: var(--danger-color);
+    color: var(--danger-color);
   }
 
   .resumo-card.saldo {
-    border-left-color: #2196f3;
+    border-left-color: var(--secondary-color);
+    color: var(--secondary-color);
   }
 
   .resumo-card.medicamento {
-    border-left-color: #ff9800;
+    border-left-color: var(--warning-color);
+    color: var(--warning-color);
   }
 
   .card-header {
@@ -216,98 +521,66 @@
   }
 
   .card-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    transition: var(--transition);
+  }
+
+  .resumo-card:hover .card-icon {
+    transform: scale(1.1) rotate(5deg);
   }
 
   .card-icon.receita {
-    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--primary-dark) 100%);
     color: white;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
   }
 
   .card-icon.despesa {
-    background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+    background: linear-gradient(135deg, var(--danger-color) 0%, #c62828 100%);
     color: white;
+    box-shadow: 0 6px 20px rgba(239, 83, 80, 0.3);
   }
 
   .card-icon.saldo {
-    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #1976d2 100%);
     color: white;
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
   }
 
   .card-icon.medicamento {
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    background: linear-gradient(135deg, var(--warning-color) 0%, #f57c00 100%);
     color: white;
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
   }
 
-  .card-info h3 {
-    font-size: 0.9rem;
-    color: #666;
-    margin: 0 0 0.5rem 0;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .card-valor {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .card-valor.receita {
-    color: #2e7d32;
-  }
-
-  .card-valor.despesa {
-    color: #c62828;
-  }
-
-  .card-valor.saldo {
-    color: #1976d2;
-  }
-
-  .card-valor.medicamento {
-    color: #f57c00;
-  }
-
-  .card-detalhes {
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    color: #888;
-  }
-
-  /* Seções de dados */
-  .secao-dados {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
+  /* Gráficos */
+  .graficos-section {
     margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   }
 
-  .secao-header {
+  .graficos-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e0e0e0;
   }
 
-  .secao-header h3 {
-    font-size: 1.3rem;
-    color: #2e7d32;
-    margin: 0;
+  .graficos-section-header h3 {
+    color: var(--primary-color);
     font-weight: 700;
+    font-size: 1.4rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  /* Gráficos */
   .graficos-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -317,22 +590,108 @@
 
   .grafico-card {
     background: white;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     padding: 2rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    overflow: hidden; /* Evita overflow do canvas */
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .grafico-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-light), var(--secondary-color));
+    opacity: 0.8;
+  }
+
+  .grafico-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
   }
 
   .grafico-card h4 {
     margin: 0 0 1.5rem 0;
-    color: #2e7d32;
+    color: var(--text-primary);
     font-weight: 700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .grafico-card canvas {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block;
+  .grafico-wrapper {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+
+  .grafico-comparativo {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow-light);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .grafico-comparativo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--success-color), var(--danger-color));
+    opacity: 0.8;
+  }
+
+  .grafico-comparativo h3 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .card-info h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card-valor {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, currentColor, var(--text-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-detalhes {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   /* Tabelas de top 5 */
@@ -344,64 +703,124 @@
 
   .top-card {
     background: white;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .top-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
   }
 
   .top-card h4 {
-    margin: 0 0 1rem 0;
-    color: #2e7d32;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    font-size: 1.1rem;
   }
 
   .top-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    background: #f9f9f9;
-    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    background: var(--bg-light);
+    border-radius: 12px;
     margin-bottom: 0.75rem;
-    transition: all 0.3s;
+    transition: var(--transition);
+    border: 1px solid transparent;
   }
 
   .top-item:hover {
-    background: #e8f5e9;
-    transform: translateX(5px);
+    background: white;
+    border-color: var(--primary-light);
+    transform: translateX(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   .top-item-info {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex: 1;
   }
 
   .top-item-rank {
-    width: 30px;
-    height: 30px;
-    background: linear-gradient(135deg, #4a8f29 0%, #2e7d32 100%);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
     color: white;
-    border-radius: 50%;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 0.9rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   }
 
   .top-item-nome {
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
+    flex: 1;
   }
 
   .top-item-valor {
     font-weight: 700;
-    color: #2e7d32;
+    color: var(--success-color);
     font-size: 1.1rem;
+  }
+
+  /* Animações */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .resumo-card,
+  .grafico-card,
+  .top-card {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .resumo-card:nth-child(2) { animation-delay: 0.1s; }
+  .resumo-card:nth-child(3) { animation-delay: 0.2s; }
+  .resumo-card:nth-child(4) { animation-delay: 0.3s; }
+
+  /* Loading states */
+  .grafico-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-secondary);
+  }
+
+  .grafico-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-light);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* Responsividade */
@@ -430,10 +849,6 @@
       gap: 1rem;
     }
 
-    .filtros-header h2 {
-      font-size: 1.2rem;
-    }
-
     .acoes-relatorio {
       width: 100%;
       flex-direction: column;
@@ -442,6 +857,66 @@
     .btn-acao {
       width: 100%;
       justify-content: center;
+    }
+
+    .notification-panel {
+      width: calc(100vw - 20px);
+      right: 10px;
+      left: 10px;
+      max-height: 70vh;
+    }
+
+    .notification-item {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .graficos-container {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .grafico-card {
+      padding: 1.5rem;
+    }
+
+    .grafico-wrapper {
+      height: 250px;
+    }
+
+    .resumo-cards {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .card-valor {
+      font-size: 1.8rem;
+    }
+
+    .top-lists {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .top-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .top-item-info {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .relatorios-container {
+      padding: 0.75rem;
+    }
+
+    .filtros-relatorio {
+      padding: 1.25rem;
     }
 
     .periodo-rapido {
@@ -455,98 +930,19 @@
 
     .periodo-personalizado {
       grid-template-columns: 1fr;
-      padding: 1rem;
-    }
-
-    .btn-aplicar-filtro {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .graficos-container {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
+      padding: 1.25rem;
     }
 
     .grafico-card {
-      padding: 1.5rem;
+      padding: 1.25rem;
     }
 
-    .top-lists {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .resumo-cards {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+    .grafico-wrapper {
+      height: 220px;
     }
 
     .card-valor {
-      font-size: 1.5rem !important;
-    }
-
-    .secao-dados {
-      padding: 1.5rem;
-    }
-
-    .top-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .top-item-valor {
-      font-size: 1rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .relatorios-container {
-      padding: 0.5rem;
-    }
-
-    .filtros-relatorio {
-      padding: 1rem;
-      border-radius: 12px;
-    }
-
-    .periodo-personalizado {
-      padding: 0.75rem;
-    }
-
-    .grafico-card {
-      padding: 1rem;
-    }
-
-    .card-valor {
-      font-size: 1.3rem !important;
-    }
-
-    .top-card {
-      padding: 1rem;
-    }
-
-    .top-item {
-      padding: 0.75rem;
-    }
-  }
-
-  @media print {
-    .filtros-relatorio,
-    .acoes-relatorio,
-    .sidebar,
-    .mobile-menu-btn,
-    .btn-notification {
-      display: none !important;
-    }
-
-    .relatorios-container {
-      padding: 0;
-    }
-
-    .secao-dados {
-      page-break-inside: avoid;
+      font-size: 1.6rem;
     }
   }
 </style>
@@ -555,7 +951,7 @@
 {% block conteudo %}
 <main class="main-content">
   <header class="content-header">
-    <h1>📊 Relatórios Gerenciais</h1>
+    <h1><i class="fas fa-chart-line"></i> Relatórios Gerenciais</h1>
     <div class="header-actions">
       <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
@@ -566,21 +962,134 @@
     </div>
   </header>
 
+  <!-- Painel de Notificações -->
+  <div class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+      <h3>
+        <i class="fas fa-bell"></i>
+        Notificações
+        {% if notificacoes_count > 0 %}
+        <span class="notification-count">{{ notificacoes_count }}</span>
+        {% endif %}
+      </h3>
+      <button class="btn-close-notification" onclick="toggleNotifications()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="notification-body">
+      {% if notificacoes_count > 0 %}
+        
+        <!-- Medicamentos Vencidos -->
+        {% if medicamentos_vencidos > 0 %}
+        <div class="notification-item danger">
+          <div class="notification-icon">
+            <i class="fas fa-pills"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Medicamentos Vencidos</div>
+            <div class="notification-description">
+              {{ medicamentos_vencidos }} medicamento(s) com estoque vencido. Verifique urgentemente!
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Medicamentos a Vencer -->
+        {% if medicamentos_vencer > 0 %}
+        <div class="notification-item warning">
+          <div class="notification-icon">
+            <i class="fas fa-capsules"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Medicamentos Próximos ao Vencimento</div>
+            <div class="notification-description">
+              {{ medicamentos_vencer }} medicamento(s) vencem em até 30 dias. Planeje o uso!
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Receitas Vencidas -->
+        {% if receitas_vencidas.count > 0 %}
+        <div class="notification-item danger">
+          <div class="notification-icon">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Receitas Vencidas</div>
+            <div class="notification-description">
+              {{ receitas_vencidas.count }} parcela(s) de receita vencida(s). Total: R$ {{ receitas_vencidas|sum_valor_parcela|moeda_br }}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Despesas Vencidas -->
+        {% if despesas_vencidas.count > 0 %}
+        <div class="notification-item danger">
+          <div class="notification-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Despesas Vencidas</div>
+            <div class="notification-description">
+              {{ despesas_vencidas.count }} parcela(s) de despesa vencida(s). Total: R$ {{ despesas_vencidas|sum_valor_parcela|moeda_br }}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Receitas a Vencer (5 dias) -->
+        {% if receitas_vencer.count > 0 %}
+        <div class="notification-item warning">
+          <div class="notification-icon">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Receitas a Vencer (5 dias)</div>
+            <div class="notification-description">
+              {{ receitas_vencer.count }} parcela(s) de receita vencem em até 5 dias. Total: R$ {{ receitas_vencer|sum_valor_parcela|moeda_br }}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Despesas a Vencer (5 dias) -->
+        {% if despesas_vencer.count > 0 %}
+        <div class="notification-item warning">
+          <div class="notification-icon">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">Despesas a Vencer (5 dias)</div>
+            <div class="notification-description">
+              {{ despesas_vencer.count }} parcela(s) de despesa vencem em até 5 dias. Total: R$ {{ despesas_vencer|sum_valor_parcela|moeda_br }}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="no-notifications">
+          <i class="fas fa-check-circle"></i>
+          <p>Nenhuma notificação no momento!</p>
+          <p style="font-size: 0.85rem;">Tudo está em ordem 🎉</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
   <div class="relatorios-container">
     <!-- Seção de Filtros -->
     <div class="filtros-relatorio">
       <div class="filtros-header">
-        <h2>🔍 Filtros de Período</h2>
+        <h2><i class="fas fa-sliders-h"></i> Filtros de Período</h2>
         <div class="acoes-relatorio">
           <a href="{% url 'gerar_pdf_relatorio' %}?periodo={{ periodo_selecionado }}&data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}" 
              class="btn-acao btn-pdf" target="_blank">
             <i class="fas fa-file-pdf"></i>
             Exportar PDF
           </a>
-          <button onclick="window.print()" class="btn-acao btn-print">
-            <i class="fas fa-print"></i>
-            Imprimir
-          </button>
         </div>
       </div>
 
@@ -612,7 +1121,7 @@
       <form method="GET" action="{% url 'dashboard_relatorios' %}">
         <div class="periodo-personalizado">
           <div class="date-input-group">
-            <label for="data_inicio">📅 Data Início</label>
+            <label for="data_inicio"><i class="fas fa-calendar-plus"></i> Data Início</label>
             <input type="date" 
                    id="data_inicio" 
                    name="data_inicio" 
@@ -620,7 +1129,7 @@
                    max="{{ data_fim|date:'Y-m-d' }}">
           </div>
           <div class="date-input-group">
-            <label for="data_fim">📅 Data Fim</label>
+            <label for="data_fim"><i class="fas fa-calendar-check"></i> Data Fim</label>
             <input type="date" 
                    id="data_fim" 
                    name="data_fim" 
@@ -628,13 +1137,13 @@
                    min="{{ data_inicio|date:'Y-m-d' }}">
           </div>
           <button type="submit" class="btn-aplicar-filtro">
-            <i class="fas fa-check"></i>
+            <i class="fas fa-rocket"></i>
             Aplicar Filtro
           </button>
         </div>
       </form>
 
-      <div style="margin-top: 1rem; padding: 0.75rem; background: #e3f2fd; border-radius: 8px; color: #1976d2; font-weight: 500;">
+      <div class="periodo-info">
         <i class="fas fa-info-circle"></i>
         Período atual: <strong>{{ data_inicio|date:'d/m/Y' }}</strong> até <strong>{{ data_fim|date:'d/m/Y' }}</strong>
         ({{ data_inicio|timesince:data_fim }})
@@ -646,12 +1155,15 @@
       <div class="resumo-card receita">
         <div class="card-header">
           <div class="card-info">
-            <h3>💰 Total de Receitas</h3>
-            <p class="card-valor receita">R$ {{ total_receitas|floatformat:2 }}</p>
-            <p class="card-detalhes">{{ count_receitas }} lançamento(s)</p>
+            <h3><i class="fas fa-hand-holding-usd"></i> Total de Receitas</h3>
+            <p class="card-valor receita">R$ {{ total_receitas|moeda_br }}</p>
+            <p class="card-detalhes">
+              <i class="fas fa-receipt"></i>
+              {{ count_receitas }} lançamento(s)
+            </p>
           </div>
           <div class="card-icon receita">
-            <i class="fas fa-arrow-up"></i>
+            <i class="fas fa-arrow-trend-up"></i>
           </div>
         </div>
       </div>
@@ -659,12 +1171,15 @@
       <div class="resumo-card despesa">
         <div class="card-header">
           <div class="card-info">
-            <h3>💸 Total de Despesas</h3>
-            <p class="card-valor despesa">R$ {{ total_despesas|floatformat:2 }}</p>
-            <p class="card-detalhes">{{ count_despesas }} lançamento(s)</p>
+            <h3><i class="fas fa-file-invoice-dollar"></i> Total de Despesas</h3>
+            <p class="card-valor despesa">R$ {{ total_despesas|moeda_br }}</p>
+            <p class="card-detalhes">
+              <i class="fas fa-file-invoice"></i>
+              {{ count_despesas }} lançamento(s)
+            </p>
           </div>
           <div class="card-icon despesa">
-            <i class="fas fa-arrow-down"></i>
+            <i class="fas fa-arrow-trend-down"></i>
           </div>
         </div>
       </div>
@@ -672,13 +1187,15 @@
       <div class="resumo-card saldo">
         <div class="card-header">
           <div class="card-info">
-            <h3>💵 Saldo do Período</h3>
-            <p class="card-valor saldo">R$ {{ saldo|floatformat:2 }}</p>
+            <h3><i class="fas fa-scale-balanced"></i> Saldo do Período</h3>
+            <p class="card-valor saldo">R$ {{ saldo|moeda_br }}</p>
             <p class="card-detalhes">
               {% if saldo >= 0 %}
-              <span style="color: #4caf50;">⬆ Positivo</span>
+              <i class="fas fa-arrow-up" style="color: #4caf50;"></i>
+              <span style="color: #4caf50;">Positivo</span>
               {% else %}
-              <span style="color: #ef5350;">⬇ Negativo</span>
+              <i class="fas fa-arrow-down" style="color: #ef5350;"></i>
+              <span style="color: #ef5350;">Negativo</span>
               {% endif %}
             </p>
           </div>
@@ -691,194 +1208,201 @@
       <div class="resumo-card medicamento">
         <div class="card-header">
           <div class="card-info">
-            <h3>💊 Total Medicamentos</h3>
+            <h3><i class="fas fa-pills"></i> Total Medicamentos</h3>
             <p class="card-valor medicamento">{{ total_medicamentos }}</p>
-            <p class="card-detalhes">{{ medicamentos_baixo_estoque }} com estoque baixo</p>
+            <p class="card-detalhes">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ medicamentos_baixo_estoque }} com estoque baixo
+            </p>
           </div>
           <div class="card-icon medicamento">
-            <i class="fas fa-pills"></i>
+            <i class="fas fa-capsules"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Gráficos de Colunas -->
-    <div class="graficos-container">
-      <!-- Gráfico Top 5 Receitas -->
+    <!-- Gráfico Comparativo -->
+    <div class="graficos-section">
+      <div class="graficos-section-header">
+        <h3><i class="fas fa-chart-line"></i> Análise Comparativa</h3>
+      </div>
+      <div class="grafico-comparativo">
+        <h3><i class="fas fa-chart-line"></i> Evolução de Receitas vs Despesas</h3>
+        <div class="grafico-wrapper">
+          <canvas id="chartComparativo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos de Análise -->
+    <div class="graficos-section">
+      <div class="graficos-section-header">
+        <h3><i class="fas fa-chart-bar"></i> Análise por Categoria</h3>
+      </div>
+      <div class="graficos-container">
+        <div class="grafico-card">
+          <h4><i class="fas fa-chart-pie"></i> Top 5 Receitas por Categoria</h4>
+          <div class="grafico-wrapper">
+            <canvas id="chartTopReceitas"></canvas>
+          </div>
+        </div>
+
+        <div class="grafico-card">
+          <h4><i class="fas fa-chart-pie"></i> Top 5 Despesas por Categoria</h4>
+          <div class="grafico-wrapper">
+            <canvas id="chartTopDespesas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de Medicamentos -->
+    <div class="graficos-section">
+      <div class="graficos-section-header">
+        <h3><i class="fas fa-capsules"></i> Análise de Medicamentos</h3>
+      </div>
       <div class="grafico-card">
-        <h4>📊 Top 5 Receitas por Categoria</h4>
-        <canvas id="chartTopReceitas"></canvas>
-      </div>
-
-      <!-- Gráfico Top 5 Despesas -->
-      <div class="grafico-card">
-        <h4>📊 Top 5 Despesas por Categoria</h4>
-        <canvas id="chartTopDespesas"></canvas>
+        <h4><i class="fas fa-chart-column"></i> Top 5 Medicamentos Mais Movimentados</h4>
+        <div class="grafico-wrapper">
+          <canvas id="chartTopMedicamentos"></canvas>
+        </div>
       </div>
     </div>
 
-    <!-- Gráfico Top 5 Medicamentos -->
-    <div class="secao-dados">
-      <div class="grafico-card" style="margin: 0;">
-        <h4>📊 Top 5 Medicamentos Mais Movimentados</h4>
-        <canvas id="chartTopMedicamentos"></canvas>
+    <!-- Top Lists -->
+    <div class="graficos-section">
+      <div class="graficos-section-header">
+        <h3><i class="fas fa-trophy"></i> Rankings</h3>
       </div>
-    </div>
-
-    <!-- Top 5 Categorias -->
-    <div class="top-lists">
-      <!-- Top 5 Receitas -->
-      <div class="top-card">
-        <h4>
-          <i class="fas fa-trophy" style="color: #ffd700;"></i>
-          Top 5 Categorias de Receita
-        </h4>
-        {% if top_receitas_categoria %}
-          {% for item in top_receitas_categoria %}
-          <div class="top-item">
-            <div class="top-item-info">
-              <div class="top-item-rank">{{ forloop.counter }}</div>
-              <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
-            </div>
-            <div class="top-item-valor">R$ {{ item.total|floatformat:2 }}</div>
-          </div>
-          {% endfor %}
-        {% else %}
-          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma receita no período</p>
-        {% endif %}
-      </div>
-
-      <!-- Top 5 Despesas -->
-      <div class="top-card">
-        <h4>
-          <i class="fas fa-trophy" style="color: #c62828;"></i>
-          Top 5 Categorias de Despesa
-        </h4>
-        {% if top_despesas_categoria %}
-          {% for item in top_despesas_categoria %}
-          <div class="top-item">
-            <div class="top-item-info">
-              <div class="top-item-rank" style="background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);">
-                {{ forloop.counter }}
+      <div class="top-lists">
+        <div class="top-card">
+          <h4>
+            <i class="fas fa-crown" style="color: #ffd700;"></i>
+            Top 5 Categorias de Receita
+          </h4>
+          {% if top_receitas_categoria %}
+            {% for item in top_receitas_categoria %}
+            <div class="top-item">
+              <div class="top-item-info">
+                <div class="top-item-rank">{{ forloop.counter }}</div>
+                <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
               </div>
-              <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
+              <div class="top-item-valor">R$ {{ item.total|moeda_br }}</div>
             </div>
-            <div class="top-item-valor" style="color: #c62828;">R$ {{ item.total|floatformat:2 }}</div>
-          </div>
-          {% endfor %}
-        {% else %}
-          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma despesa no período</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Seção de Medicamentos -->
-    <div class="secao-dados">
-      <div class="secao-header">
-        <h3>💊 Análise de Medicamentos</h3>
-      </div>
-
-      <div class="resumo-cards">
-        <div class="resumo-card medicamento">
-          <div class="card-info">
-            <h3>📦 Total de Entradas</h3>
-            <p class="card-valor medicamento">{{ total_entradas }}</p>
-            <p class="card-detalhes">no período selecionado</p>
-          </div>
+            {% endfor %}
+          {% else %}
+            <div class="no-data">
+              <i class="fas fa-chart-line"></i>
+              <p>Nenhuma receita no período</p>
+            </div>
+          {% endif %}
         </div>
 
-        <div class="resumo-card" style="border-left-color: #ff9800;">
-          <div class="card-info">
-            <h3>⚠️ Próximos ao Vencimento</h3>
-            <p class="card-valor" style="color: #ff9800;">{{ medicamentos_vencer }}</p>
-            <p class="card-detalhes">nos próximos 30 dias</p>
-          </div>
-        </div>
-
-        <div class="resumo-card" style="border-left-color: #f44336;">
-          <div class="card-info">
-            <h3>❌ Medicamentos Vencidos</h3>
-            <p class="card-valor" style="color: #f44336;">{{ medicamentos_vencidos }}</p>
-            <p class="card-detalhes">com estoque disponível</p>
-          </div>
-        </div>
-
-        <div class="resumo-card" style="border-left-color: #2196f3;">
-          <div class="card-info">
-            <h3>📊 Valor do Estoque</h3>
-            <p class="card-valor" style="color: #2196f3;">R$ {{ valor_total_estoque|floatformat:2 }}</p>
-            <p class="card-detalhes">entradas no período</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top 5 Medicamentos -->
-      <div class="top-card" style="margin-top: 2rem;">
-        <h4>
-          <i class="fas fa-star" style="color: #ffd700;"></i>
-          Top 5 Medicamentos Mais Movimentados
-        </h4>
-        {% if top_medicamentos %}
-          {% for item in top_medicamentos %}
-          <div class="top-item">
-            <div class="top-item-info">
-              <div class="top-item-rank" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
-                {{ forloop.counter }}
+        <div class="top-card">
+          <h4>
+            <i class="fas fa-crown" style="color: #c62828;"></i>
+            Top 5 Categorias de Despesa
+          </h4>
+          {% if top_despesas_categoria %}
+            {% for item in top_despesas_categoria %}
+            <div class="top-item">
+              <div class="top-item-info">
+                <div class="top-item-rank">{{ forloop.counter }}</div>
+                <div class="top-item-nome">{{ item.categoria__nome|default:"Sem Categoria" }}</div>
               </div>
-              <div class="top-item-nome">{{ item.medicamento__nome }} - {{ item.medicamento__fazenda__nome }}</div>
+              <div class="top-item-valor" style="color: #c62828;">R$ {{ item.total|moeda_br }}</div>
             </div>
-            <div class="top-item-valor" style="color: #f57c00;">
-              {{ item.quantidade_total }} unidades
+            {% endfor %}
+          {% else %}
+            <div class="no-data">
+              <i class="fas fa-chart-line"></i>
+              <p>Nenhuma despesa no período</p>
             </div>
-          </div>
-          {% endfor %}
-        {% else %}
-          <p style="text-align: center; color: #888; padding: 2rem;">Nenhuma movimentação no período</p>
-        {% endif %}
+          {% endif %}
+        </div>
       </div>
     </div>
-
   </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  // Configurações globais do Chart.js
+  Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+  Chart.defaults.color = '#546e7a';
+  Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.05)';
+
   // Função para aplicar período rápido
   function aplicarPeriodo(dias) {
     window.location.href = `{% url 'dashboard_relatorios' %}?periodo=${dias}`;
   }
 
   // Configuração base responsiva
-  const configBase = {
+  const getResponsiveConfig = () => ({
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: window.innerWidth < 768 ? 1.2 : 2,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 20,
+          font: {
+            size: window.innerWidth < 768 ? 11 : 13,
+            weight: '600'
+          },
+          color: '#2c3e50'
+        }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#2c3e50',
+        bodyColor: '#546e7a',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 1,
         padding: 12,
+        cornerRadius: 8,
         titleFont: {
-          size: 14,
+          size: 13,
           weight: 'bold'
         },
         bodyFont: {
-          size: 13
+          size: 12
+        },
+        boxPadding: 6,
+        usePointStyle: true,
+        callbacks: {
+          labelColor: function(context) {
+            return {
+              borderColor: context.dataset.borderColor || context.dataset.backgroundColor,
+              backgroundColor: context.dataset.backgroundColor,
+              borderWidth: 2
+            };
+          }
         }
       }
     },
     scales: {
       y: {
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.04)',
+          drawBorder: false
+        },
         ticks: {
           font: {
             size: window.innerWidth < 768 ? 10 : 12
-          }
+          },
+          padding: 10
         }
       },
       x: {
+        grid: {
+          display: false
+        },
         ticks: {
           font: {
             size: window.innerWidth < 768 ? 10 : 12
@@ -887,199 +1411,318 @@
           minRotation: window.innerWidth < 768 ? 45 : 0
         }
       }
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false
+    },
+    animations: {
+      tension: {
+        duration: 1000,
+        easing: 'easeOutQuart'
+      }
     }
+  });
+
+  // ========== GRÁFICO COMPARATIVO ==========
+  const initComparativoChart = () => {
+    const ctx = document.getElementById('chartComparativo').getContext('2d');
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ comparativo_labels|safe }},
+        datasets: [
+          {
+            label: 'Receitas',
+            data: {{ comparativo_receitas|safe }},
+            borderColor: '#4caf50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#4caf50',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: '#2e7d32',
+            pointHoverBorderWidth: 3
+          },
+          {
+            label: 'Despesas',
+            data: {{ comparativo_despesas|safe }},
+            borderColor: '#ef5350',
+            backgroundColor: 'rgba(239, 83, 80, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#ef5350',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: '#c62828',
+            pointHoverBorderWidth: 3
+          }
+        ]
+      },
+      options: {
+        ...getResponsiveConfig(),
+        plugins: {
+          ...getResponsiveConfig().plugins,
+          tooltip: {
+            ...getResponsiveConfig().plugins.tooltip,
+            callbacks: {
+              ...getResponsiveConfig().plugins.tooltip.callbacks,
+              label: function(context) {
+                return `${context.dataset.label}: R$ ${context.parsed.y.toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}`;
+              }
+            }
+          }
+        },
+        scales: {
+          ...getResponsiveConfig().scales,
+          y: {
+            ...getResponsiveConfig().scales.y,
+            ticks: {
+              ...getResponsiveConfig().scales.y.ticks,
+              callback: function(value) {
+                return 'R$ ' + value.toLocaleString('pt-BR', {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                });
+              }
+            }
+          }
+        }
+      }
+    });
   };
 
-  // ========== GRÁFICO TOP 5 RECEITAS ==========
-  const ctxReceitas = document.getElementById('chartTopReceitas').getContext('2d');
-  const chartReceitas = new Chart(ctxReceitas, {
-    type: 'bar',
-    data: {
-      labels: {{ top_5_receitas_labels|safe }},
-      datasets: [{
-        label: 'Receitas',
-        data: {{ top_5_receitas_valores|safe }},
-        backgroundColor: [
-          'rgba(76, 175, 80, 0.8)',
-          'rgba(102, 187, 106, 0.8)',
-          'rgba(129, 199, 132, 0.8)',
-          'rgba(156, 204, 101, 0.8)',
-          'rgba(174, 213, 129, 0.8)'
-        ],
-        borderColor: [
-          'rgba(76, 175, 80, 1)',
-          'rgba(102, 187, 106, 1)',
-          'rgba(129, 199, 132, 1)',
-          'rgba(156, 204, 101, 1)',
-          'rgba(174, 213, 129, 1)'
-        ],
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...configBase,
-      plugins: {
-        ...configBase.plugins,
-        tooltip: {
-          ...configBase.plugins.tooltip,
-          callbacks: {
-            label: function(context) {
-              return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              });
-            }
-          }
-        }
+  // ========== GRÁFICO TOP RECEITAS ==========
+  const initReceitasChart = () => {
+    const ctx = document.getElementById('chartTopReceitas').getContext('2d');
+    return new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: {{ top_5_receitas_labels|safe }},
+        datasets: [{
+          data: {{ top_5_receitas_valores|safe }},
+          backgroundColor: [
+            'rgba(76, 175, 80, 0.9)',
+            'rgba(102, 187, 106, 0.9)',
+            'rgba(129, 199, 132, 0.9)',
+            'rgba(156, 204, 101, 0.9)',
+            'rgba(174, 213, 129, 0.9)'
+          ],
+          borderColor: [
+            'rgba(76, 175, 80, 1)',
+            'rgba(102, 187, 106, 1)',
+            'rgba(129, 199, 132, 1)',
+            'rgba(156, 204, 101, 1)',
+            'rgba(174, 213, 129, 1)'
+          ],
+          borderWidth: 2,
+          borderRadius: 6,
+          spacing: 2
+        }]
       },
-      scales: {
-        ...configBase.scales,
-        y: {
-          ...configBase.scales.y,
-          ticks: {
-            ...configBase.scales.y.ticks,
-            callback: function(value) {
-              return 'R$ ' + value.toLocaleString('pt-BR');
+      options: {
+        ...getResponsiveConfig(),
+        cutout: '60%',
+        plugins: {
+          ...getResponsiveConfig().plugins,
+          tooltip: {
+            ...getResponsiveConfig().plugins.tooltip,
+            callbacks: {
+              ...getResponsiveConfig().plugins.tooltip.callbacks,
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                return [
+                  `R$ ${context.parsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                  `${percentage}% do total`
+                ];
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  };
 
-  // ========== GRÁFICO TOP 5 DESPESAS ==========
-  const ctxDespesas = document.getElementById('chartTopDespesas').getContext('2d');
-  const chartDespesas = new Chart(ctxDespesas, {
-    type: 'bar',
-    data: {
-      labels: {{ top_5_despesas_labels|safe }},
-      datasets: [{
-        label: 'Despesas',
-        data: {{ top_5_despesas_valores|safe }},
-        backgroundColor: [
-          'rgba(239, 83, 80, 0.8)',
-          'rgba(229, 115, 115, 0.8)',
-          'rgba(239, 154, 154, 0.8)',
-          'rgba(255, 138, 128, 0.8)',
-          'rgba(255, 171, 145, 0.8)'
-        ],
-        borderColor: [
-          'rgba(239, 83, 80, 1)',
-          'rgba(229, 115, 115, 1)',
-          'rgba(239, 154, 154, 1)',
-          'rgba(255, 138, 128, 1)',
-          'rgba(255, 171, 145, 1)'
-        ],
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...configBase,
-      plugins: {
-        ...configBase.plugins,
-        tooltip: {
-          ...configBase.plugins.tooltip,
-          callbacks: {
-            label: function(context) {
-              return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              });
-            }
-          }
-        }
+  // ========== GRÁFICO TOP DESPESAS ==========
+  const initDespesasChart = () => {
+    const ctx = document.getElementById('chartTopDespesas').getContext('2d');
+    return new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: {{ top_5_despesas_labels|safe }},
+        datasets: [{
+          data: {{ top_5_despesas_valores|safe }},
+          backgroundColor: [
+            'rgba(239, 83, 80, 0.9)',
+            'rgba(229, 115, 115, 0.9)',
+            'rgba(239, 154, 154, 0.9)',
+            'rgba(255, 138, 128, 0.9)',
+            'rgba(255, 171, 145, 0.9)'
+          ],
+          borderColor: [
+            'rgba(239, 83, 80, 1)',
+            'rgba(229, 115, 115, 1)',
+            'rgba(239, 154, 154, 1)',
+            'rgba(255, 138, 128, 1)',
+            'rgba(255, 171, 145, 1)'
+          ],
+          borderWidth: 2,
+          borderRadius: 6,
+          spacing: 2
+        }]
       },
-      scales: {
-        ...configBase.scales,
-        y: {
-          ...configBase.scales.y,
-          ticks: {
-            ...configBase.scales.y.ticks,
-            callback: function(value) {
-              return 'R$ ' + value.toLocaleString('pt-BR');
+      options: {
+        ...getResponsiveConfig(),
+        cutout: '60%',
+        plugins: {
+          ...getResponsiveConfig().plugins,
+          tooltip: {
+            ...getResponsiveConfig().plugins.tooltip,
+            callbacks: {
+              ...getResponsiveConfig().plugins.tooltip.callbacks,
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                return [
+                  `R$ ${context.parsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                  `${percentage}% do total`
+                ];
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  };
 
-  // ========== GRÁFICO TOP 5 MEDICAMENTOS ==========
-  const ctxMedicamentos = document.getElementById('chartTopMedicamentos').getContext('2d');
-  const chartMedicamentos = new Chart(ctxMedicamentos, {
-    type: 'bar',
-    data: {
-      labels: {{ top_5_medicamentos_labels|safe }},
-      datasets: [{
-        label: 'Quantidade',
-        data: {{ top_5_medicamentos_valores|safe }},
-        backgroundColor: [
-          'rgba(255, 152, 0, 0.8)',
-          'rgba(255, 167, 38, 0.8)',
-          'rgba(255, 183, 77, 0.8)',
-          'rgba(255, 202, 40, 0.8)',
-          'rgba(255, 213, 79, 0.8)'
-        ],
-        borderColor: [
-          'rgba(255, 152, 0, 1)',
-          'rgba(255, 167, 38, 1)',
-          'rgba(255, 183, 77, 1)',
-          'rgba(255, 202, 40, 1)',
-          'rgba(255, 213, 79, 1)'
-        ],
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      ...configBase,
-      plugins: {
-        ...configBase.plugins,
-        tooltip: {
-          ...configBase.plugins.tooltip,
-          callbacks: {
-            label: function(context) {
-              return context.parsed.y + ' unidades';
+  // ========== GRÁFICO TOP MEDICAMENTOS ==========
+  const initMedicamentosChart = () => {
+    const ctx = document.getElementById('chartTopMedicamentos').getContext('2d');
+    return new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ top_5_medicamentos_labels|safe }},
+        datasets: [{
+          label: 'Quantidade Movimentada',
+          data: {{ top_5_medicamentos_valores|safe }},
+          backgroundColor: 'rgba(255, 152, 0, 0.8)',
+          borderColor: 'rgba(255, 152, 0, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        ...getResponsiveConfig(),
+        plugins: {
+          ...getResponsiveConfig().plugins,
+          tooltip: {
+            ...getResponsiveConfig().plugins.tooltip,
+            callbacks: {
+              ...getResponsiveConfig().plugins.tooltip.callbacks,
+              label: function(context) {
+                return `${context.parsed.y} unidades movimentadas`;
+              }
             }
           }
-        }
-      },
-      scales: {
-        ...configBase.scales,
-        y: {
-          ...configBase.scales.y,
-          ticks: {
-            ...configBase.scales.y.ticks,
-            callback: function(value) {
-              return value + ' un';
+        },
+        scales: {
+          ...getResponsiveConfig().scales,
+          y: {
+            ...getResponsiveConfig().scales.y,
+            ticks: {
+              ...getResponsiveConfig().scales.y.ticks,
+              callback: function(value) {
+                return value + ' un';
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  };
 
-  // ========== ATUALIZAÇÃO RESPONSIVA ==========
-  window.addEventListener('resize', function() {
-    const newAspectRatio = window.innerWidth < 768 ? 1.2 : 2;
-    const fontSize = window.innerWidth < 768 ? 10 : 12;
-    const rotation = window.innerWidth < 768 ? 45 : 0;
-    
-    [chartReceitas, chartDespesas, chartMedicamentos].forEach(chart => {
-      chart.options.aspectRatio = newAspectRatio;
-      chart.options.scales.y.ticks.font.size = fontSize;
-      chart.options.scales.x.ticks.font.size = fontSize;
-      chart.options.scales.x.ticks.maxRotation = rotation;
-      chart.options.scales.x.ticks.minRotation = rotation;
-      chart.update();
+  // Inicialização dos gráficos
+  document.addEventListener('DOMContentLoaded', function() {
+    const chartComparativo = initComparativoChart();
+    const chartReceitas = initReceitasChart();
+    const chartDespesas = initDespesasChart();
+    const chartMedicamentos = initMedicamentosChart();
+
+    // Atualização responsiva
+    window.addEventListener('resize', function() {
+      chartComparativo.resize();
+      chartReceitas.resize();
+      chartDespesas.resize();
+      chartMedicamentos.resize();
+    });
+
+    // Efeitos de hover nos cards
+    const cards = document.querySelectorAll('.resumo-card, .grafico-card, .top-card');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = this.classList.contains('resumo-card') ? 
+          'translateY(-8px)' : 'translateY(-5px)';
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
     });
   });
 
+  // Animação de loading para os gráficos
+  function showChartLoading(container) {
+    container.innerHTML = '<div class="grafico-loading"></div>';
+  }
+
+  // Função para exportar gráficos
+  function exportChartAsImage(chartId, filename) {
+    const chartCanvas = document.getElementById(chartId);
+    const link = document.createElement('a');
+    link.download = filename + '.png';
+    link.href = chartCanvas.toDataURL('image/png');
+    link.click();
+  }
+
+  // ========== PAINEL DE NOTIFICAÇÕES ==========
+  function toggleNotifications() {
+    const panel = document.getElementById('notificationPanel');
+    panel.classList.toggle('show');
+  }
+
+  // Botão de notificação
+  document.getElementById('notificationBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleNotifications();
+  });
+
+  // Fechar ao clicar fora
+  document.addEventListener('click', function(e) {
+    const panel = document.getElementById('notificationPanel');
+    const btn = document.getElementById('notificationBtn');
+    
+    if (!panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.classList.remove('show');
+    }
+  });
+
+  // Prevenir fechamento ao clicar dentro do painel
+  document.getElementById('notificationPanel').addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
 </script>
 {% endblock %}
 
