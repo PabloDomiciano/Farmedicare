@@ -336,7 +336,7 @@
         <p class="lista-subtitle">Gerenciamento de parcelas pendentes e pagas</p>
       </div>
       <div class="lista-actions">
-        <a href="{% url 'cadastrar_movimentacao' %}" class="btn-add">
+        <a href="{% url 'cadastrar_despesa' %}" class="btn-add">
           <i class="fas fa-plus"></i>
           Nova Despesa
         </a>
@@ -372,10 +372,6 @@
       <div class="stat-card">
         <div class="stat-label">📊 Valor Total</div>
         <div class="stat-value" id="valor-total">R$ 0,00</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">✅ Valor Pago</div>
-        <div class="stat-value" style="color: #10b981;" id="valor-pago">R$ 0,00</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">⏳ Valor a Pagar</div>
@@ -535,8 +531,7 @@
         let totalPendentes = 0;
         let totalVencidas = 0;
         let valorTotal = 0;
-        let valorPago = 0;
-        let valorPendente = 0;
+        let valorPendente = 0;  // Valor a pagar (pendentes + vencidas)
         
         // Contadores gerais para os badges (TODOS os registros)
         let countTodosGeral = 0;
@@ -563,16 +558,15 @@
 
             totalParcelas++;
             valorTotal += valor;
-            valorPago += valorPg;
 
             if (status === 'pago') {
               totalPagas++;
             } else if (status === 'vencido') {
               totalVencidas++;
-              valorPendente += (valor - valorPg);
+              valorPendente += (valor - valorPg);  // Soma pendentes e vencidas
             } else if (status === 'pendente') {
               totalPendentes++;
-              valorPendente += (valor - valorPg);
+              valorPendente += (valor - valorPg);  // Soma pendentes e vencidas
             }
           }
         });
@@ -586,7 +580,6 @@
         // Atualiza estatísticas (mostram apenas o que está visível)
         document.getElementById('total-parcelas').textContent = totalParcelas;
         document.getElementById('valor-total').textContent = formatarMoeda(valorTotal);
-        document.getElementById('valor-pago').textContent = formatarMoeda(valorPago);
         document.getElementById('valor-pendente').textContent = formatarMoeda(valorPendente);
       }
 
