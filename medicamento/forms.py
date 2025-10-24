@@ -60,7 +60,7 @@ class EntradaMedicamentoForm(forms.ModelForm):
             'valor_medicamento',
             'validade',
             'observacao',
-            'cadastrada_por',
+            # 'cadastrada_por' - definido automaticamente pela view
         ]
         
         widgets = {
@@ -91,11 +91,6 @@ class EntradaMedicamentoForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Informações adicionais: lote, fornecedor, observações sobre o medicamento...',
             }),
-            'cadastrada_por': forms.Select(attrs={
-                'class': 'form-control form-field-full',
-                'readonly': True,
-                'disabled': True,
-            }),
         }
         
         labels = {
@@ -104,7 +99,6 @@ class EntradaMedicamentoForm(forms.ModelForm):
             'valor_medicamento': 'Valor Total (R$)',
             'validade': 'Data de Validade',
             'observacao': 'Observações / Lote',
-            'cadastrada_por': 'Cadastrado por',
         }
         
         help_texts = {
@@ -118,11 +112,6 @@ class EntradaMedicamentoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
-        # Define o usuário logado como valor inicial
-        if user:
-            self.fields['cadastrada_por'].initial = user
-            self.fields['cadastrada_por'].widget.attrs['disabled'] = True
         
         # Define data mínima para validade (hoje)
         hoje = date.today()
@@ -168,8 +157,4 @@ class EntradaMedicamentoForm(forms.ModelForm):
             )
         return valor
     
-    def clean_cadastrada_por(self):
-        # Garante que o campo cadastrada_por mantenha o valor original
-        if self.instance and self.instance.pk:
-            return self.instance.cadastrada_por
-        return self.cleaned_data.get('cadastrada_por')
+    # Removido clean_cadastrada_por - campo não está mais no formulário

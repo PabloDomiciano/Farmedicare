@@ -63,7 +63,7 @@ class MovimentacaoForm(forms.ModelForm):
             'imposto_renda',
             'data',
             'descricao',
-            'cadastrada_por',
+            # 'cadastrada_por' - definido automaticamente pela view
         ]
         
         widgets = {
@@ -110,11 +110,6 @@ class MovimentacaoForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Descreva os detalhes da movimentação...',
             }),
-            'cadastrada_por': forms.Select(attrs={
-                'class': 'form-control form-field-full',
-                'readonly': True,
-                'disabled': True,
-            }),
         }
         
         labels = {
@@ -127,7 +122,6 @@ class MovimentacaoForm(forms.ModelForm):
             'imposto_renda': 'Declarar no Imposto de Renda?',
             'data': 'Data da Movimentação',
             'descricao': 'Descrição/Observações',
-            'cadastrada_por': 'Cadastrado por',
         }
         
         help_texts = {
@@ -140,12 +134,23 @@ class MovimentacaoForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        tipo_fixo = kwargs.pop('tipo_fixo', None)  # Novo parâmetro para tipo fixo
         super().__init__(*args, **kwargs)
         
-        # Define o usuário logado como valor inicial
-        if user:
-            self.fields['cadastrada_por'].initial = user
-            self.fields['cadastrada_por'].widget.attrs['disabled'] = True
+        # Se tipo_fixo foi passado, configura o campo como disabled e com valor fixo
+        if tipo_fixo:
+            self.fields['tipo'].initial = tipo_fixo
+            self.fields['tipo'].widget.attrs.update({
+                'disabled': True,
+                'class': 'form-control form-field-half campo-bloqueado',
+            })
+            # Armazena o tipo fixo para usar no clean
+            self.tipo_fixo = tipo_fixo
+            
+            # Filtra as categorias pelo tipo
+            self.fields['categoria'].queryset = Categoria.objects.filter(tipo=tipo_fixo).order_by('nome')
+        else:
+            self.tipo_fixo = None
         
         # Adiciona classes personalizadas para estilização
         for field_name, field in self.fields.items():
@@ -154,8 +159,12 @@ class MovimentacaoForm(forms.ModelForm):
                     'autocomplete': 'off'
                 })
     
-    def clean_cadastrada_por(self):
-        # Garante que o campo cadastrada_por mantenha o valor original
-        if self.instance and self.instance.pk:
-            return self.instance.cadastrada_por
-        return self.cleaned_data.get('cadastrada_por')
+    def clean_tipo(self):
+        """
+        Garante que o tipo fixo seja mantido mesmo com o campo disabled
+        """
+        if self.tipo_fixo:
+            return self.tipo_fixo
+        return self.cleaned_data.get('tipo')
+    
+    # Removido clean_cadastrada_por - campo não está mais no formulário
