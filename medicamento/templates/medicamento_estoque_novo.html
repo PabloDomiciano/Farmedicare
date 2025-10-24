@@ -282,6 +282,451 @@
     .dias-ok {
       color: #388e3c;
     }
+
+    /* Cabeçalhos clicáveis com setinhas de ordenação */
+    .modelo-table thead th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 30px;
+      color: white !important;
+    }
+
+    .modelo-table thead th:hover {
+      background-color: #00838f !important;
+      color: white !important;
+    }
+
+    .modelo-table thead th::after {
+      content: '\f0dc';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 10px;
+      opacity: 0.3;
+      font-size: 12px;
+      color: white;
+    }
+
+    .modelo-table thead th.sortable::after {
+      opacity: 0.6;
+    }
+
+    .modelo-table thead th.asc::after {
+      content: '\f0de';
+      opacity: 1;
+      color: white;
+    }
+
+    .modelo-table thead th.desc::after {
+      content: '\f0dd';
+      opacity: 1;
+      color: white;
+    }
+
+    /* Estilos para o popup de saída */
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      animation: fadeIn 0.3s;
+    }
+
+    .popup-overlay.active {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .popup-saida {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .popup-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1976d2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .popup-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #999;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .popup-close:hover {
+      background: #f5f5f5;
+      color: #d32f2f;
+      transform: rotate(90deg);
+    }
+
+    .popup-body {
+      margin-bottom: 25px;
+    }
+
+    .info-medicamento {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid #1976d2;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .info-label {
+      color: #666;
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: #1976d2;
+      font-weight: 700;
+    }
+
+    .quantidade-control {
+      margin-top: 20px;
+    }
+
+    .quantidade-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .quantidade-display {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .quantidade-valor {
+      font-size: 48px;
+      font-weight: 700;
+      color: #1976d2;
+      line-height: 1;
+    }
+
+    .quantidade-max {
+      font-size: 14px;
+      color: #999;
+      margin-top: 5px;
+    }
+
+    .slider-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .quantidade-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: linear-gradient(to right, #bbdefb 0%, #1976d2 100%);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .quantidade-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1976d2;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.4);
+      transition: all 0.2s;
+    }
+
+    .quantidade-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.6);
+    }
+
+    .quantidade-slider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1976d2;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.4);
+      transition: all 0.2s;
+    }
+
+    .quantidade-slider::-moz-range-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.6);
+    }
+
+    .quantidade-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .btn-quantidade {
+      background: #e3f2fd;
+      border: 2px solid #1976d2;
+      color: #1976d2;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .btn-quantidade:hover {
+      background: #1976d2;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .popup-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-popup {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-size: 15px;
+    }
+
+    .btn-cancelar {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .btn-cancelar:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-confirmar {
+      background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+    }
+
+    .btn-confirmar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
+    }
+
+    .btn-confirmar:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Botões de ação padronizados */
+    .btn-action {
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      margin: 0 3px;
+      white-space: nowrap;
+    }
+
+    .btn-saida {
+      background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+      color: white;
+      box-shadow: 0 2px 6px rgba(211, 47, 47, 0.3);
+    }
+
+    .btn-saida:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(211, 47, 47, 0.4);
+      background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+    }
+
+    .btn-entrada {
+      background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+      color: white;
+      box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
+    }
+
+    .btn-entrada:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(25, 118, 210, 0.4);
+      background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    }
+
+    .actions {
+      white-space: nowrap;
+    }
+
+    /* Toast Notification */
+    .toast-notification {
+      position: fixed;
+      top: 80px;
+      right: -400px;
+      background: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      min-width: 350px;
+      max-width: 450px;
+      transition: right 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      border-left: 5px solid #4caf50;
+    }
+
+    .toast-notification.show {
+      right: 20px;
+    }
+
+    .toast-notification.success {
+      border-left-color: #4caf50;
+    }
+
+    .toast-notification.error {
+      border-left-color: #f44336;
+    }
+
+    .toast-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .toast-notification.success .toast-icon {
+      color: #4caf50;
+    }
+
+    .toast-notification.error .toast-icon {
+      color: #f44336;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .toast-message {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #999;
+      cursor: pointer;
+      padding: 5px;
+      line-height: 1;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toast-close:hover {
+      color: #333;
+      transform: rotate(90deg);
+    }
+
+    .toast-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #4caf50 0%, #81c784 100%);
+      border-radius: 0 0 0 12px;
+      animation: toast-progress 3s linear forwards;
+    }
+
+    .toast-notification.error .toast-progress {
+      background: linear-gradient(90deg, #f44336 0%, #ef5350 100%);
+    }
+
+    @keyframes toast-progress {
+      from {
+        width: 100%;
+      }
+      to {
+        width: 0%;
+      }
+    }
   </style>
 
   <!-- Botão de Nova Entrada -->
@@ -375,7 +820,7 @@
             <td>
               <strong style="font-size: 15px; color: #1976d2;">{{ med.nome }}</strong>
               <div style="font-size: 12px; color: #666; margin-top: 4px;">
-                <i class="fas fa-box"></i> {{ med.total_entradas }} entrada(s) no estoque
+                <i class="fas fa-tag"></i> {{ med.lote }}
               </div>
             </td>
             
@@ -425,9 +870,11 @@
             </td>
             
             <td class="actions">
-              <a href="{% url 'entrada_medicamento_create' %}" class="btn-edit" style="background: #42a5f5;">
-                <i class="fas fa-plus"></i> Nova Entrada
-              </a>
+              <button class="btn-saida btn-action" 
+                      onclick="abrirPopupSaida('{{ med.nome }}', '{{ med.fazenda.nome }}', '{{ med.lote }}', {{ med.quantidade_total }}, {{ med.id }})"
+                      title="Dar saída de estoque">
+                <i class="fas fa-minus-circle"></i> Saída
+              </button>
             </td>
           </tr>
           {% empty %}
@@ -440,6 +887,101 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-notification" id="toastNotification">
+    <i class="fas fa-check-circle toast-icon"></i>
+    <div class="toast-content">
+      <div class="toast-title" id="toastTitle">Sucesso!</div>
+      <div class="toast-message" id="toastMessage">Operação realizada com sucesso.</div>
+    </div>
+    <button class="toast-close" onclick="fecharToast()">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="toast-progress"></div>
+  </div>
+
+  <!-- Popup de Saída de Medicamento -->
+  <div class="popup-overlay" id="popupSaida">
+    <div class="popup-saida">
+      <div class="popup-header">
+        <h3 class="popup-title">
+          <i class="fas fa-minus-circle"></i>
+          Dar Saída de Medicamento
+        </h3>
+        <button class="popup-close" onclick="fecharPopupSaida()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="popup-body">
+        <div class="info-medicamento">
+          <div class="info-item">
+            <span class="info-label">💊 Medicamento:</span>
+            <span class="info-value" id="popup-nome"></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">🏠 Fazenda:</span>
+            <span class="info-value" id="popup-fazenda"></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📦 Lote:</span>
+            <span class="info-value" id="popup-lote"></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📊 Estoque Atual:</span>
+            <span class="info-value" id="popup-estoque"></span>
+          </div>
+        </div>
+
+        <div class="quantidade-control">
+          <label class="quantidade-label">Quantidade para dar saída:</label>
+          
+          <div class="quantidade-display">
+            <div class="quantidade-valor" id="quantidade-valor">0</div>
+            <div class="quantidade-max">de <span id="quantidade-max">0</span> unidades</div>
+          </div>
+
+          <div class="slider-container">
+            <input type="range" 
+                   class="quantidade-slider" 
+                   id="quantidade-slider"
+                   min="0" 
+                   max="100" 
+                   value="0"
+                   oninput="atualizarQuantidade(this.value)">
+          </div>
+
+          <div class="quantidade-buttons">
+            <button class="btn-quantidade" onclick="ajustarQuantidade(-10)">
+              <i class="fas fa-minus"></i> 10
+            </button>
+            <button class="btn-quantidade" onclick="ajustarQuantidade(-1)">
+              <i class="fas fa-minus"></i> 1
+            </button>
+            <button class="btn-quantidade" onclick="ajustarQuantidade(1)">
+              <i class="fas fa-plus"></i> 1
+            </button>
+            <button class="btn-quantidade" onclick="ajustarQuantidade(10)">
+              <i class="fas fa-plus"></i> 10
+            </button>
+            <button class="btn-quantidade" onclick="setarMaximo()">
+              Máximo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="popup-footer">
+        <button class="btn-popup btn-cancelar" onclick="fecharPopupSaida()">
+          Cancelar
+        </button>
+        <button class="btn-popup btn-confirmar" id="btn-confirmar" onclick="confirmarSaida()" disabled>
+          <i class="fas fa-check"></i> Confirmar Saída
+        </button>
+      </div>
     </div>
   </div>
 
@@ -473,6 +1015,191 @@
           
           row.style.display = (statusMatch && searchMatch) ? '' : 'none';
         });
+      }
+    });
+
+    // Variáveis globais para o popup
+    let quantidadeMaxima = 0;
+    let quantidadeAtual = 0;
+    let medicamentoId = null;
+    let toastTimeout = null;
+
+    // Funções do Toast
+    function mostrarToast(titulo, mensagem, tipo = 'success') {
+      const toast = document.getElementById('toastNotification');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = toast.querySelector('.toast-icon');
+      
+      // Limpar classe anterior
+      toast.classList.remove('success', 'error');
+      
+      // Configurar conteúdo
+      toastTitle.textContent = titulo;
+      toastMessage.textContent = mensagem;
+      
+      // Configurar tipo e ícone
+      toast.classList.add(tipo);
+      if (tipo === 'success') {
+        toastIcon.className = 'fas fa-check-circle toast-icon';
+      } else if (tipo === 'error') {
+        toastIcon.className = 'fas fa-exclamation-circle toast-icon';
+      }
+      
+      // Remover animação de progresso anterior se existir
+      const oldProgress = toast.querySelector('.toast-progress');
+      if (oldProgress) {
+        oldProgress.remove();
+      }
+      
+      // Adicionar nova barra de progresso
+      const progress = document.createElement('div');
+      progress.className = 'toast-progress';
+      toast.appendChild(progress);
+      
+      // Mostrar toast
+      toast.classList.add('show');
+      
+      // Limpar timeout anterior
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+      }
+      
+      // Esconder automaticamente após 3 segundos (mesmo tempo da barra de progresso)
+      toastTimeout = setTimeout(() => {
+        fecharToast();
+      }, 3000);
+    }
+
+    function fecharToast() {
+      const toast = document.getElementById('toastNotification');
+      toast.classList.remove('show');
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+      }
+    }
+
+    function abrirPopupSaida(nome, fazenda, lote, estoque, id) {
+      document.getElementById('popup-nome').textContent = nome;
+      document.getElementById('popup-fazenda').textContent = fazenda;
+      document.getElementById('popup-lote').textContent = lote;
+      document.getElementById('popup-estoque').textContent = estoque + ' unidades';
+      
+      quantidadeMaxima = estoque;
+      medicamentoId = id;
+      document.getElementById('quantidade-max').textContent = estoque;
+      document.getElementById('quantidade-slider').max = estoque;
+      document.getElementById('quantidade-slider').value = 0;
+      document.getElementById('quantidade-valor').textContent = 0;
+      quantidadeAtual = 0;
+      
+      document.getElementById('btn-confirmar').disabled = true;
+      document.getElementById('popupSaida').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function fecharPopupSaida() {
+      document.getElementById('popupSaida').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function atualizarQuantidade(valor) {
+      quantidadeAtual = parseInt(valor);
+      document.getElementById('quantidade-valor').textContent = quantidadeAtual;
+      document.getElementById('btn-confirmar').disabled = quantidadeAtual === 0;
+    }
+
+    function ajustarQuantidade(delta) {
+      let novoValor = quantidadeAtual + delta;
+      if (novoValor < 0) novoValor = 0;
+      if (novoValor > quantidadeMaxima) novoValor = quantidadeMaxima;
+      
+      document.getElementById('quantidade-slider').value = novoValor;
+      atualizarQuantidade(novoValor);
+    }
+
+    function setarMaximo() {
+      document.getElementById('quantidade-slider').value = quantidadeMaxima;
+      atualizarQuantidade(quantidadeMaxima);
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function confirmarSaida() {
+      if (quantidadeAtual === 0) {
+        mostrarToast('Atenção!', 'Selecione uma quantidade válida para dar saída.', 'error');
+        return;
+      }
+
+      const btnConfirmar = document.getElementById('btn-confirmar');
+      
+      // Desabilitar botão durante o processamento
+      btnConfirmar.disabled = true;
+      btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+      
+      const dados = {
+        medicamento_id: medicamentoId,
+        quantidade: quantidadeAtual,
+        motivo: ''
+      };
+
+      console.log('Enviando dados:', dados);
+      console.log('URL:', '{% url "saida_medicamento_api" %}');
+
+      // Chamada AJAX para registrar a saída
+      fetch('{% url "saida_medicamento_api" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(dados)
+      })
+      .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+          fecharPopupSaida();
+          mostrarToast('Saída Registrada!', data.message, 'success');
+          
+          // Recarregar página após a notificação sumir (3.5 segundos)
+          setTimeout(() => {
+            location.reload();
+          }, 3500);
+        } else {
+          mostrarToast('Erro!', data.error, 'error');
+          btnConfirmar.disabled = false;
+          btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Saída';
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        mostrarToast('Erro!', 'Erro ao processar saída. Tente novamente.', 'error');
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Saída';
+      });
+    }
+
+    // Fechar popup ao clicar fora
+    document.getElementById('popupSaida').addEventListener('click', function(e) {
+      if (e.target === this) {
+        fecharPopupSaida();
       }
     });
   </script>
