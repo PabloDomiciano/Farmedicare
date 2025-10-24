@@ -1,0 +1,424 @@
+{% extends 'modelo.html' %}
+{% load static %}
+{% block titulo %}<title>{{ title }}</title>{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1><i class="fas fa-bell"></i> {{ titulo }}</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Pesquisar notificações..." />
+        <i class="fas fa-search"></i>
+      </div>
+    </div>
+  </header>
+
+  <style>
+    /* Tema Moderno para Notificações */
+    .notificacoes-filters {
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      margin: 2rem auto;
+      max-width: 1400px;
+      border: 1px solid rgba(74, 143, 41, 0.1);
+    }
+
+    .filter-stats-notif {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .stat-card-notif {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border-left: 4px solid;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .stat-card-notif:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    .stat-card-notif.total {
+      border-left-color: #4a8f29;
+    }
+
+    .stat-card-notif.medicamentos {
+      border-left-color: #2196f3;
+    }
+
+    .stat-card-notif.receitas {
+      border-left-color: #4caf50;
+    }
+
+    .stat-card-notif.despesas {
+      border-left-color: #ef5350;
+    }
+
+    .stat-label-notif {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value-notif {
+      font-weight: 700;
+      font-size: 2.5rem;
+      color: #4a8f29;
+    }
+
+    .stat-card-notif.medicamentos .stat-value-notif {
+      color: #2196f3;
+    }
+
+    .stat-card-notif.receitas .stat-value-notif {
+      color: #4caf50;
+    }
+
+    .stat-card-notif.despesas .stat-value-notif {
+      color: #ef5350;
+    }
+
+    /* Container de Notificações */
+    .notificacoes-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Loading State */
+    .loading-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #999;
+    }
+
+    .loading-state i {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      color: #4a8f29;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #999;
+    }
+
+    .empty-state i {
+      font-size: 5rem;
+      margin-bottom: 1.5rem;
+      color: #4caf50;
+      opacity: 0.6;
+    }
+
+    .empty-state h3 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: #333;
+    }
+
+    .empty-state p {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Cards de Notificação */
+    .notificacao-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border-left: 5px solid;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .notificacao-card:hover {
+      transform: translateX(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .notificacao-card.vencido {
+      border-left-color: #ef5350;
+      background: linear-gradient(to right, #ffebee, white);
+    }
+
+    .notificacao-card.muito_proximo {
+      border-left-color: #ff9800;
+      background: linear-gradient(to right, #fff3e0, white);
+    }
+
+    .notificacao-card.proximo {
+      border-left-color: #ffc107;
+      background: linear-gradient(to right, #fffde7, white);
+    }
+
+    .notificacao-icon {
+      font-size: 3rem;
+      min-width: 70px;
+      text-align: center;
+      animation: iconFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .notificacao-icon.vencido {
+      color: #ef5350;
+      animation: pulse 1.5s infinite, iconFloat 3s ease-in-out infinite;
+    }
+
+    .notificacao-icon.muito_proximo {
+      color: #ff9800;
+      animation: shake 2s infinite, iconFloat 3s ease-in-out infinite;
+    }
+
+    .notificacao-icon.proximo {
+      color: #ffc107;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    .notificacao-content {
+      flex: 1;
+    }
+
+    .notificacao-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .notificacao-subtitle {
+      color: #666;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .notificacao-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    .notificacao-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .notificacao-detail-item i {
+      color: #4a8f29;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .filter-stats-notif {
+        grid-template-columns: 1fr;
+      }
+
+      .notificacao-card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .notificacao-details {
+        justify-content: center;
+      }
+    }
+  </style>
+
+  <!-- Estatísticas -->
+  <div class="notificacoes-filters">
+    <div class="filter-stats-notif">
+      <div class="stat-card-notif total">
+        <div class="stat-label-notif"><i class="fas fa-bell"></i> Total de Notificações</div>
+        <div class="stat-value-notif">{{ total }}</div>
+      </div>
+      <div class="stat-card-notif medicamentos">
+        <div class="stat-label-notif"><i class="fas fa-pills"></i> Medicamentos</div>
+        <div class="stat-value-notif">{{ medicamentos_vencidos|add:medicamentos_vencer }}</div>
+      </div>
+      <div class="stat-card-notif receitas">
+        <div class="stat-label-notif"><i class="fas fa-hand-holding-usd"></i> Receitas</div>
+        <div class="stat-value-notif">{{ receitas_vencidas|add:receitas_vencer }}</div>
+      </div>
+      <div class="stat-card-notif despesas">
+        <div class="stat-label-notif"><i class="fas fa-file-invoice-dollar"></i> Despesas</div>
+        <div class="stat-value-notif">{{ despesas_vencidas|add:despesas_vencer }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container de Notificações -->
+  <div class="notificacoes-container" id="notificacoesContainer">
+    <div class="loading-state">
+      <i class="fas fa-spinner"></i>
+      <h3>Carregando notificações...</h3>
+      <p>Aguarde enquanto buscamos as informações</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const container = document.getElementById('notificacoesContainer');
+      const searchInput = document.getElementById('searchInput');
+      let todasNotificacoes = [];
+
+      // Carregar notificações
+      fetch('/relatorios/api/notificacoes/')
+        .then(response => response.json())
+        .then(data => {
+          todasNotificacoes = data.notificacoes;
+          renderizarNotificacoes(todasNotificacoes);
+        })
+        .catch(error => {
+          console.error('Erro:', error);
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <h3>Erro ao carregar notificações</h3>
+              <p>Tente novamente mais tarde</p>
+            </div>
+          `;
+        });
+
+      // Busca
+      searchInput.addEventListener('input', function() {
+        const termo = this.value.toLowerCase();
+        const filtradas = todasNotificacoes.filter(notif => {
+          const textos = [
+            notif.titulo,
+            notif.medicamento || notif.descricao || '',
+            notif.fazenda || '',
+            notif.categoria_nome || '',
+            notif.lote || ''
+          ].join(' ').toLowerCase();
+          return textos.includes(termo);
+        });
+        renderizarNotificacoes(filtradas);
+      });
+
+      function renderizarNotificacoes(notificacoes) {
+        if (!notificacoes || notificacoes.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-check-circle"></i>
+              <h3>Nenhuma notificação encontrada</h3>
+              <p>Tudo em ordem! 🎉</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        notificacoes.forEach(notif => {
+          html += criarCardNotificacao(notif);
+        });
+        container.innerHTML = html;
+      }
+
+      function criarCardNotificacao(notif) {
+        let detalhes = '';
+        
+        if (notif.tipo.includes('medicamento')) {
+          detalhes = `
+            <div class="notificacao-detail-item">
+              <i class="fas fa-home"></i> ${notif.fazenda}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-calendar"></i> Validade: ${notif.validade_formatada}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-hashtag"></i> Lote: ${notif.lote}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-clock"></i> ${notif.mensagem}
+            </div>
+          `;
+        } else {
+          const valorFormatado = formatarMoeda(notif.valor);
+          detalhes = `
+            <div class="notificacao-detail-item">
+              <i class="fas fa-tag"></i> ${notif.categoria_nome}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-dollar-sign"></i> R$ ${valorFormatado}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-calendar"></i> Vencimento: ${notif.data_vencimento_formatada}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-clock"></i> ${notif.mensagem}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="notificacao-card ${notif.categoria}">
+            <div class="notificacao-icon ${notif.categoria}">
+              <i class="fas ${notif.icone}"></i>
+            </div>
+            <div class="notificacao-content">
+              <div class="notificacao-title">${notif.titulo}</div>
+              <div class="notificacao-subtitle">
+                <strong>${notif.medicamento || notif.descricao}</strong>
+              </div>
+              <div class="notificacao-details">
+                ${detalhes}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function formatarMoeda(valor) {
+        return new Intl.NumberFormat('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(valor);
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block ultimos_registros %}{% endblock %}
+</main>
