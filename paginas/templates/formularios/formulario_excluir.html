@@ -17,9 +17,11 @@
     <h1>{{titulo}}</h1>
     <div class="header-actions">
       {% block admin %} {%endblock%}
-      <button class="btn btn-notification">
+      <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
-        <span class="badge">3</span>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
       </button>
     </div>
   </header>
@@ -35,16 +37,155 @@
 <div class="exclusao-container">
     <div class="exclusao-header">
         <h1 class="exclusao-title">⚠️ Exclusão de Registros</h1>
-        <p class="exclusao-subtitle"><b>Tem certeza que deseja excluir permanentemente o registro:</b></p>
+        <p class="exclusao-subtitle"><b>Tem certeza que deseja excluir permanentemente este registro?</b></p>
     </div>
 
     <div class="exclusao-object">
-        {{ object }}
+        {% if object.categoria %}
+            <!-- Movimentação -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas {% if object.tipo == 'receita' %}fa-hand-holding-usd{% else %}fa-file-invoice-dollar{% endif %}"></i>
+                    {{ object.get_tipo_display }}
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Categoria:</strong> {{ object.categoria }}</div>
+                    <div><strong>Parceiro:</strong> {{ object.parceiros }}</div>
+                    <div><strong>Fazenda:</strong> {{ object.fazenda }}</div>
+                    <div><strong>Valor Total:</strong> R$ {{ object.valor_total|floatformat:2 }}</div>
+                    <div><strong>Parcelas:</strong> {{ object.parcelas }}x</div>
+                    <div><strong>Data:</strong> {{ object.data|date:"d/m/Y" }}</div>
+                    {% if object.descricao %}
+                    <div><strong>Descrição:</strong> {{ object.descricao|truncatewords:20 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif object.movimentacao %}
+            <!-- Parcela -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-money-check-alt"></i>
+                    Parcela {{ object.ordem_parcela }}
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Movimentação:</strong> {{ object.movimentacao.categoria }} - {{ object.movimentacao.parceiros }}</div>
+                    <div><strong>Valor da Parcela:</strong> R$ {{ object.valor_parcela|floatformat:2 }}</div>
+                    <div><strong>Valor Pago:</strong> R$ {{ object.valor_pago|floatformat:2 }}</div>
+                    <div><strong>Status:</strong> <span style="color: {% if object.status_pagamento == 'Pago' %}#4caf50{% else %}#fb8c00{% endif %}; font-weight: 600;">{{ object.status_pagamento }}</span></div>
+                    <div><strong>Vencimento:</strong> {{ object.data_vencimento|date:"d/m/Y" }}</div>
+                    {% if object.data_quitacao %}
+                    <div><strong>Quitação:</strong> {{ object.data_quitacao|date:"d/m/Y" }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif object.tipo and object.nome %}
+            <!-- Categoria -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-tag"></i>
+                    Categoria
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Nome:</strong> {{ object.nome }}</div>
+                    <div><strong>Tipo:</strong> {{ object.get_tipo_display }}</div>
+                </div>
+            </div>
+        {% elif object.if_adicionais != None or object.telefone %}
+            <!-- Parceiro -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-handshake"></i>
+                    Parceiro
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Nome:</strong> {{ object.nome }}</div>
+                    {% if object.telefone %}
+                    <div><strong>Telefone:</strong> {{ object.telefone }}</div>
+                    {% endif %}
+                    {% if object.email %}
+                    <div><strong>Email:</strong> {{ object.email }}</div>
+                    {% endif %}
+                    {% if object.if_adicionais %}
+                    <div><strong>Informações Adicionais:</strong> {{ object.if_adicionais|truncatewords:20 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif object.cidade != None or object.usuarios %}
+            <!-- Fazenda -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-tractor"></i>
+                    Fazenda
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Nome:</strong> {{ object.nome }}</div>
+                    {% if object.cidade %}
+                    <div><strong>Cidade:</strong> {{ object.cidade }}</div>
+                    {% endif %}
+                    {% if object.descricao %}
+                    <div><strong>Descrição:</strong> {{ object.descricao|truncatewords:20 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif object.username %}
+            <!-- Usuário -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-user"></i>
+                    Usuário
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Nome de Usuário:</strong> {{ object.username }}</div>
+                    <div><strong>Email:</strong> {{ object.email }}</div>
+                    <div><strong>Nome Completo:</strong> {{ object.first_name }} {{ object.last_name }}</div>
+                </div>
+            </div>
+        {% elif object.medicamento and object.lote %}
+            <!-- Entrada de Medicamento -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-pills"></i>
+                    Entrada de Medicamento
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Medicamento:</strong> {{ object.medicamento }}</div>
+                    <div><strong>Lote:</strong> {{ object.lote }}</div>
+                    <div><strong>Quantidade:</strong> {{ object.quantidade }}</div>
+                    <div><strong>Disponível:</strong> {{ object.quantidade_disponivel }}</div>
+                    <div><strong>Validade:</strong> {{ object.validade|date:"d/m/Y" }}</div>
+                    <div><strong>Valor:</strong> R$ {{ object.valor_medicamento|floatformat:2 }}</div>
+                </div>
+            </div>
+        {% elif object.nome %}
+            <!-- Medicamento -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-pills"></i>
+                    Medicamento
+                </h3>
+                <div style="display: grid; gap: 10px;">
+                    <div><strong>Nome:</strong> {{ object.nome }}</div>
+                    {% if object.descricao %}
+                    <div><strong>Descrição:</strong> {{ object.descricao|truncatewords:20 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Fallback genérico -->
+            <div style="padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center;">
+                <h3 style="margin: 0; color: #333;">{{ object }}</h3>
+            </div>
+        {% endif %}
     </div>
 
     <div class="exclusao-warning">
         <i class="fas fa-exclamation-triangle"></i>
         <strong>Atenção:</strong> Esta ação não pode ser desfeita. O registro será permanentemente removido do sistema.
+        {% if object.categoria and object.parcelas > 1 %}
+        <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 3px solid #ff9800;">
+            <i class="fas fa-info-circle"></i> <strong>Importante:</strong> Esta movimentação possui {{ object.parcelas }} parcelas que também serão excluídas.
+        </div>
+        {% endif %}
     </div>
 
     <form class="modelo-form" action="" method="POST">
@@ -52,7 +193,7 @@
         {{ form.as_p }}
 
         <div class="exclusao-actions">
-            <a class="btn-exclusao btn-exclusao-secondary" href="{% url 'pagina_index' %}">
+            <a class="btn-exclusao btn-exclusao-secondary" href="javascript:history.back()">
                 <i class="fas fa-times"></i> Cancelar
             </a>
             <button type="submit" class="btn-exclusao btn-exclusao-danger">
