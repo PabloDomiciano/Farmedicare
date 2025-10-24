@@ -153,12 +153,44 @@ class RelatoriosView(TemplateView):
             quantidade_total=Sum('quantidade')
         ).order_by('-quantidade_total')[:5]
         
+        # ========== NOTIFICAÇÕES DE MOVIMENTAÇÕES ==========
+        
+        # Parcelas vencidas (receitas e despesas)
+        data_limite_vencimento = hoje + timedelta(days=5)
+        
+        parcelas_vencidas = Parcela.objects.filter(
+            data_vencimento__lt=hoje,
+            status_pagamento__in=['Pendente', 'Atrasado']
+        ).select_related('movimentacao')
+        
+        parcelas_vencer_5dias = Parcela.objects.filter(
+            data_vencimento__gte=hoje,
+            data_vencimento__lte=data_limite_vencimento,
+            status_pagamento__in=['Pendente', 'Atrasado']
+        ).select_related('movimentacao')
+        
+        # Separar por tipo
+        receitas_vencidas = parcelas_vencidas.filter(movimentacao__tipo='receita')
+        despesas_vencidas = parcelas_vencidas.filter(movimentacao__tipo='despesa')
+        receitas_vencer = parcelas_vencer_5dias.filter(movimentacao__tipo='receita')
+        despesas_vencer = parcelas_vencer_5dias.filter(movimentacao__tipo='despesa')
+        
+        # Contar notificações
+        notificacoes_count = (
+            medicamentos_vencer + 
+            medicamentos_vencidos + 
+            receitas_vencidas.count() +
+            despesas_vencidas.count() +
+            receitas_vencer.count() +
+            despesas_vencer.count()
+        )
+        
         # ========== DADOS PARA GRÁFICOS ==========
         
-        # Receitas vs Despesas por mês (últimos 6 meses)
-        meses_grafico = []
-        receitas_grafico = []
-        despesas_grafico = []
+        # Gráfico comparativo: Receitas vs Despesas por mês (últimos 6 meses)
+        comparativo_labels = []
+        comparativo_receitas = []
+        comparativo_despesas = []
         
         for i in range(5, -1, -1):
             data_ref = hoje - timedelta(days=30*i)
@@ -180,9 +212,9 @@ class RelatoriosView(TemplateView):
                 data__range=[mes_inicio, mes_fim]
             ).aggregate(total=Sum('valor_total'))['total'] or 0
             
-            meses_grafico.append(mes_inicio.strftime('%b/%y'))
-            receitas_grafico.append(float(receita_mes))
-            despesas_grafico.append(float(despesa_mes))
+            comparativo_labels.append(mes_inicio.strftime('%b/%y'))
+            comparativo_receitas.append(float(receita_mes))
+            comparativo_despesas.append(float(despesa_mes))
         
         # ========== DADOS PARA GRÁFICOS DE COLUNAS ==========
         
@@ -231,10 +263,17 @@ class RelatoriosView(TemplateView):
             'medicamentos_vencidos': medicamentos_vencidos,
             'top_medicamentos': top_medicamentos,
             
-            # Gráficos
-            'meses_grafico': meses_grafico,
-            'receitas_grafico': receitas_grafico,
-            'despesas_grafico': despesas_grafico,
+            # Notificações
+            'notificacoes_count': notificacoes_count,
+            'receitas_vencidas': receitas_vencidas,
+            'despesas_vencidas': despesas_vencidas,
+            'receitas_vencer': receitas_vencer,
+            'despesas_vencer': despesas_vencer,
+            
+            # Gráfico Comparativo (linha)
+            'comparativo_labels': comparativo_labels,
+            'comparativo_receitas': comparativo_receitas,
+            'comparativo_despesas': comparativo_despesas,
             
             # Gráficos de colunas (JSON)
             'top_5_receitas_labels': top_5_receitas_labels,
