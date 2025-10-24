@@ -29,8 +29,8 @@ class MovimentacaoCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         # Define o usuário logado como cadastrado_por
         form.instance.cadastrada_por = self.request.user
+        # As parcelas são geradas automaticamente pelo método save() do modelo
         response = super().form_valid(form)
-        self.criar_parcelas(form.instance)
         return response
 
     def get_context_data(self, **kwargs):
@@ -39,6 +39,66 @@ class MovimentacaoCreateView(LoginRequiredMixin, CreateView):
             "title": "Cadastro de Movimentações",
             "titulo": "Cadastro de Movimentações",
             "subtitulo": "Movimentações são usadas para registrar entradas e saídas de dinheiro na fazenda. As parcelas serão geradas automaticamente.",
+        })
+        return context
+
+
+############ Create Receita (Movimentação com tipo fixo) ############
+class ReceitaCreateView(LoginRequiredMixin, CreateView):
+    model = Movimentacao
+    form_class = MovimentacaoForm
+    template_name = "movimentacao/cadastro_movimentacao.html"
+    success_url = reverse_lazy("listar_movimentacao_receita")
+    login_url = reverse_lazy("login")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        kwargs['tipo_fixo'] = 'receita'  # Define tipo fixo como receita
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.cadastrada_por = self.request.user
+        form.instance.tipo = 'receita'  # Garante que o tipo seja receita
+        response = super().form_valid(form)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Cadastro de Receita",
+            "titulo": "Nova Receita",
+            "subtitulo": "Registre uma nova entrada de dinheiro. O formulário está configurado para receitas e as categorias mostradas são apenas de receitas.",
+        })
+        return context
+
+
+############ Create Despesa (Movimentação com tipo fixo) ############
+class DespesaCreateView(LoginRequiredMixin, CreateView):
+    model = Movimentacao
+    form_class = MovimentacaoForm
+    template_name = "movimentacao/cadastro_movimentacao.html"
+    success_url = reverse_lazy("listar_movimentacao_despesa")
+    login_url = reverse_lazy("login")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        kwargs['tipo_fixo'] = 'despesa'  # Define tipo fixo como despesa
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.cadastrada_por = self.request.user
+        form.instance.tipo = 'despesa'  # Garante que o tipo seja despesa
+        response = super().form_valid(form)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Cadastro de Despesa",
+            "titulo": "Nova Despesa",
+            "subtitulo": "Registre uma nova saída de dinheiro. O formulário está configurado para despesas e as categorias mostradas são apenas de despesas.",
         })
         return context
 
@@ -84,25 +144,24 @@ class CategoriaCreateView(LoginRequiredMixin, CreateView):
 ############ Update Movimentacao ############
 class MovimentacaoUpdateView(LoginRequiredMixin, UpdateView):
     model = Movimentacao
-    fields = [
-        "tipo",
-        "parceiros",
-        "categoria",
-        "valor_total",
-        "parcelas",
-        "imposto_renda",
-        "descricao",
-        "data",
-        "fazenda",
-    ]
-    template_name = "formularios/formulario_modelo.html"
+    form_class = MovimentacaoForm
+    template_name = "movimentacao/cadastro_movimentacao.html"
     success_url = reverse_lazy("pagina_index")
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    login_url = reverse_lazy("login")
 
-    extra_context = {
-        "title": "Atualização de Movimentações",
-        "titulo": "Atualização de Movimentações",
-    }
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "title": "Edição de Movimentação",
+            "titulo": "Edição de Movimentação",
+            "subtitulo": "Edite as informações da movimentação abaixo.",
+        })
+        return context
 
 
 ############ Update Parcela ############

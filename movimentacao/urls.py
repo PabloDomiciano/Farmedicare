@@ -2,7 +2,13 @@ from django.urls import path
 
 # Importação das views de Criação
 from medicamento import views
-from movimentacao.views import MovimentacaoCreateView, ParcelaCreateView,CategoriaCreateView
+from movimentacao.views import (
+    MovimentacaoCreateView, 
+    ReceitaCreateView,
+    DespesaCreateView,
+    ParcelaCreateView,
+    CategoriaCreateView
+)
 # Importação das views de Edição
 from movimentacao.views import MovimentacaoUpdateView, ParcelaUpdateView, CategoriaUpdateView
 # Importação das views de Exclusão
@@ -19,7 +25,13 @@ from movimentacao.views import (
 )
 
 urlpatterns = [
+    # URLs antigas mantidas para compatibilidade
     path('cadastrar/movimentacao/', MovimentacaoCreateView.as_view(), name='cadastrar_movimentacao'),
+    
+    # URLs novas - Específicas para Receita e Despesa
+    path('cadastrar/receita/', ReceitaCreateView.as_view(), name='cadastrar_receita'),
+    path('cadastrar/despesa/', DespesaCreateView.as_view(), name='cadastrar_despesa'),
+    
     path('cadastrar/parcela/', ParcelaCreateView.as_view(), name='cadastrar_parcela'),
     path('cadastrar/categoria/', CategoriaCreateView.as_view(), name='cadastrar_categoria'),
 
