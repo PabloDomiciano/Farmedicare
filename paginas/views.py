@@ -114,7 +114,7 @@ class PaginaView(TemplateView):
         context["saldo"] = saldo
         context["crescimento_receitas"] = round(crescimento_receitas, 1)
         context["crescimento_despesas"] = round(crescimento_despesas, 1)
-        context["total_medicamentos"] = Medicamento.objects.count()
+        context["total_medicamentos"] = EntradaMedicamento.objects.filter(quantidade_disponivel__gt=0).count()  # Conta entradas disponíveis
         context["medicamentos_proximos_vencer"] = medicamentos_proximos_vencer
         context["alertas_urgentes"] = alertas_urgentes
         context["total_alertas"] = total_alertas
