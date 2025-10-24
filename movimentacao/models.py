@@ -28,11 +28,8 @@ class Movimentacao(models.Model):
     parcelas = models.IntegerField(default=1)
     imposto_renda = models.BooleanField(
         default=False,
+        blank=True,
         verbose_name="Imposto de Renda [Sim/Não]",
-        choices=[
-            (True, "Sim"),
-            (False, "Não"),
-        ],
     )
     descricao = models.TextField(blank=True, null=True, verbose_name="Descrição")
     data = models.DateField(verbose_name="Data da Movimentação")
