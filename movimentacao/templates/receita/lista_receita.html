@@ -271,6 +271,47 @@
       transform: scale(1.1);
     }
 
+    /* Cabeçalhos clicáveis com setinhas de ordenação */
+    .modelo-table thead th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 30px;
+      color: white !important;
+    }
+
+    .modelo-table thead th:hover {
+      background-color: #1b5e20 !important;
+      color: white !important;
+    }
+
+    .modelo-table thead th::after {
+      content: '\f0dc';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 10px;
+      opacity: 0.3;
+      font-size: 12px;
+      color: white;
+    }
+
+    .modelo-table thead th.sortable::after {
+      opacity: 0.6;
+    }
+
+    .modelo-table thead th.asc::after {
+      content: '\f0de';
+      opacity: 1;
+      color: white;
+    }
+
+    .modelo-table thead th.desc::after {
+      content: '\f0dd';
+      opacity: 1;
+      color: white;
+    }
+
   </style>
 
   <div class="lista-card">
@@ -337,13 +378,13 @@
       <table class="modelo-table">
         <thead>
           <tr>
-            <th>Parceiro</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Parcelas</th>
-            <th>IR</th>
-            <th>Data</th>
-            <th>Fazenda</th>
+            <th class="sortable" data-column="parceiro">Parceiro</th>
+            <th class="sortable" data-column="categoria">Categoria</th>
+            <th class="sortable" data-column="valor">Valor</th>
+            <th class="sortable" data-column="parcelas">Parcelas</th>
+            <th class="sortable" data-column="ir">IR</th>
+            <th class="sortable" data-column="data">Data</th>
+            <th class="sortable" data-column="fazenda">Fazenda</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -353,6 +394,10 @@
               data-parcelas="{{ receita.parcelas }}"
               data-ir="{% if receita.imposto_renda %}sim{% else %}nao{% endif %}"
               data-valor="{{ receita.valor_total }}"
+              data-parceiro="{{ receita.parceiros.nome }}"
+              data-categoria="{{ receita.categoria.nome }}"
+              data-fazenda="{{ receita.fazenda.nome }}"
+              data-data="{{ receita.data|date:'Y-m-d' }}"
               data-search="{{ receita.parceiros.nome }} {{ receita.categoria.nome }} {{ receita.fazenda.nome }}">
             
             <td>
@@ -437,9 +482,32 @@
       const filterButtons = document.querySelectorAll('.filter-btn');
       const receitaRows = document.querySelectorAll('.receita-row');
       const searchInput = document.getElementById('searchInput');
+      const tableHeaders = document.querySelectorAll('.modelo-table thead th.sortable');
+      const tbody = document.getElementById('receitas-tbody');
       let currentFilter = 'todas';
+      let sortColumn = null;
+      let sortOrder = 'asc';
 
       calcularEstatisticas();
+
+      // Ordenação de colunas
+      tableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          const column = this.dataset.column;
+          
+          if (sortColumn === column) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortOrder = 'asc';
+          }
+
+          tableHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+          this.classList.add(sortOrder);
+
+          ordenarTabela(column, sortOrder);
+        });
+      });
 
       filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -523,6 +591,47 @@
 
       function formatarMoeda(valor) {
         return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function ordenarTabela(column, order) {
+        const rowsArray = Array.from(tbody.querySelectorAll('.receita-row'));
+        
+        rowsArray.sort((a, b) => {
+          let aValue, bValue;
+
+          if (column === 'valor') {
+            aValue = parseFloat(a.dataset.valor);
+            bValue = parseFloat(b.dataset.valor);
+          } else if (column === 'parcelas') {
+            aValue = parseInt(a.dataset.parcelas);
+            bValue = parseInt(b.dataset.parcelas);
+          } else if (column === 'data') {
+            aValue = new Date(a.dataset.data);
+            bValue = new Date(b.dataset.data);
+          } else if (column === 'ir') {
+            aValue = a.dataset.ir;
+            bValue = b.dataset.ir;
+          } else if (column === 'parceiro') {
+            aValue = a.dataset.parceiro.toLowerCase();
+            bValue = b.dataset.parceiro.toLowerCase();
+          } else if (column === 'categoria') {
+            aValue = a.dataset.categoria.toLowerCase();
+            bValue = b.dataset.categoria.toLowerCase();
+          } else if (column === 'fazenda') {
+            aValue = a.dataset.fazenda.toLowerCase();
+            bValue = b.dataset.fazenda.toLowerCase();
+          }
+
+          if (order === 'asc') {
+            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+          } else {
+            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+          }
+        });
+
+        tbody.innerHTML = '';
+        rowsArray.forEach(row => tbody.appendChild(row));
+        aplicarFiltros();
       }
     });
   </script>

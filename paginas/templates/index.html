@@ -75,7 +75,7 @@
         </div>
         <div class="card-info">
             <h3>Medicamentos</h3>
-            <p>{{ total_medicamentos|default:"0" }} itens</p>
+            <p>{{ total_medicamentos |default:"0" }} itens</p>
             <small>
                 {% if medicamentos_proximos_vencer > 0 %}
                     <i class="fas fa-exclamation-circle"></i> {{ medicamentos_proximos_vencer }} próximos de vencer
@@ -102,7 +102,7 @@
                 {% endif %}
             </small>
         </div>
-        <a href="{% url 'medicamento_notificacoes' %}" class="card-link">Ver tudo</a>
+        <a href="{% url 'notificacoes_unificadas' %}" class="card-link">Ver tudo</a>
     </div>
 </section>
 {% endblock %}

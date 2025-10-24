@@ -153,6 +153,7 @@
       display: flex;
       align-items: center;
       gap: 1.5rem;
+      position: relative;
     }
 
     .notificacao-card:hover {
@@ -160,20 +161,35 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
 
-    .notificacao-card.vencido {
-      border-left-color: #ef5350;
-      background: linear-gradient(to right, #ffebee, white);
+    /* Botão de Ação */
+    .btn-action-notif {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      border: 2px solid;
+      background: white;
+      cursor: pointer;
     }
 
-    .notificacao-card.muito_proximo {
-      border-left-color: #ff9800;
-      background: linear-gradient(to right, #fff3e0, white);
+    .btn-action-notif:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    .notificacao-card.proximo {
-      border-left-color: #ffc107;
-      background: linear-gradient(to right, #fffde7, white);
+    .btn-action-notif i {
+      font-size: 1rem;
     }
+
+    /* Cores removidas - usando inline do backend */
 
     .notificacao-icon {
       font-size: 3rem;
@@ -187,18 +203,17 @@
       50% { transform: translateY(-5px); }
     }
 
+    /* Animações mantidas, cores aplicadas inline */
     .notificacao-icon.vencido {
-      color: #ef5350;
       animation: pulse 1.5s infinite, iconFloat 3s ease-in-out infinite;
     }
 
     .notificacao-icon.muito_proximo {
-      color: #ff9800;
       animation: shake 2s infinite, iconFloat 3s ease-in-out infinite;
     }
 
     .notificacao-icon.proximo {
-      color: #ffc107;
+      /* Sem animação adicional */
     }
 
     @keyframes pulse {
@@ -230,6 +245,21 @@
       font-weight: 600;
     }
 
+    .notificacao-parceiro {
+      color: #333;
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .notificacao-parceiro i {
+      color: #4a8f29;
+      font-size: 1rem;
+    }
+
     .notificacao-details {
       display: flex;
       flex-wrap: wrap;
@@ -258,6 +288,14 @@
       .notificacao-card {
         flex-direction: column;
         text-align: center;
+        padding-top: 3.5rem;
+      }
+
+      .btn-action-notif {
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 0.75rem;
+        padding: 0.5rem 0.85rem;
       }
 
       .notificacao-details {
@@ -358,50 +396,82 @@
 
       function criarCardNotificacao(notif) {
         let detalhes = '';
+        let btnAcao = '';
+        let parceiro = '';
         
         if (notif.tipo.includes('medicamento')) {
           detalhes = `
             <div class="notificacao-detail-item">
-              <i class="fas fa-home"></i> ${notif.fazenda}
+              <i class="fas fa-home"></i> ${notif.fazenda || 'Sem fazenda'}
             </div>
             <div class="notificacao-detail-item">
-              <i class="fas fa-calendar"></i> Validade: ${notif.validade_formatada}
+              <i class="fas fa-calendar"></i> Validade: ${notif.validade || 'Não informado'}
             </div>
             <div class="notificacao-detail-item">
-              <i class="fas fa-hashtag"></i> Lote: ${notif.lote}
+              <i class="fas fa-hashtag"></i> Lote: ${notif.lote || 'Sem lote'}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-box"></i> Quantidade: ${notif.quantidade || 0}
             </div>
             <div class="notificacao-detail-item">
               <i class="fas fa-clock"></i> ${notif.mensagem}
             </div>
           `;
+          // Sem botão de ação para medicamentos
         } else {
+          // Receitas e Despesas
+          parceiro = `
+            <div class="notificacao-parceiro">
+              <i class="fas fa-building"></i>
+              <strong>${notif.parceiro || 'Sem parceiro'}</strong>
+            </div>
+          `;
+          
           const valorFormatado = formatarMoeda(notif.valor);
           detalhes = `
             <div class="notificacao-detail-item">
-              <i class="fas fa-tag"></i> ${notif.categoria_nome}
+              <i class="fas fa-tag"></i> ${notif.categoria_nome || 'Sem categoria'}
             </div>
             <div class="notificacao-detail-item">
               <i class="fas fa-dollar-sign"></i> R$ ${valorFormatado}
             </div>
             <div class="notificacao-detail-item">
-              <i class="fas fa-calendar"></i> Vencimento: ${notif.data_vencimento_formatada}
+              <i class="fas fa-home"></i> ${notif.fazenda || 'Sem fazenda'}
+            </div>
+            <div class="notificacao-detail-item">
+              <i class="fas fa-calendar"></i> Vencimento: ${notif.data_vencimento || 'Não informado'}
             </div>
             <div class="notificacao-detail-item">
               <i class="fas fa-clock"></i> ${notif.mensagem}
             </div>
           `;
+          
+          // Botão para editar parcela (apenas se tiver id_parcela)
+          if (notif.id_parcela) {
+            btnAcao = `
+              <a href="/pagina_movimentacao/editar/parcela/${notif.id_parcela}/" 
+                 class="btn-action-notif" 
+                 style="color: ${notif.cor}; border-color: ${notif.cor};"
+                 title="Editar e realizar pagamento">
+                <i class="fas fa-hand-holding-usd"></i>
+                Pagar
+              </a>
+            `;
+          }
         }
 
         return `
-          <div class="notificacao-card ${notif.categoria}">
-            <div class="notificacao-icon ${notif.categoria}">
+          <div class="notificacao-card ${notif.categoria}" style="background: linear-gradient(to right, ${notif.cor_bg}, white); border-left-color: ${notif.cor_border};">
+            ${btnAcao}
+            <div class="notificacao-icon ${notif.categoria}" style="color: ${notif.cor};">
               <i class="fas ${notif.icone}"></i>
             </div>
             <div class="notificacao-content">
-              <div class="notificacao-title">${notif.titulo}</div>
+              <div class="notificacao-title" style="color: ${notif.cor};">${notif.titulo}</div>
               <div class="notificacao-subtitle">
-                <strong>${notif.medicamento || notif.descricao}</strong>
+                <strong>Parcela ${notif.parcela_numero || '-'}/${notif.total_parcelas || '-'}</strong>
               </div>
+              ${parceiro}
               <div class="notificacao-details">
                 ${detalhes}
               </div>

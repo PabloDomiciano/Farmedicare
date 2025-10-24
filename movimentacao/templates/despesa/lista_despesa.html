@@ -51,7 +51,7 @@
     }
 
     .lista-header {
-      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+      background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
       color: white;
       padding: 1.5rem 2rem;
       display: flex;
@@ -84,7 +84,7 @@
 
     .btn-add {
       background-color: white;
-      color: #c62828;
+      color: #f57c00;
       padding: 0.75rem 1.5rem;
       border-radius: 8px;
       text-decoration: none;
@@ -102,15 +102,15 @@
       background-color: #f5f5f5;
     }
 
-    /* Estilos para filtros - Tema Vermelho para Despesas */
+    /* Estilos para filtros - Tema Laranja para Despesas */
     .despesas-filters {
-      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(198, 40, 40, 0.15);
+      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15);
       margin: 20px auto;
       max-width: 1200px;
-      border: 2px solid #ef5350;
+      border: 2px solid #fb8c00;
     }
 
     .filter-buttons {
@@ -122,7 +122,7 @@
 
     .filter-btn-desp {
       padding: 10px 20px;
-      border: 2px solid #ef5350;
+      border: 2px solid #fb8c00;
       background: white;
       border-radius: 8px;
       cursor: pointer;
@@ -132,18 +132,18 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #c62828;
+      color: #f57c00;
     }
 
     .filter-btn-desp:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(239, 83, 80, 0.3);
+      box-shadow: 0 6px 16px rgba(251, 140, 0, 0.3);
     }
 
     .filter-btn-desp.active {
-      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+      background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
       color: white;
-      border-color: #c62828;
+      border-color: #f57c00;
     }
 
     .filter-stats-desp {
@@ -151,7 +151,7 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
       padding-top: 15px;
-      border-top: 2px solid #ef5350;
+      border-top: 2px solid #fb8c00;
     }
 
     .stat-card-desp {
@@ -159,7 +159,7 @@
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-left: 4px solid #ef5350;
+      border-left: 4px solid #fb8c00;
     }
 
     .stat-label-desp {
@@ -171,7 +171,7 @@
     .stat-value-desp {
       font-weight: bold;
       font-size: 20px;
-      color: #c62828;
+      color: #f57c00;
     }
 
     /* Destaque nas linhas */
@@ -181,26 +181,26 @@
     }
 
     .modelo-table tbody tr.despesa-row:hover {
-      background: #ffebee !important;
+      background: #fff3e0 !important;
       transform: scale(1.01);
-      box-shadow: 0 4px 12px rgba(198, 40, 40, 0.15);
+      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15);
     }
 
     .modelo-table tbody tr.despesa-alta {
-      background: #fff3e0 !important;
-      border-left: 4px solid #ff9800;
+      background: #fff8e1 !important;
+      border-left: 4px solid #ffa726;
     }
 
     /* Valores em destaque */
     .valor-despesa {
       font-weight: bold;
       font-size: 16px;
-      color: #c62828;
+      color: #f57c00;
     }
 
     .filter-count-desp {
       background: white;
-      color: #c62828;
+      color: #f57c00;
       border-radius: 12px;
       padding: 2px 8px;
       font-size: 12px;
@@ -244,6 +244,47 @@
     .btn-delete:hover {
       background-color: #ffcdd2;
       transform: scale(1.1);
+    }
+
+    /* Cabeçalhos clicáveis com setinhas de ordenação */
+    .modelo-table thead th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 30px;
+      color: white !important;
+    }
+
+    .modelo-table thead th:hover {
+      background-color: #e65100 !important;
+      color: white !important;
+    }
+
+    .modelo-table thead th::after {
+      content: '\f0dc';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 10px;
+      opacity: 0.3;
+      font-size: 12px;
+      color: white;
+    }
+
+    .modelo-table thead th.sortable::after {
+      opacity: 0.6;
+    }
+
+    .modelo-table thead th.asc::after {
+      content: '\f0de';
+      opacity: 1;
+      color: white;
+    }
+
+    .modelo-table thead th.desc::after {
+      content: '\f0dd';
+      opacity: 1;
+      color: white;
     }
   </style>
 
@@ -311,12 +352,12 @@
       <table class="modelo-table">
         <thead>
           <tr>
-            <th>Parceiro</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Parcelas</th>
-            <th>Data</th>
-            <th>Fazenda</th>
+            <th class="sortable" data-column="parceiro">Parceiro</th>
+            <th class="sortable" data-column="categoria">Categoria</th>
+            <th class="sortable" data-column="valor">Valor</th>
+            <th class="sortable" data-column="parcelas">Parcelas</th>
+            <th class="sortable" data-column="data">Data</th>
+            <th class="sortable" data-column="fazenda">Fazenda</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -325,10 +366,14 @@
           <tr class="despesa-row {% if despesa.valor_total > 5000 %}despesa-alta{% endif %}"
               data-parcelas="{{ despesa.parcelas }}"
               data-valor="{{ despesa.valor_total }}"
+              data-parceiro="{{ despesa.parceiros.nome }}"
+              data-categoria="{{ despesa.categoria.nome }}"
+              data-fazenda="{{ despesa.fazenda.nome }}"
+              data-data="{{ despesa.data|date:'Y-m-d' }}"
               data-search="{{ despesa.parceiros.nome }} {{ despesa.categoria.nome }} {{ despesa.fazenda.nome }}">
             
             <td>
-              <strong style="color: #c62828;">{{ despesa.parceiros.nome }}</strong>
+              <strong style="color: #f57c00;">{{ despesa.parceiros.nome }}</strong>
             </td>
             
             <td>
@@ -351,11 +396,11 @@
             
             <td style="text-align: center;">
               {% if despesa.parcelas == 1 %}
-                <span style="background: #ffebee; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #c62828;">
+                <span style="background: #fff3e0; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #f57c00;">
                   <i class="fas fa-money-bill-wave"></i> À Vista
                 </span>
               {% else %}
-                <span style="background: #fff3e0; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #e65100;">
+                <span style="background: #fff8e1; padding: 4px 12px; border-radius: 12px; font-weight: 600; color: #e65100;">
                   <i class="fas fa-credit-card"></i> {{ despesa.parcelas }}x
                 </span>
               {% endif %}
@@ -369,7 +414,7 @@
             </td>
             
             <td>
-              <i class="fas fa-home" style="color: #ef5350;"></i>
+              <i class="fas fa-home" style="color: #fb8c00;"></i>
               {{ despesa.fazenda.nome }}
             </td>
             
@@ -406,9 +451,32 @@
       const filterButtons = document.querySelectorAll('.filter-btn-desp');
       const despesaRows = document.querySelectorAll('.despesa-row');
       const searchInput = document.getElementById('searchInput');
+      const tableHeaders = document.querySelectorAll('.modelo-table thead th.sortable');
+      const tbody = document.getElementById('despesas-tbody');
       let currentFilter = 'todas';
+      let sortColumn = null;
+      let sortOrder = 'asc';
 
       calcularEstatisticas();
+
+      // Ordenação de colunas
+      tableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          const column = this.dataset.column;
+          
+          if (sortColumn === column) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortOrder = 'asc';
+          }
+
+          tableHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+          this.classList.add(sortOrder);
+
+          ordenarTabela(column, sortOrder);
+        });
+      });
 
       filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -492,6 +560,44 @@
 
       function formatarMoeda(valor) {
         return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function ordenarTabela(column, order) {
+        const rowsArray = Array.from(tbody.querySelectorAll('.despesa-row'));
+        
+        rowsArray.sort((a, b) => {
+          let aValue, bValue;
+
+          if (column === 'valor') {
+            aValue = parseFloat(a.dataset.valor);
+            bValue = parseFloat(b.dataset.valor);
+          } else if (column === 'parcelas') {
+            aValue = parseInt(a.dataset.parcelas);
+            bValue = parseInt(b.dataset.parcelas);
+          } else if (column === 'data') {
+            aValue = new Date(a.dataset.data);
+            bValue = new Date(b.dataset.data);
+          } else if (column === 'parceiro') {
+            aValue = a.dataset.parceiro.toLowerCase();
+            bValue = b.dataset.parceiro.toLowerCase();
+          } else if (column === 'categoria') {
+            aValue = a.dataset.categoria.toLowerCase();
+            bValue = b.dataset.categoria.toLowerCase();
+          } else if (column === 'fazenda') {
+            aValue = a.dataset.fazenda.toLowerCase();
+            bValue = b.dataset.fazenda.toLowerCase();
+          }
+
+          if (order === 'asc') {
+            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+          } else {
+            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+          }
+        });
+
+        tbody.innerHTML = '';
+        rowsArray.forEach(row => tbody.appendChild(row));
+        aplicarFiltros();
       }
     });
   </script>

@@ -324,6 +324,47 @@
       background-color: #ffcdd2;
       transform: scale(1.1);
     }
+
+    /* Cabeçalhos clicáveis com setinhas de ordenação */
+    .modelo-table thead th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 30px;
+      color: white !important;
+    }
+
+    .modelo-table thead th:hover {
+      background-color: #1b5e20 !important;
+      color: white !important;
+    }
+
+    .modelo-table thead th::after {
+      content: '\f0dc';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 10px;
+      opacity: 0.3;
+      font-size: 12px;
+      color: white;
+    }
+
+    .modelo-table thead th.sortable::after {
+      opacity: 0.6;
+    }
+
+    .modelo-table thead th.asc::after {
+      content: '\f0de';
+      opacity: 1;
+      color: white;
+    }
+
+    .modelo-table thead th.desc::after {
+      content: '\f0dd';
+      opacity: 1;
+      color: white;
+    }
   </style>
 
   <div class="lista-card">
@@ -386,13 +427,13 @@
       <table class="modelo-table">
         <thead>
           <tr>
-            <th>Cliente/Parceiro</th>
-            <th>Parcela</th>
-            <th>Valor</th>
-            <th>Vencimento</th>
-            <th>Valor Recebido</th>
-            <th>Status</th>
-            <th>Recebimento</th>
+            <th class="sortable" data-column="parceiro">Cliente/Parceiro</th>
+            <th class="sortable" data-column="parcela">Parcela</th>
+            <th class="sortable" data-column="valor">Valor</th>
+            <th class="sortable" data-column="vencimento">Vencimento</th>
+            <th class="sortable" data-column="valor-pago">Valor Recebido</th>
+            <th class="sortable" data-column="status">Status</th>
+            <th class="sortable" data-column="recebimento">Recebimento</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -403,6 +444,10 @@
                 data-status="{% if parcela.status_pagamento == 'Pago' %}pago{% elif parcela.data_vencimento|date:'Y-m-d' < today and parcela.status_pagamento != 'Pago' %}vencido{% else %}pendente{% endif %}"
                 data-valor="{{ parcela.valor_parcela }}"
                 data-valor-pago="{{ parcela.valor_pago }}"
+                data-parceiro="{{ parcela.movimentacao.parceiros.nome }}"
+                data-parcela="{{ parcela.ordem_parcela }}"
+                data-vencimento="{{ parcela.data_vencimento|date:'Y-m-d' }}"
+                data-recebimento="{% if parcela.data_quitacao %}{{ parcela.data_quitacao|date:'Y-m-d' }}{% else %}9999-12-31{% endif %}"
                 data-search="{{ parcela.movimentacao.tipo }} {{ parcela.movimentacao.parceiros.nome }} {{ parcela.ordem_parcela }}">
               
               <td>
@@ -489,9 +534,38 @@
       const filterButtons = document.querySelectorAll('.filter-btn');
       const parcelaRows = document.querySelectorAll('.parcela-row');
       const searchInput = document.getElementById('searchInput');
+      const tableHeaders = document.querySelectorAll('.modelo-table thead th.sortable');
+      const tbody = document.getElementById('parcelas-tbody');
       let currentFilter = 'todos';
+      let sortColumn = 'vencimento';
+      let sortOrder = 'asc';
 
+      // Ordenação inicial por vencimento (do mais antigo para o mais recente)
+      const vencimentoHeader = document.querySelector('th[data-column="vencimento"]');
+      if (vencimentoHeader) {
+        vencimentoHeader.classList.add('asc');
+      }
+      ordenarTabela('vencimento', 'asc');
       calcularEstatisticas();
+
+      // Ordenação de colunas
+      tableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          const column = this.dataset.column;
+          
+          if (sortColumn === column) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortOrder = 'asc';
+          }
+
+          tableHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+          this.classList.add(sortOrder);
+
+          ordenarTabela(column, sortOrder);
+        });
+      });
 
       filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -580,6 +654,44 @@
 
       function formatarMoeda(valor) {
         return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function ordenarTabela(column, order) {
+        const rowsArray = Array.from(tbody.querySelectorAll('.parcela-row'));
+        
+        rowsArray.sort((a, b) => {
+          let aValue, bValue;
+
+          if (column === 'valor' || column === 'valor-pago') {
+            aValue = parseFloat(column === 'valor' ? a.dataset.valor : a.dataset.valorPago);
+            bValue = parseFloat(column === 'valor' ? b.dataset.valor : b.dataset.valorPago);
+          } else if (column === 'parcela') {
+            aValue = parseInt(a.dataset.parcela);
+            bValue = parseInt(b.dataset.parcela);
+          } else if (column === 'vencimento') {
+            aValue = new Date(a.dataset.vencimento);
+            bValue = new Date(b.dataset.vencimento);
+          } else if (column === 'recebimento') {
+            aValue = new Date(a.dataset.recebimento);
+            bValue = new Date(b.dataset.recebimento);
+          } else if (column === 'status') {
+            aValue = a.dataset.status;
+            bValue = b.dataset.status;
+          } else if (column === 'parceiro') {
+            aValue = a.dataset.parceiro.toLowerCase();
+            bValue = b.dataset.parceiro.toLowerCase();
+          }
+
+          if (order === 'asc') {
+            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+          } else {
+            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+          }
+        });
+
+        tbody.innerHTML = '';
+        rowsArray.forEach(row => tbody.appendChild(row));
+        aplicarFiltros();
       }
     });
   </script>

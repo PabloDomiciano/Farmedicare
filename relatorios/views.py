@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.db.models import Sum, Count, Avg, Q, F
 from django.utils import timezone
@@ -720,4 +720,301 @@ def gerar_pdf_relatorio(request):
     
     return response
 
+
+# ========== API DE NOTIFICAÇÕES ESTILO FACEBOOK ==========
+
+def api_notificacoes(request):
+    """
+    API que retorna notificações detalhadas estilo Facebook
+    - Parcelas de receitas vencidas ou próximas do vencimento (5 dias)
+    - Parcelas de despesas vencidas ou próximas do vencimento (5 dias)
+    - Medicamentos vencidos ou próximos do vencimento (30 dias)
+    """
+    hoje = timezone.now().date()
+    data_limite_5dias = hoje + timedelta(days=5)
+    data_limite_30dias = hoje + timedelta(days=30)
+    
+    notificacoes = []
+    
+    # ========== PARCELAS DE RECEITAS ==========
+    
+    # Receitas vencidas (não pagas)
+    receitas_vencidas = Parcela.objects.filter(
+        movimentacao__tipo='receita',
+        data_vencimento__lt=hoje,
+        status_pagamento='Pendente'
+    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    
+    for parcela in receitas_vencidas:
+        dias_atraso = (hoje - parcela.data_vencimento).days
+        notificacoes.append({
+            'tipo': 'receita_vencida',
+            'categoria': 'vencido',
+            'urgencia': 3,  # Crítico
+            'icone': 'fa-hand-holding-usd',
+            'cor': '#2e7d32',  # Verde escuro para receitas
+            'cor_bg': '#e8f5e9',  # Fundo verde claro
+            'cor_border': '#4caf50',  # Borda verde
+            'titulo': f'Receita Vencida - {dias_atraso} dia(s) de atraso',
+            'mensagem': f'Parcela {parcela.ordem_parcela}/{parcela.movimentacao.parcelas} vencida há {dias_atraso} dia(s)',
+            'parcela_numero': parcela.ordem_parcela,
+            'total_parcelas': parcela.movimentacao.parcelas,
+            'valor': float(parcela.valor_parcela),
+            'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
+            'data_vencimento_raw': parcela.data_vencimento.isoformat(),
+            'parceiro': parcela.movimentacao.parceiros.nome,
+            'categoria_nome': parcela.movimentacao.categoria.nome,
+            'descricao': parcela.movimentacao.descricao or '',
+            'fazenda': parcela.movimentacao.fazenda.nome,
+            'id_parcela': parcela.id,
+        })
+    
+    # Receitas a vencer (próximas 5 dias)
+    receitas_vencer = Parcela.objects.filter(
+        movimentacao__tipo='receita',
+        data_vencimento__gte=hoje,
+        data_vencimento__lte=data_limite_5dias,
+        status_pagamento='Pendente'
+    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    
+    for parcela in receitas_vencer:
+        dias_restantes = (parcela.data_vencimento - hoje).days
+        urgencia = 2 if dias_restantes <= 2 else 1
+        categoria = 'muito_proximo' if dias_restantes <= 2 else 'proximo'
+        cor = '#43a047' if dias_restantes <= 2 else '#66bb6a'  # Verde médio/claro
+        
+        notificacoes.append({
+            'tipo': 'receita_vencer',
+            'categoria': categoria,
+            'urgencia': urgencia,
+            'icone': 'fa-hand-holding-usd',
+            'cor': cor,
+            'cor_bg': '#f1f8e9',  # Fundo verde bem claro
+            'cor_border': '#8bc34a',  # Borda verde claro
+            'titulo': f'Receita a Vencer em {dias_restantes} dia(s)',
+            'mensagem': f'Parcela {parcela.ordem_parcela}/{parcela.movimentacao.parcelas} vence em {dias_restantes} dia(s)',
+            'parcela_numero': parcela.ordem_parcela,
+            'total_parcelas': parcela.movimentacao.parcelas,
+            'valor': float(parcela.valor_parcela),
+            'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
+            'data_vencimento_raw': parcela.data_vencimento.isoformat(),
+            'parceiro': parcela.movimentacao.parceiros.nome,
+            'categoria_nome': parcela.movimentacao.categoria.nome,
+            'descricao': parcela.movimentacao.descricao or '',
+            'fazenda': parcela.movimentacao.fazenda.nome,
+            'id_parcela': parcela.id,
+        })
+    
+    # ========== PARCELAS DE DESPESAS ==========
+    
+    # Despesas vencidas (não pagas)
+    despesas_vencidas = Parcela.objects.filter(
+        movimentacao__tipo='despesa',
+        data_vencimento__lt=hoje,
+        status_pagamento='Pendente'
+    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    
+    for parcela in despesas_vencidas:
+        dias_atraso = (hoje - parcela.data_vencimento).days
+        notificacoes.append({
+            'tipo': 'despesa_vencida',
+            'categoria': 'vencido',
+            'urgencia': 3,  # Crítico
+            'icone': 'fa-file-invoice-dollar',
+            'cor': '#f57c00',  # Laranja escuro para despesas
+            'cor_bg': '#fff3e0',  # Fundo laranja claro
+            'cor_border': '#ff9800',  # Borda laranja
+            'titulo': f'Despesa Vencida - {dias_atraso} dia(s) de atraso',
+            'mensagem': f'Parcela {parcela.ordem_parcela}/{parcela.movimentacao.parcelas} vencida há {dias_atraso} dia(s)',
+            'parcela_numero': parcela.ordem_parcela,
+            'total_parcelas': parcela.movimentacao.parcelas,
+            'valor': float(parcela.valor_parcela),
+            'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
+            'data_vencimento_raw': parcela.data_vencimento.isoformat(),
+            'parceiro': parcela.movimentacao.parceiros.nome,
+            'categoria_nome': parcela.movimentacao.categoria.nome,
+            'descricao': parcela.movimentacao.descricao or '',
+            'fazenda': parcela.movimentacao.fazenda.nome,
+            'id_parcela': parcela.id,
+        })
+    
+    # Despesas a vencer (próximas 5 dias)
+    despesas_vencer = Parcela.objects.filter(
+        movimentacao__tipo='despesa',
+        data_vencimento__gte=hoje,
+        data_vencimento__lte=data_limite_5dias,
+        status_pagamento='Pendente'
+    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    
+    for parcela in despesas_vencer:
+        dias_restantes = (parcela.data_vencimento - hoje).days
+        urgencia = 2 if dias_restantes <= 2 else 1
+        categoria = 'muito_proximo' if dias_restantes <= 2 else 'proximo'
+        cor = '#fb8c00' if dias_restantes <= 2 else '#ffa726'  # Laranja médio/claro
+        
+        notificacoes.append({
+            'tipo': 'despesa_vencer',
+            'categoria': categoria,
+            'urgencia': urgencia,
+            'icone': 'fa-file-invoice-dollar',
+            'cor': cor,
+            'cor_bg': '#fff8e1',  # Fundo amarelo claro
+            'cor_border': '#ffb74d',  # Borda laranja claro
+            'titulo': f'Despesa a Vencer em {dias_restantes} dia(s)',
+            'mensagem': f'Parcela {parcela.ordem_parcela}/{parcela.movimentacao.parcelas} vence em {dias_restantes} dia(s)',
+            'parcela_numero': parcela.ordem_parcela,
+            'total_parcelas': parcela.movimentacao.parcelas,
+            'valor': float(parcela.valor_parcela),
+            'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
+            'data_vencimento_raw': parcela.data_vencimento.isoformat(),
+            'parceiro': parcela.movimentacao.parceiros.nome,
+            'categoria_nome': parcela.movimentacao.categoria.nome,
+            'descricao': parcela.movimentacao.descricao or '',
+            'fazenda': parcela.movimentacao.fazenda.nome,
+            'id_parcela': parcela.id,
+        })
+    
+    # ========== MEDICAMENTOS ==========
+    
+    # Medicamentos vencidos
+    medicamentos_vencidos = EntradaMedicamento.objects.filter(
+        validade__lt=hoje,
+        quantidade__gt=0
+    ).select_related('medicamento', 'medicamento__fazenda')
+    
+    for entrada in medicamentos_vencidos:
+        dias_vencido = (hoje - entrada.validade).days
+        notificacoes.append({
+            'tipo': 'medicamento_vencido',
+            'categoria': 'vencido',
+            'urgencia': 3,
+            'icone': 'fa-pills',
+            'cor': '#5e35b1',  # Roxo escuro para medicamentos
+            'cor_bg': '#ede7f6',  # Fundo roxo claro
+            'cor_border': '#7e57c2',  # Borda roxo
+            'titulo': f'Medicamento Vencido há {dias_vencido} dia(s)',
+            'mensagem': f'Venceu há {dias_vencido} dia(s)',
+            'medicamento': entrada.medicamento.nome,
+            'fazenda': entrada.medicamento.fazenda.nome,
+            'lote': f'ID-{entrada.id}',
+            'quantidade': entrada.quantidade,
+            'validade': entrada.validade.strftime('%d/%m/%Y'),
+            'validade_raw': entrada.validade.isoformat(),
+            'id_entrada': entrada.id,
+        })
+    
+    # Medicamentos a vencer (30 dias)
+    medicamentos_vencer = EntradaMedicamento.objects.filter(
+        validade__gte=hoje,
+        validade__lte=data_limite_30dias,
+        quantidade__gt=0
+    ).select_related('medicamento', 'medicamento__fazenda')
+    
+    for entrada in medicamentos_vencer:
+        dias_restantes = (entrada.validade - hoje).days
+        if dias_restantes <= 7:
+            urgencia = 2
+            categoria = 'muito_proximo'
+            cor = '#7b1fa2'  # Roxo médio
+        else:
+            urgencia = 1
+            categoria = 'proximo'
+            cor = '#9c27b0'  # Roxo claro
+        
+        notificacoes.append({
+            'tipo': 'medicamento_vencer',
+            'categoria': categoria,
+            'urgencia': urgencia,
+            'icone': 'fa-pills',
+            'cor': cor,
+            'cor_bg': '#f3e5f5',  # Fundo roxo bem claro
+            'cor_border': '#ab47bc',  # Borda roxo claro
+            'titulo': f'Medicamento Vence em {dias_restantes} dia(s)',
+            'mensagem': f'Vence em {dias_restantes} dia(s)',
+            'medicamento': entrada.medicamento.nome,
+            'fazenda': entrada.medicamento.fazenda.nome,
+            'lote': f'ID-{entrada.id}',
+            'quantidade': entrada.quantidade,
+            'validade': entrada.validade.strftime('%d/%m/%Y'),
+            'validade_raw': entrada.validade.isoformat(),
+            'id_entrada': entrada.id,
+        })
+    
+    # Ordenar por urgência (3 = crítico primeiro) e depois por data
+    notificacoes.sort(key=lambda x: (
+        -x['urgencia'],
+        x.get('data_vencimento_raw', x.get('validade_raw', ''))
+    ))
+    
+    return JsonResponse({
+        'total': len(notificacoes),
+        'notificacoes': notificacoes
+    })
+
+
+def notificacoes_page(request):
+    """
+    Página completa de notificações estilo Facebook
+    """
+    hoje = timezone.now().date()
+    data_limite_5dias = hoje + timedelta(days=5)
+    data_limite_30dias = hoje + timedelta(days=30)
+    
+    # Contadores
+    receitas_vencidas = Parcela.objects.filter(
+        movimentacao__tipo='receita',
+        data_vencimento__lt=hoje,
+        status_pagamento='Pendente'
+    ).count()
+    
+    receitas_vencer = Parcela.objects.filter(
+        movimentacao__tipo='receita',
+        data_vencimento__gte=hoje,
+        data_vencimento__lte=data_limite_5dias,
+        status_pagamento='Pendente'
+    ).count()
+    
+    despesas_vencidas = Parcela.objects.filter(
+        movimentacao__tipo='despesa',
+        data_vencimento__lt=hoje,
+        status_pagamento='Pendente'
+    ).count()
+    
+    despesas_vencer = Parcela.objects.filter(
+        movimentacao__tipo='despesa',
+        data_vencimento__gte=hoje,
+        data_vencimento__lte=data_limite_5dias,
+        status_pagamento='Pendente'
+    ).count()
+    
+    medicamentos_vencidos = EntradaMedicamento.objects.filter(
+        validade__lt=hoje,
+        quantidade__gt=0
+    ).count()
+    
+    medicamentos_vencer = EntradaMedicamento.objects.filter(
+        validade__gte=hoje,
+        validade__lte=data_limite_30dias,
+        quantidade__gt=0
+    ).count()
+    
+    total = (
+        receitas_vencidas + receitas_vencer +
+        despesas_vencidas + despesas_vencer +
+        medicamentos_vencidos + medicamentos_vencer
+    )
+    
+    context = {
+        'titulo': 'Notificações',
+        'title': 'Notificações - Farmedicare',
+        'total': total,
+        'receitas_vencidas': receitas_vencidas,
+        'receitas_vencer': receitas_vencer,
+        'despesas_vencidas': despesas_vencidas,
+        'despesas_vencer': despesas_vencer,
+        'medicamentos_vencidos': medicamentos_vencidos,
+        'medicamentos_vencer': medicamentos_vencer,
+    }
+    
+    return render(request, 'relatorios/notificacoes_unificadas.html', context)
 

@@ -190,18 +190,17 @@
         justify-content: center;
       }
 
+      /* Cores aplicadas inline via backend */
       .notification-item.vencido .notification-icon {
-        color: #ef5350;
         animation: iconPulse 2s infinite;
       }
 
       .notification-item.muito_proximo .notification-icon {
-        color: #ff9800;
         animation: iconShake 3s infinite;
       }
 
       .notification-item.proximo .notification-icon {
-        color: #ffa726;
+        /* Sem animação adicional */
       }
 
       @keyframes iconPulse {
@@ -318,6 +317,101 @@
       .btn-view-all:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(66, 165, 245, 0.4);
+      }
+
+      /* ========== ESTILOS ESTILO FACEBOOK PARA NOTIFICAÇÕES DETALHADAS ========== */
+      
+      .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .notification-subtitle {
+        font-size: 13px;
+        color: #333;
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+
+      .notification-subtitle strong {
+        color: #212121;
+        font-weight: 600;
+      }
+
+      .notif-details {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 8px;
+      }
+
+      .notif-detail-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .notif-detail-row i {
+        font-size: 13px;
+        /* Cor aplicada inline via backend */
+        min-width: 16px;
+        text-align: center;
+      }
+
+      .notif-detail-row span {
+        flex: 1;
+        word-break: break-word;
+      }
+
+      .notification-pulse {
+        position: absolute;
+        top: 14px;
+        left: 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .notification-pulse::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        animation: pulseRing 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.8;
+        }
+      }
+
+      @keyframes pulseRing {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(2.5);
+          opacity: 0;
+        }
       }
 
       @media (max-width: 768px) {
@@ -623,7 +717,7 @@
 
       {% if notificacoes_count > 0 %}
       <div class="notification-popup-footer">
-        <a href="{% url 'medicamento_notificacoes' %}" class="btn-view-all">
+        <a href="{% url 'notificacoes_unificadas' %}" class="btn-view-all">
           Ver todas as notificações <i class="fas fa-arrow-right"></i>
         </a>
       </div>
@@ -715,8 +809,8 @@
         }
 
         function carregarNotificacoes() {
-            // Fazer requisição AJAX para buscar notificações
-            fetch('/pagina_medicamento/api/notificacoes/')
+            // Fazer requisição AJAX para buscar notificações da API unificada
+            fetch('/relatorios/api/notificacoes/')
                 .then(response => response.json())
                 .then(data => {
                     renderizarNotificacoes(data);
@@ -739,7 +833,7 @@
                     <div class="notification-empty">
                         <i class="fas fa-check-circle"></i>
                         <p>Nenhuma notificação</p>
-                        <small>Tudo em ordem com seus medicamentos!</small>
+                        <small>Tudo em ordem!</small>
                     </div>
                 `;
                 return;
@@ -751,21 +845,7 @@
             let html = '<div class="notification-list">';
             
             notificacoesLimitadas.forEach(notif => {
-                const icone = getIconeNotificacao(notif.tipo);
-                const cor = getCorNotificacao(notif.tipo);
-                
-                html += `
-                    <div class="notification-item ${notif.tipo}" data-tipo="${notif.tipo}">
-                        <div class="notification-icon" style="color: ${cor};">
-                            <i class="fas ${icone}"></i>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">${notif.medicamento}</div>
-                            <div class="notification-message">${getMensagemCurta(notif)}</div>
-                            <div class="notification-time">${getTempoRelativo(notif.validade)}</div>
-                        </div>
-                    </div>
-                `;
+                html += criarItemNotificacao(notif);
             });
             
             html += '</div>';
@@ -773,39 +853,54 @@
             notificationPopupBody.innerHTML = html;
         }
 
-        function getIconeNotificacao(tipo) {
-            const icones = {
-                'vencido': 'fa-times-circle',
-                'muito_proximo': 'fa-exclamation-triangle',
-                'proximo': 'fa-clock'
-            };
-            return icones[tipo] || 'fa-bell';
-        }
-
-        function getCorNotificacao(tipo) {
-            const cores = {
-                'vencido': '#ef5350',
-                'muito_proximo': '#ff9800',
-                'proximo': '#ffa726'
-            };
-            return cores[tipo] || '#42a5f5';
-        }
-
-        function getMensagemCurta(notif) {
-            if (notif.dias_para_vencer < 0) {
-                return `Venceu há ${notif.dias_vencido_abs} dias`;
-            } else if (notif.dias_para_vencer === 0) {
-                return 'Vence hoje!';
-            } else if (notif.dias_para_vencer === 1) {
-                return 'Vence amanhã!';
-            } else {
-                return `Vence em ${notif.dias_para_vencer} dias`;
+        function criarItemNotificacao(notif) {
+            // Determinar título e mensagem baseado no tipo
+            let titulo = '';
+            let mensagem = '';
+            
+            if (notif.tipo.includes('medicamento')) {
+                titulo = notif.medicamento || 'Medicamento';
+                if (notif.dias_para_vencer < 0) {
+                    mensagem = `Venceu há ${notif.dias_vencido_abs} dias`;
+                } else if (notif.dias_para_vencer === 0) {
+                    mensagem = 'Vence hoje!';
+                } else if (notif.dias_para_vencer === 1) {
+                    mensagem = 'Vence amanhã!';
+                } else {
+                    mensagem = `Vence em ${notif.dias_para_vencer} dias`;
+                }
+            } else if (notif.tipo.includes('receita')) {
+                titulo = notif.parceiro || 'Receita';
+                mensagem = `R$ ${parseFloat(notif.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} - ${notif.categoria_nome || 'Sem categoria'}`;
+            } else if (notif.tipo.includes('despesa')) {
+                titulo = notif.parceiro || 'Despesa';
+                mensagem = `R$ ${parseFloat(notif.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} - ${notif.categoria_nome || 'Sem categoria'}`;
             }
+            
+            return `
+                <div class="notification-item ${notif.categoria}" 
+                     style="border-left: 3px solid ${notif.cor_border};">
+                    <div class="notification-icon" style="color: ${notif.cor};">
+                        <i class="fas ${getIconeNotificacao(notif.tipo)}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${titulo}</div>
+                        <div class="notification-message">${mensagem}</div>
+                        <div class="notification-time">${notif.data_vencimento || notif.validade || ''}</div>
+                    </div>
+                </div>
+            `;
         }
 
-        function getTempoRelativo(validade) {
-            const dataValidade = new Date(validade);
-            return `Validade: ${dataValidade.toLocaleDateString('pt-BR')}`;
+        function getIconeNotificacao(tipo) {
+            if (tipo.includes('medicamento')) {
+                return 'fa-pills';
+            } else if (tipo.includes('receita')) {
+                return 'fa-hand-holding-usd';
+            } else if (tipo.includes('despesa')) {
+                return 'fa-file-invoice-dollar';
+            }
+            return 'fa-bell';
         }
     });
     </script>

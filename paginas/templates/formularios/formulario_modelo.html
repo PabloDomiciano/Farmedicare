@@ -18,9 +18,11 @@
     <h1>{{titulo}}</h1>
     <div class="header-actions">
       {% block admin %} {%endblock%}
-      <button class="btn btn-notification">
+      <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
-        <span class="badge">3</span>
+        {% if notificacoes_count > 0 %}
+        <span class="badge">{{ notificacoes_count }}</span>
+        {% endif %}
       </button>
     </div>
   </header>

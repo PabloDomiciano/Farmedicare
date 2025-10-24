@@ -51,7 +51,7 @@
     }
 
     .lista-header {
-      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+      background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
       color: white;
       padding: 1.5rem 2rem;
       display: flex;
@@ -84,7 +84,7 @@
 
     .btn-add {
       background-color: white;
-      color: #c62828;
+      color: #f57c00;
       padding: 0.75rem 1.5rem;
       border-radius: 8px;
       text-decoration: none;
@@ -102,15 +102,15 @@
       background-color: #f5f5f5;
     }
 
-    /* Tema Vermelho para Parcelas de Despesas (A Pagar) */
+    /* Tema Laranja para Parcelas de Despesas (A Pagar) */
     .parcelas-filters {
-      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(198, 40, 40, 0.15);
+      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15);
       margin: 20px auto;
       max-width: 1200px;
-      border: 2px solid #ef5350;
+      border: 2px solid #fb8c00;
     }
 
     .filter-buttons {
@@ -122,7 +122,7 @@
 
     .filter-btn {
       padding: 10px 20px;
-      border: 2px solid #ef5350;
+      border: 2px solid #fb8c00;
       background: white;
       border-radius: 8px;
       cursor: pointer;
@@ -132,18 +132,18 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #c62828;
+      color: #f57c00;
     }
 
     .filter-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(239, 83, 80, 0.3);
+      box-shadow: 0 6px 16px rgba(251, 140, 0, 0.3);
     }
 
     .filter-btn.active {
-      background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+      background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
       color: white;
-      border-color: #c62828;
+      border-color: #f57c00;
     }
 
     .filter-btn.status-pago {
@@ -178,7 +178,7 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
       padding-top: 15px;
-      border-top: 2px solid #ef5350;
+      border-top: 2px solid #fb8c00;
     }
 
     .stat-card {
@@ -186,7 +186,7 @@
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-left: 4px solid #ef5350;
+      border-left: 4px solid #fb8c00;
     }
 
     .stat-label {
@@ -198,7 +198,7 @@
     .stat-value {
       font-weight: bold;
       font-size: 20px;
-      color: #c62828;
+      color: #f57c00;
     }
 
     /* Badges de status */
@@ -249,13 +249,13 @@
     }
 
     .modelo-table tbody tr:hover {
-      background: #ffebee !important;
+      background: #fff3e0 !important;
       transform: scale(1.01);
-      box-shadow: 0 4px 12px rgba(198, 40, 40, 0.15);
+      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15);
       transition: all 0.3s;
     }
 
-    /* Valor destacado */
+    /* Valores em destaque */
     .valor-destaque {
       font-weight: bold;
       font-size: 15px;
@@ -266,7 +266,7 @@
     }
 
     .valor-pendente {
-      color: #c62828;
+      color: #f57c00;
     }
 
     /* Informação da movimentação */
@@ -279,7 +279,7 @@
     /* Contador de filtros */
     .filter-count {
       background: white;
-      color: #c62828;
+      color: #f57c00;
       border-radius: 12px;
       padding: 2px 8px;
       font-size: 12px;
@@ -323,6 +323,47 @@
     .btn-delete:hover {
       background-color: #ffcdd2;
       transform: scale(1.1);
+    }
+
+    /* Cabeçalhos clicáveis com setinhas de ordenação */
+    .modelo-table thead th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 30px;
+      color: white !important;
+    }
+
+    .modelo-table thead th:hover {
+      background-color: #e65100 !important;
+      color: white !important;
+    }
+
+    .modelo-table thead th::after {
+      content: '\f0dc';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 10px;
+      opacity: 0.3;
+      font-size: 12px;
+      color: white;
+    }
+
+    .modelo-table thead th.sortable::after {
+      opacity: 0.6;
+    }
+
+    .modelo-table thead th.asc::after {
+      content: '\f0de';
+      opacity: 1;
+      color: white;
+    }
+
+    .modelo-table thead th.desc::after {
+      content: '\f0dd';
+      opacity: 1;
+      color: white;
     }
   </style>
 
@@ -375,7 +416,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-label">⏳ Valor a Pagar</div>
-        <div class="stat-value" style="color: #c62828;" id="valor-pendente">R$ 0,00</div>
+        <div class="stat-value" style="color: #f57c00;" id="valor-pendente">R$ 0,00</div>
       </div>
     </div>
   </div>
@@ -386,13 +427,13 @@
       <table class="modelo-table">
         <thead>
           <tr>
-            <th>Fornecedor/Parceiro</th>
-            <th>Parcela</th>
-            <th>Valor</th>
-            <th>Vencimento</th>
-            <th>Valor Pago</th>
-            <th>Status</th>
-            <th>Pagamento</th>
+            <th class="sortable" data-column="parceiro">Fornecedor/Parceiro</th>
+            <th class="sortable" data-column="parcela">Parcela</th>
+            <th class="sortable" data-column="valor">Valor</th>
+            <th class="sortable" data-column="vencimento">Vencimento</th>
+            <th class="sortable" data-column="valor-pago">Valor Pago</th>
+            <th class="sortable" data-column="status">Status</th>
+            <th class="sortable" data-column="pagamento">Pagamento</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -403,18 +444,22 @@
                 data-status="{% if parcela.status_pagamento == 'Pago' %}pago{% elif parcela.data_vencimento|date:'Y-m-d' < today and parcela.status_pagamento != 'Pago' %}vencido{% else %}pendente{% endif %}"
                 data-valor="{{ parcela.valor_parcela }}"
                 data-valor-pago="{{ parcela.valor_pago }}"
+                data-parceiro="{{ parcela.movimentacao.parceiros.nome }}"
+                data-parcela="{{ parcela.ordem_parcela }}"
+                data-vencimento="{{ parcela.data_vencimento|date:'Y-m-d' }}"
+                data-pagamento="{% if parcela.data_quitacao %}{{ parcela.data_quitacao|date:'Y-m-d' }}{% else %}9999-12-31{% endif %}"
                 data-search="{{ parcela.movimentacao.tipo }} {{ parcela.movimentacao.parceiros.nome }} {{ parcela.ordem_parcela }}">
               
               <td>
-                <strong style="color: #c62828;">{{ parcela.movimentacao.parceiros.nome }}</strong>
+                <strong style="color: #f57c00;">{{ parcela.movimentacao.parceiros.nome }}</strong>
                 <div class="info-movimentacao">
-                  <i class="fas fa-tag" style="color: #ef5350;"></i> {{ parcela.movimentacao.categoria.nome }}
-                  | <i class="fas fa-home" style="color: #ef5350;"></i> {{ parcela.movimentacao.fazenda.nome }}
+                  <i class="fas fa-tag" style="color: #fb8c00;"></i> {{ parcela.movimentacao.categoria.nome }}
+                  | <i class="fas fa-home" style="color: #fb8c00;"></i> {{ parcela.movimentacao.fazenda.nome }}
                 </div>
               </td>
               
               <td style="text-align: center;">
-                <strong style="font-size: 16px; color: #c62828;">{{ parcela.ordem_parcela }}/{{ parcela.movimentacao.parcelas }}</strong>
+                <strong style="font-size: 16px; color: #f57c00;">{{ parcela.ordem_parcela }}/{{ parcela.movimentacao.parcelas }}</strong>
               </td>
               
               <td class="valor-destaque valor-pendente">
@@ -494,9 +539,38 @@
       const filterButtons = document.querySelectorAll('.filter-btn');
       const parcelaRows = document.querySelectorAll('.parcela-row');
       const searchInput = document.getElementById('searchInput');
+      const tableHeaders = document.querySelectorAll('.modelo-table thead th.sortable');
+      const tbody = document.getElementById('parcelas-tbody');
       let currentFilter = 'todos';
+      let sortColumn = 'vencimento';
+      let sortOrder = 'asc';
 
+      // Ordenação inicial por vencimento (do mais antigo para o mais recente)
+      const vencimentoHeader = document.querySelector('th[data-column="vencimento"]');
+      if (vencimentoHeader) {
+        vencimentoHeader.classList.add('asc');
+      }
+      ordenarTabela('vencimento', 'asc');
       calcularEstatisticas();
+
+      // Ordenação de colunas
+      tableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          const column = this.dataset.column;
+          
+          if (sortColumn === column) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortOrder = 'asc';
+          }
+
+          tableHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+          this.classList.add(sortOrder);
+
+          ordenarTabela(column, sortOrder);
+        });
+      });
 
       filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -585,6 +659,44 @@
 
       function formatarMoeda(valor) {
         return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function ordenarTabela(column, order) {
+        const rowsArray = Array.from(tbody.querySelectorAll('.parcela-row'));
+        
+        rowsArray.sort((a, b) => {
+          let aValue, bValue;
+
+          if (column === 'valor' || column === 'valor-pago') {
+            aValue = parseFloat(column === 'valor' ? a.dataset.valor : a.dataset.valorPago);
+            bValue = parseFloat(column === 'valor' ? b.dataset.valor : b.dataset.valorPago);
+          } else if (column === 'parcela') {
+            aValue = parseInt(a.dataset.parcela);
+            bValue = parseInt(b.dataset.parcela);
+          } else if (column === 'vencimento') {
+            aValue = new Date(a.dataset.vencimento);
+            bValue = new Date(b.dataset.vencimento);
+          } else if (column === 'pagamento') {
+            aValue = new Date(a.dataset.pagamento);
+            bValue = new Date(b.dataset.pagamento);
+          } else if (column === 'status') {
+            aValue = a.dataset.status;
+            bValue = b.dataset.status;
+          } else if (column === 'parceiro') {
+            aValue = a.dataset.parceiro.toLowerCase();
+            bValue = b.dataset.parceiro.toLowerCase();
+          }
+
+          if (order === 'asc') {
+            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+          } else {
+            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+          }
+        });
+
+        tbody.innerHTML = '';
+        rowsArray.forEach(row => tbody.appendChild(row));
+        aplicarFiltros();
       }
     });
   </script>

@@ -10,8 +10,9 @@ from medicamento.views import (
     EntradaMedicamentoDeleteView, 
     EntradaMedicamentoUpdateView,
     MedicamentoEstoqueListView,
-    NotificacoesListView,
-    NotificacoesAPIView,
+    SaidaMedicamentoAPIView,
+    # NotificacoesListView,  # REMOVIDO - Usando sistema unificado
+    # NotificacoesAPIView,   # REMOVIDO - Usando sistema unificado
 )
 
 urlpatterns = [
@@ -29,10 +30,13 @@ urlpatterns = [
     # View antiga - Entradas detalhadas (mantida para compatibilidade)
     path('entradas/', EntradaMedicamentoListView.as_view(), name='medicamento_entradas'),
     
-    # Notificações
-    path('notificacoes/', NotificacoesListView.as_view(), name='medicamento_notificacoes'),
-    path('api/notificacoes/', NotificacoesAPIView.as_view(), name='medicamento_notificacoes_api'),
+    # Notificações antigas REMOVIDAS - Agora usando sistema unificado em /relatorios/notificacoes/
+    # path('notificacoes/', NotificacoesListView.as_view(), name='medicamento_notificacoes'),
+    # path('api/notificacoes/', NotificacoesAPIView.as_view(), name='medicamento_notificacoes_api'),
     
     path('editar/<int:pk>/', EntradaMedicamentoUpdateView.as_view(), name='editar_medicamento'),
     path('excluir/<int:pk>/', EntradaMedicamentoDeleteView.as_view(), name='excluir_medicamento'),
+    
+    # API de saída de medicamento
+    path('api/saida/', SaidaMedicamentoAPIView.as_view(), name='saida_medicamento_api'),
 ]
