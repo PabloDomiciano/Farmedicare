@@ -1,5 +1,5 @@
 from django import forms
-from .models import Movimentacao, Categoria
+from .models import Movimentacao, Categoria, Parcela
 from perfis.models import Parceiros, Fazenda
 
 
@@ -168,3 +168,103 @@ class MovimentacaoForm(forms.ModelForm):
         return self.cleaned_data.get('tipo')
     
     # Removido clean_cadastrada_por - campo não está mais no formulário
+
+
+class ParcelaForm(forms.ModelForm):
+    """
+    Formulário personalizado para edição de parcelas.
+    Interface intuitiva com campos organizados e validações automáticas.
+    """
+    
+    class Meta:
+        model = Parcela
+        fields = [
+            'valor_pago',
+            'status_pagamento',
+            'data_quitacao',
+        ]
+        
+        widgets = {
+            'valor_pago': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'R$ 0,00',
+                'step': '0.01',
+                'min': '0',
+                'required': True,
+            }),
+            'status_pagamento': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True,
+            }),
+            'data_quitacao': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+        }
+        
+        labels = {
+            'valor_pago': 'Valor Pago',
+            'status_pagamento': 'Status',
+            'data_quitacao': 'Data de Quitação',
+        }
+        
+        help_texts = {
+            'valor_pago': 'Valor efetivamente pago',
+            'status_pagamento': 'Situação atual do pagamento',
+            'data_quitacao': 'Data em que a parcela foi quitada',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Se já está pago, torna data_quitacao obrigatória
+        instance = kwargs.get('instance')
+        if instance:
+            # Se a parcela está pendente, preenche com valores padrão para facilitar
+            if instance.status_pagamento == 'Pendente':
+                from datetime import date
+                # Define valor pago igual ao valor da parcela
+                self.initial['valor_pago'] = instance.valor_parcela
+                # Define status como Pago
+                self.initial['status_pagamento'] = 'Pago'
+                # Define data de quitação como hoje
+                self.initial['data_quitacao'] = date.today()
+            
+            if instance.status_pagamento == 'Pago':
+                self.fields['data_quitacao'].required = True
+                self.fields['data_quitacao'].widget.attrs['required'] = True
+        
+        # Adiciona autocomplete off para todos os campos
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'autocomplete': 'off'
+            })
+        
+        # Adiciona classe de destaque para campos importantes
+        self.fields['status_pagamento'].widget.attrs.update({
+            'class': 'form-control status-select',
+            'onchange': 'toggleDataQuitacao(this)',
+        })
+        
+        self.fields['valor_pago'].widget.attrs.update({
+            'class': 'form-control valor-pago-input',
+            'oninput': 'calcularDiferenca()',
+        })
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status_pagamento')
+        data_quitacao = cleaned_data.get('data_quitacao')
+        valor_pago = cleaned_data.get('valor_pago')
+        
+        # Se status é "Pago", data_quitacao é obrigatória
+        if status == 'Pago' and not data_quitacao:
+            from datetime import date
+            cleaned_data['data_quitacao'] = date.today()
+        
+        # Se status é "Pendente", limpa data_quitacao
+        if status == 'Pendente':
+            cleaned_data['data_quitacao'] = None
+            cleaned_data['valor_pago'] = 0.00
+        
+        return cleaned_data

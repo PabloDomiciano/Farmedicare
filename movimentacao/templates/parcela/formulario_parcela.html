@@ -1,0 +1,510 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}<title>{{ title }}</title>{% endblock %}
+
+{% block cards %}{% endblock %}
+{% block graficos %}{% endblock %}
+{% block ultimos_registros %}{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+  <header class="content-header">
+    <h1>{{ titulo }}</h1>
+    <p class="subtitle">{{ subtitulo }}</p>
+  </header>
+
+  <style>
+    .parcela-form-container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .form-header {
+      background: linear-gradient(135deg, {% if tipo_movimentacao == 'receita' %}#4caf50 0%, #2e7d32 100%{% else %}#fb8c00 0%, #f57c00 100%{% endif %});
+      color: white;
+      padding: 25px 35px;
+      border-bottom: 4px solid {% if tipo_movimentacao == 'receita' %}#2e7d32{% else %}#f57c00{% endif %};
+    }
+
+    .form-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .form-header .badge-tipo {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-body {
+      padding: 40px 35px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-field label .required {
+      color: #f44336;
+      font-size: 16px;
+    }
+
+    .form-field input,
+    .form-field select {
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s;
+      background: white;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: {% if tipo_movimentacao == 'receita' %}#4caf50{% else %}#fb8c00{% endif %};
+      box-shadow: 0 0 0 3px {% if tipo_movimentacao == 'receita' %}rgba(76, 175, 80, 0.1){% else %}rgba(251, 140, 0, 0.1){% endif %};
+    }
+
+    .form-field input[readonly] {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+      color: #666;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .help-text i {
+      font-size: 11px;
+    }
+
+    .status-select {
+      font-weight: 600;
+    }
+
+    .status-select option[value="Pago"] {
+      color: #4caf50;
+    }
+
+    .status-select option[value="Pendente"] {
+      color: #fb8c00;
+    }
+
+    .info-card {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      border-left: 4px solid #2196f3;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    .info-card h3 {
+      margin: 0 0 12px 0;
+      color: #1976d2;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1976d2;
+    }
+
+    .diferenca-container {
+      background: #fff3e0;
+      border: 2px solid #fb8c00;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .diferenca-container.show {
+      display: block;
+    }
+
+    .diferenca-container h4 {
+      margin: 0 0 10px 0;
+      color: #f57c00;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .diferenca-valor {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e65100;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      padding-top: 30px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    .btn {
+      padding: 14px 30px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-cancelar {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .btn-cancelar:hover {
+      background: #e0e0e0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-salvar {
+      background: linear-gradient(135deg, {% if tipo_movimentacao == 'receita' %}#4caf50 0%, #2e7d32 100%{% else %}#fb8c00 0%, #f57c00 100%{% endif %});
+      color: white;
+      box-shadow: 0 4px 12px {% if tipo_movimentacao == 'receita' %}rgba(76, 175, 80, 0.3){% else %}rgba(251, 140, 0, 0.3){% endif %};
+    }
+
+    .btn-salvar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px {% if tipo_movimentacao == 'receita' %}rgba(76, 175, 80, 0.4){% else %}rgba(251, 140, 0, 0.4){% endif %};
+    }
+
+    .errorlist {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0 0;
+    }
+
+    .errorlist li {
+      background: #ffebee;
+      color: #c62828;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 4px;
+      border-left: 3px solid #f44336;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid,
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .parcela-form-container {
+        margin: 15px;
+      }
+
+      .form-body {
+        padding: 25px 20px;
+      }
+    }
+  </style>
+
+  <div class="parcela-form-container">
+    <div class="form-header">
+      <h2>
+        {% if tipo_movimentacao == 'receita' %}
+          <i class="fas fa-arrow-up"></i>
+        {% else %}
+          <i class="fas fa-arrow-down"></i>
+        {% endif %}
+        Parcela {{ object.ordem_parcela }} de {{ total_parcelas }}
+        <span class="badge-tipo">{{ movimentacao.get_tipo_display }}</span>
+      </h2>
+    </div>
+
+    <div class="form-body">
+      <!-- Informações da Movimentação -->
+      <div class="info-card">
+        <h3>
+          <i class="fas fa-info-circle"></i>
+          Informações da Parcela
+        </h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-hashtag"></i> Número da Parcela
+            </span>
+            <span class="info-value">{{ object.ordem_parcela }} de {{ total_parcelas }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-coins"></i> Valor da Parcela
+            </span>
+            <span class="info-value">R$ {{ object.valor_parcela|floatformat:2 }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-calendar-alt"></i> Data de Vencimento
+            </span>
+            <span class="info-value">{{ object.data_vencimento|date:"d/m/Y" }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-tag"></i> Categoria
+            </span>
+            <span class="info-value">{{ movimentacao.categoria }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-handshake"></i> Parceiro
+            </span>
+            <span class="info-value">{{ movimentacao.parceiros }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">
+              <i class="fas fa-home"></i> Fazenda
+            </span>
+            <span class="info-value">{{ movimentacao.fazenda }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <form method="post" id="parcelaForm">
+        {% csrf_token %}
+        
+        <div class="form-grid">
+          <!-- Valor Pago -->
+          <div class="form-field">
+            <label for="{{ form.valor_pago.id_for_label }}">
+              <i class="fas fa-money-bill-wave"></i>
+              {{ form.valor_pago.label }}
+              <span class="required">*</span>
+            </label>
+            {{ form.valor_pago }}
+            {% if form.valor_pago.help_text %}
+              <span class="help-text">
+                <i class="fas fa-info-circle"></i>
+                {{ form.valor_pago.help_text }}
+              </span>
+            {% endif %}
+            {{ form.valor_pago.errors }}
+          </div>
+
+          <!-- Status -->
+          <div class="form-field">
+            <label for="{{ form.status_pagamento.id_for_label }}">
+              <i class="fas fa-flag"></i>
+              {{ form.status_pagamento.label }}
+              <span class="required">*</span>
+            </label>
+            {{ form.status_pagamento }}
+            {% if form.status_pagamento.help_text %}
+              <span class="help-text">
+                <i class="fas fa-info-circle"></i>
+                {{ form.status_pagamento.help_text }}
+              </span>
+            {% endif %}
+            {{ form.status_pagamento.errors }}
+          </div>
+
+          <!-- Data de Quitação -->
+          <div class="form-field full-width">
+            <label for="{{ form.data_quitacao.id_for_label }}">
+              <i class="fas fa-calendar-check"></i>
+              {{ form.data_quitacao.label }}
+              <span class="required" id="quitacao-required" style="display: none;">*</span>
+            </label>
+            {{ form.data_quitacao }}
+            {% if form.data_quitacao.help_text %}
+              <span class="help-text">
+                <i class="fas fa-info-circle"></i>
+                {{ form.data_quitacao.help_text }}
+              </span>
+            {% endif %}
+            {{ form.data_quitacao.errors }}
+          </div>
+        </div>
+
+        <!-- Alerta de Diferença -->
+        <div class="diferenca-container" id="diferencaContainer">
+          <h4>
+            <i class="fas fa-exclamation-triangle"></i>
+            Atenção: Diferença detectada
+          </h4>
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            Valor pago diferente do valor da parcela:
+          </p>
+          <div class="diferenca-valor" id="diferencaValor"></div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="form-actions">
+          <a href="{% if tipo_movimentacao == 'receita' %}{% url 'listar_parcelas_receita' %}{% else %}{% url 'listar_parcelas_despesa' %}{% endif %}" class="btn btn-cancelar">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-salvar">
+            <i class="fas fa-save"></i>
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const valorParcela = {{ object.valor_parcela }};
+
+    // Toggle data de quitação baseado no status
+    function toggleDataQuitacao(selectElement) {
+      const dataQuitacaoField = document.getElementById('{{ form.data_quitacao.id_for_label }}');
+      const requiredIndicator = document.getElementById('quitacao-required');
+      const valorPagoField = document.getElementById('{{ form.valor_pago.id_for_label }}');
+      
+      if (selectElement.value === 'Pago') {
+        dataQuitacaoField.required = true;
+        requiredIndicator.style.display = 'inline';
+        
+        // Se data de quitação estiver vazia, preenche com hoje
+        if (!dataQuitacaoField.value) {
+          const hoje = new Date().toISOString().split('T')[0];
+          dataQuitacaoField.value = hoje;
+        }
+        
+        // Se valor pago for zero, preenche com valor da parcela
+        if (parseFloat(valorPagoField.value) === 0) {
+          valorPagoField.value = valorParcela.toFixed(2);
+        }
+      } else {
+        dataQuitacaoField.required = false;
+        requiredIndicator.style.display = 'none';
+        dataQuitacaoField.value = '';
+        valorPagoField.value = '0.00';
+      }
+      
+      calcularDiferenca();
+    }
+
+    // Calcular diferença entre valor pago e valor da parcela
+    function calcularDiferenca() {
+      const valorPago = parseFloat(document.getElementById('{{ form.valor_pago.id_for_label }}').value) || 0;
+      const status = document.getElementById('{{ form.status_pagamento.id_for_label }}').value;
+      
+      const diferenca = Math.abs(valorPago - valorParcela);
+      const diferencaContainer = document.getElementById('diferencaContainer');
+      const diferencaValor = document.getElementById('diferencaValor');
+      
+      if (status === 'Pago' && diferenca > 0.01) {
+        diferencaContainer.classList.add('show');
+        
+        if (valorPago > valorParcela) {
+          diferencaValor.innerHTML = `<i class="fas fa-arrow-up"></i> Pago R$ ${diferenca.toFixed(2)} a mais`;
+          diferencaValor.style.color = '#2e7d32';
+        } else {
+          diferencaValor.innerHTML = `<i class="fas fa-arrow-down"></i> Pago R$ ${diferenca.toFixed(2)} a menos`;
+          diferencaValor.style.color = '#d32f2f';
+        }
+      } else {
+        diferencaContainer.classList.remove('show');
+      }
+    }
+
+    // Inicializar ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      const statusSelect = document.getElementById('{{ form.status_pagamento.id_for_label }}');
+      const valorPagoInput = document.getElementById('{{ form.valor_pago.id_for_label }}');
+      const dataQuitacaoField = document.getElementById('{{ form.data_quitacao.id_for_label }}');
+      const requiredIndicator = document.getElementById('quitacao-required');
+      
+      // Configurar estado inicial baseado no status atual
+      if (statusSelect.value === 'Pago') {
+        dataQuitacaoField.required = true;
+        requiredIndicator.style.display = 'inline';
+      } else {
+        dataQuitacaoField.required = false;
+        requiredIndicator.style.display = 'none';
+      }
+      
+      // Calcular diferença inicial
+      calcularDiferenca();
+      
+      // Adicionar listeners
+      statusSelect.addEventListener('change', function() {
+        toggleDataQuitacao(this);
+      });
+      
+      valorPagoInput.addEventListener('input', calcularDiferenca);
+    });
+  </script>
+</main>
+{% endblock %}

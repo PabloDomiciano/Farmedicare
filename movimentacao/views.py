@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView, ListView
 from django.utils import timezone
 from .models import Categoria, Movimentacao, Parcela
-from .forms import MovimentacaoForm, CategoriaForm
+from .forms import MovimentacaoForm, CategoriaForm, ParcelaForm
 
 
 # Create your views here.
@@ -167,9 +168,9 @@ class MovimentacaoUpdateView(LoginRequiredMixin, UpdateView):
 ############ Update Parcela ############
 class ParcelaUpdateView(LoginRequiredMixin, UpdateView):
     model = Parcela
-    fields = ["valor_pago", "status_pagamento", "data_quitacao"]
-    template_name = "formularios/formulario_modelo.html"
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    form_class = ParcelaForm
+    template_name = "parcela/formulario_parcela.html"
+    login_url = reverse_lazy("login")
 
     def get_success_url(self):
         # Redireciona para a lista correta baseada no tipo de movimentação
@@ -178,17 +179,26 @@ class ParcelaUpdateView(LoginRequiredMixin, UpdateView):
         else:
             return reverse_lazy("listar_parcelas_despesa")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        parcela = self.object
+        movimentacao = parcela.movimentacao
+        
+        context.update({
+            'title': f'Editar Parcela {parcela.ordem_parcela}/{movimentacao.parcelas}',
+            'titulo': f'Editar Parcela {parcela.ordem_parcela} de {movimentacao.parcelas}',
+            'subtitulo': f'{movimentacao.get_tipo_display()}: {movimentacao.categoria} - {movimentacao.parceiros}',
+            'movimentacao': movimentacao,
+            'total_parcelas': movimentacao.parcelas,
+            'tipo_movimentacao': movimentacao.tipo,
+        })
+        return context
+
     def form_valid(self, form):
-        # Se o status for alterado para "Pago" e data_quitacao estiver vazia, preenche com hoje
-        if form.instance.status_pagamento == "Pago" and not form.instance.data_quitacao:
-            form.instance.data_quitacao = datetime.now().date()
-
-        # Se o valor pago for igual ao valor da parcela, marca como pago
-        if form.instance.valor_pago >= form.instance.valor_parcela:
-            form.instance.status_pagamento = "Pago"
-            if not form.instance.data_quitacao:
-                form.instance.data_quitacao = datetime.now().date()
-
+        messages.success(
+            self.request,
+            f'Parcela {form.instance.ordem_parcela} atualizada com sucesso!'
+        )
         return super().form_valid(form)
 
 
