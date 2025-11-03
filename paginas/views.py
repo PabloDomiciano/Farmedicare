@@ -14,9 +14,39 @@ class PaginaView(TemplateView):
         context = super().get_context_data(**kwargs)
 
         hoje = date.today()
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
         
-        # ========== OTIMIZAÇÃO: Uma única query para totais de receitas e despesas ==========
-        totais = Movimentacao.objects.aggregate(
+        if not fazenda_ativa:
+            # Se não há fazenda ativa, retorna contexto vazio
+            context.update({
+                "total_quantidade": 0,
+                "total_valor": 0,
+                "total_receitas": 0,
+                "total_despesas": 0,
+                "saldo": 0,
+                "crescimento_receitas": 0,
+                "crescimento_despesas": 0,
+                "total_medicamentos": 0,
+                "medicamentos_proximos_vencer": 0,
+                "alertas_urgentes": 0,
+                "total_alertas": 0,
+                "ultimas_receitas": [],
+                "ultimas_despesas": [],
+                "medicamentos_vencimento": [],
+                "today": hoje,
+                "grafico_data_json": json.dumps({
+                    "meses": [],
+                    "receitas": [],
+                    "despesas": [],
+                    "categorias": [],
+                    "valores": [],
+                    "totais": {"receitas": 0, "despesas": 0, "saldo": 0},
+                })
+            })
+            return context
+        
+        # ========== OTIMIZAÇÃO: Uma única query para totais de receitas e despesas (FILTRANDO POR FAZENDA) ==========
+        totais = Movimentacao.objects.filter(fazenda=fazenda_ativa).aggregate(
             total_receitas=Sum('valor_total', filter=Q(categoria__tipo='receita')),
             total_despesas=Sum('valor_total', filter=Q(categoria__tipo='despesa'))
         )
@@ -31,8 +61,9 @@ class PaginaView(TemplateView):
         mes_atual_fim = hoje
         mes_anterior_fim = mes_atual_inicio - timedelta(days=1)
         
-        # Query otimizada para receitas e despesas dos 2 meses (uma query)
+        # Query otimizada para receitas e despesas dos 2 meses (uma query) - FILTRANDO POR FAZENDA
         crescimento_data = Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
             data__gte=mes_anterior_inicio
         ).aggregate(
             receitas_mes_atual=Sum('valor_total', filter=Q(
@@ -70,8 +101,10 @@ class PaginaView(TemplateView):
             if despesas_mes_anterior > 0 else 0
         )
 
-        # ========== OTIMIZAÇÃO: Aggregate para totais de medicamentos (uma query) ==========
-        totais_medicamentos = EntradaMedicamento.objects.aggregate(
+        # ========== OTIMIZAÇÃO: Aggregate para totais de medicamentos (uma query) - FILTRANDO POR FAZENDA ==========
+        totais_medicamentos = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa
+        ).aggregate(
             total_quantidade=Sum('quantidade'),
             total_valor=Sum('valor_medicamento')
         )
@@ -79,11 +112,13 @@ class PaginaView(TemplateView):
         total_quantidade = totais_medicamentos['total_quantidade'] or 0
         total_valor = totais_medicamentos['total_valor'] or 0
 
-        # ========== OTIMIZAÇÃO: Contagens de medicamentos (uma query com agregação) ==========
+        # ========== OTIMIZAÇÃO: Contagens de medicamentos (uma query com agregação) - FILTRANDO POR FAZENDA ==========
         data_limite_30 = hoje + timedelta(days=30)
         data_limite_7 = hoje + timedelta(days=7)
         
-        contagens_medicamentos = EntradaMedicamento.objects.aggregate(
+        contagens_medicamentos = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa
+        ).aggregate(
             total_medicamentos=Count('id', filter=Q(quantidade_disponivel__gt=0)),
             proximos_vencer_30=Count('id', filter=Q(
                 validade__lte=data_limite_30,
@@ -96,15 +131,17 @@ class PaginaView(TemplateView):
         medicamentos_proximos_vencer = contagens_medicamentos['proximos_vencer_30']
         alertas_urgentes = contagens_medicamentos['alertas_urgentes_7']
 
-        # ========== OTIMIZAÇÃO: Parcelas pendentes ==========
+        # ========== OTIMIZAÇÃO: Parcelas pendentes - FILTRANDO POR FAZENDA ==========
         parcelas_pendentes = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             status_pagamento="Pendente"
         ).only('id').count()
         
         total_alertas = parcelas_pendentes + medicamentos_proximos_vencer
 
-        # ========== OTIMIZAÇÃO: Últimas receitas e despesas - converter para lista para evitar re-queries ==========
+        # ========== OTIMIZAÇÃO: Últimas receitas e despesas - FILTRANDO POR FAZENDA ==========
         ultimas_receitas = list(Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
             categoria__tipo="receita"
         ).select_related(
             'categoria', 'fazenda', 'parceiros'
@@ -114,6 +151,7 @@ class PaginaView(TemplateView):
         ).order_by("-data")[:3])
 
         ultimas_despesas = list(Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
             categoria__tipo="despesa"
         ).select_related(
             'categoria', 'fazenda', 'parceiros'
@@ -122,8 +160,9 @@ class PaginaView(TemplateView):
             'categoria__nome', 'fazenda__nome', 'parceiros__nome'
         ).order_by("-data")[:3])
 
-        # ========== OTIMIZAÇÃO: Medicamentos próximos de vencer - converter para lista ==========
+        # ========== OTIMIZAÇÃO: Medicamentos próximos de vencer - FILTRANDO POR FAZENDA ==========
         medicamentos_vencimento = list(EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
             validade__gte=hoje,
             quantidade_disponivel__gt=0
         ).select_related(
@@ -153,9 +192,9 @@ class PaginaView(TemplateView):
         context["medicamentos_vencimento"] = medicamentos_vencimento
         context["today"] = hoje
 
-        # Dados para os gráficos
-        grafico_linhas = self.get_dados_grafico_linhas()
-        grafico_pizza = self.get_dados_grafico_pizza()
+        # Dados para os gráficos - PASSANDO FAZENDA
+        grafico_linhas = self.get_dados_grafico_linhas(fazenda_ativa)
+        grafico_pizza = self.get_dados_grafico_pizza(fazenda_ativa)
 
         context["grafico_receitas_despesas"] = grafico_linhas
         context["grafico_categorias"] = grafico_pizza
@@ -178,22 +217,27 @@ class PaginaView(TemplateView):
 
         return context
 
-    def get_dados_grafico_linhas(self):
+    def get_dados_grafico_linhas(self, fazenda):
         """
         OTIMIZADO: Busca dados dos últimos 6 meses em uma única query + Cache
         """
-        # Verificar cache primeiro (60 segundos)
-        cache_key = 'grafico_linhas_6meses'
+        # Cache específico por fazenda
+        cache_key = f'grafico_linhas_6meses_fazenda_{fazenda.id if fazenda else "none"}'
         cached_data = cache.get(cache_key)
         if cached_data:
             return cached_data
+        
+        # Se não há fazenda, retornar vazio
+        if not fazenda:
+            return {'meses': [], 'receitas': [], 'despesas': []}
         
         # Calcular range dos últimos 6 meses
         hoje = date.today()
         inicio_periodo = (datetime.now() - timedelta(days=180)).replace(day=1).date()
         
-        # Uma única query para todos os meses - converter para lista
+        # Uma única query para todos os meses - FILTRANDO POR FAZENDA
         movimentacoes = list(Movimentacao.objects.filter(
+            fazenda=fazenda,
             data__gte=inicio_periodo
         ).values(
             'data', 'categoria__tipo', 'valor_total'
@@ -236,18 +280,26 @@ class PaginaView(TemplateView):
         cache.set(cache_key, result, 60)
         return result
 
-    def get_dados_grafico_pizza(self):
+    def get_dados_grafico_pizza(self, fazenda):
         """
         OTIMIZADO: Distribuição de despesas por categoria (uma query) + Cache
         """
-        # Verificar cache primeiro (60 segundos)
-        cache_key = 'grafico_pizza_despesas'
+        # Cache específico por fazenda
+        cache_key = f'grafico_pizza_despesas_fazenda_{fazenda.id if fazenda else "none"}'
         cached_data = cache.get(cache_key)
         if cached_data:
             return cached_data
         
+        # Se não há fazenda, retornar vazio
+        if not fazenda:
+            return {"categorias": [], "valores": []}
+        
+        # FILTRANDO POR FAZENDA
         categorias = list(
-            Movimentacao.objects.filter(categoria__tipo="despesa")
+            Movimentacao.objects.filter(
+                fazenda=fazenda,
+                categoria__tipo="despesa"
+            )
             .values("categoria__nome")
             .annotate(total=Sum("valor_total"))
             .order_by("-total")
