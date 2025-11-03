@@ -420,8 +420,7 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
 ############ List Movimentação Receita ############
 class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
-    # template_name = "receita/lista_receita.html"  # Template original
-    template_name = "receita/lista_receita_teste.html"  # Template de teste SEM JS
+    template_name = "receita/lista_receita.html"
     context_object_name = "receitas"
     login_url = reverse_lazy("login")
     paginate_by = 20
