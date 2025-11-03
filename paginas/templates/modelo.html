@@ -544,6 +544,137 @@
         color: #333;
       }
 
+      /* ========== RESPONSIVIDADE PARA BOTÃO DE NOTIFICAÇÃO E POPUP ========== */
+      
+      /* Tablet */
+      @media (max-width: 992px) {
+        .notification-popup {
+          width: 360px;
+          max-height: 500px;
+        }
+      }
+
+      /* Tablet Pequeno */
+      @media (max-width: 768px) {
+        .btn-notification {
+          font-size: 18px;
+          padding: 8px 12px;
+        }
+
+        .btn-notification .badge {
+          font-size: 10px;
+          padding: 2px 5px;
+          min-width: 16px;
+        }
+
+        .notification-popup {
+          width: calc(100vw - 40px);
+          max-width: 400px;
+          right: 20px;
+          top: 60px;
+          max-height: calc(100vh - 120px);
+        }
+
+        .notification-popup-header h3 {
+          font-size: 15px;
+        }
+
+        .notification-item {
+          padding: 12px 16px;
+        }
+
+        .notification-title {
+          font-size: 14px;
+        }
+
+        .notification-subtitle {
+          font-size: 12px;
+        }
+
+        .notification-text {
+          font-size: 12px;
+        }
+      }
+
+      /* Mobile */
+      @media (max-width: 576px) {
+        .btn-notification {
+          font-size: 16px;
+          padding: 6px 10px;
+        }
+
+        .btn-notification .badge {
+          font-size: 9px;
+          padding: 1px 4px;
+          min-width: 14px;
+          top: 3px;
+          right: 3px;
+        }
+
+        .notification-popup {
+          position: fixed;
+          top: 0;
+          right: 0;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          max-width: 100%;
+          max-height: 100%;
+          border-radius: 0;
+          transform: translateX(100%);
+        }
+
+        .notification-popup.show {
+          transform: translateX(0);
+        }
+
+        .notification-popup-header {
+          border-radius: 0;
+          padding: 14px 16px;
+        }
+
+        .notification-popup-header h3 {
+          font-size: 16px;
+        }
+
+        .notification-popup-header .close-popup {
+          font-size: 22px;
+          width: 35px;
+          height: 35px;
+        }
+
+        .notification-popup-body {
+          max-height: calc(100vh - 130px);
+        }
+
+        .notification-item {
+          padding: 14px;
+          border-left: none;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .notification-empty,
+        .notification-loading,
+        .notification-error {
+          padding: 60px 20px;
+        }
+
+        .notification-empty i,
+        .notification-loading i,
+        .notification-error i {
+          font-size: 56px;
+        }
+
+        .notification-popup-footer {
+          border-radius: 0;
+        }
+
+        .btn-view-all {
+          padding: 12px;
+          font-size: 15px;
+        }
+      }
+
       /* Animações */
       @keyframes slideInRight {
         from {
@@ -567,7 +698,7 @@
         }
       }
 
-      /* Responsivo */
+      /* Responsivo - Flash Messages */
       @media (max-width: 768px) {
         #flash-messages-container {
           top: 10px;

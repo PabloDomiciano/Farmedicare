@@ -120,6 +120,18 @@
   .header-actions {
     width: 100%;
     flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* Search container responsivo */
+  .search-container {
+    width: 100%;
+    order: 1;
+  }
+
+  /* Botão de notificação alinhado */
+  .btn-notification {
+    order: 2;
   }
 
   .search-box {
@@ -315,6 +327,19 @@
     flex-direction: column;
     width: 100%;
     gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  /* Search container ocupa toda largura */
+  .search-container {
+    width: 100%;
+    order: 1;
+  }
+
+  /* Botão de notificação centralizado */
+  .btn-notification {
+    order: 2;
+    align-self: flex-end;
   }
 
   .search-box,

@@ -293,6 +293,16 @@ a {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-actions .search-container {
+  flex: 1;
+  min-width: 250px;
+}
+
+.header-actions .btn-notification {
+  flex-shrink: 0;
 }
 
 .search-box {
