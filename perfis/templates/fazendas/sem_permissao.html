@@ -1,0 +1,185 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>Acesso Negado - FarMedicare</title>
+{% endblock %}
+
+{% block cards %}
+<!-- Bloco vazio para não mostrar cards do template base -->
+{% endblock %}
+
+{% block graficos %}
+<!-- Bloco vazio para não mostrar gráficos do template base -->
+{% endblock %}
+
+{% block ultimos_registros %}
+<!-- Bloco vazio para não mostrar últimos registros do template base -->
+{% endblock %}
+
+{% block css_especifico %}
+<style>
+    .error-container {
+        max-width: 700px;
+        margin: 4rem auto;
+        text-align: center;
+        padding: 3rem;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .error-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+        box-shadow: 0 8px 24px rgba(238, 90, 82, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .error-container h1 {
+        color: #d32f2f;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .error-container p {
+        color: #666;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        margin-bottom: 2.5rem;
+    }
+
+    .error-details {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border-left: 4px solid #ff9800;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2.5rem;
+        text-align: left;
+    }
+
+    .error-details h3 {
+        color: #e65100;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .error-details h3 i {
+        font-size: 1.2rem;
+    }
+
+    .error-details ul {
+        margin: 0;
+        padding-left: 1.5rem;
+        color: #555;
+    }
+
+    .error-details li {
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, #4a8f29 0%, #3a7320 100%);
+        color: white;
+        padding: 1rem 3rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        box-shadow: 0 4px 12px rgba(74, 143, 41, 0.3);
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(74, 143, 41, 0.4);
+    }
+
+    .btn-back i {
+        font-size: 1.2rem;
+    }
+
+    .info-card {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f1f8ff 100%);
+        border-left: 4px solid #2196f3;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2.5rem;
+        text-align: left;
+    }
+
+    .info-card h4 {
+        color: #1976d2;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-card p {
+        margin: 0;
+        color: #555;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-hand-paper"></i>
+        </div>
+
+        <h1>🚫 Acesso Negado</h1>
+        <p>Você não tem permissão para realizar esta ação.</p>
+
+        <div class="error-details">
+            <h3><i class="fas fa-exclamation-triangle"></i> Por que isso aconteceu?</h3>
+            <ul>
+                <li>Apenas o <strong>proprietário da fazenda</strong> pode editar ou excluir</li>
+                <li>Funcionários têm <strong>acesso apenas para visualização</strong></li>
+                <li>Esta é uma medida de segurança para proteger os dados da fazenda</li>
+            </ul>
+        </div>
+
+        <div class="info-card">
+            <h4><i class="fas fa-info-circle"></i> Precisa realizar alterações?</h4>
+            <p>Entre em contato com o proprietário da fazenda para solicitar as mudanças necessárias.</p>
+        </div>
+
+        <a href="{% url 'listar_fazendas' %}" class="btn-back">
+            <i class="fas fa-arrow-left"></i>
+            Voltar para Fazendas
+        </a>
+    </div>
+</main>
+{% endblock %}

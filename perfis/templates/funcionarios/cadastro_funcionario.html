@@ -1,0 +1,535 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Funcionário - FarMedicare</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f9f2;
+            background-image: url("{% static 'img/logo.png' %}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-blend-mode: overlay;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4a8f29;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            background: white;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-link:hover {
+            background: #f0f8f0;
+            transform: translateX(-5px);
+        }
+
+        .welcome-header {
+            text-align: center;
+            color: #2e7d32;
+            margin-bottom: 2rem;
+        }
+
+        .welcome-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .welcome-header p {
+            font-size: 1rem;
+            color: #3a7320;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #4a8f29 0%, #3a7320 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .card-header i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .card-header h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .card-body {
+            padding: 2.5rem;
+        }
+
+        .fazenda-info {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f0f8f0 100%);
+            border-left: 4px solid #4a8f29;
+            padding: 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .fazenda-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4a8f29 0%, #3a7320 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .fazenda-details strong {
+            color: #2e7d32;
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 1.1rem;
+        }
+
+        .fazenda-details span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e8f5e9;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            color: #4a8f29;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: #f44336;
+            margin-left: 3px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a8f29;
+            box-shadow: 0 0 0 4px rgba(74, 143, 41, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        .help-text {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .errorlist {
+            list-style: none;
+            margin: 0.5rem 0 0 0;
+            padding: 0;
+        }
+
+        .errorlist li {
+            color: #f44336;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .errorlist li::before {
+            content: '⚠';
+            font-size: 1rem;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+            margin: 2rem 0;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: #4a8f29;
+            color: #4a8f29;
+        }
+
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            color: #1976d2;
+        }
+
+        .alert i {
+            font-size: 1.3rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-container {
+                flex-direction: column-reverse;
+            }
+
+            .welcome-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navegação -->
+        <div class="header-nav">
+            <a href="{% url 'listar_funcionarios' fazenda.id %}" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                Voltar
+            </a>
+        </div>
+
+        <!-- Header de Boas-vindas -->
+        <div class="welcome-header">
+            <h1><i class="fas fa-user-plus"></i> {{ titulo }}</h1>
+            <p>{{ subtitulo }}</p>
+        </div>
+
+        <!-- Card Principal -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users"></i>
+                <h2>Novo Funcionário</h2>
+                <p>Preencha os dados para criar o acesso do funcionário</p>
+            </div>
+
+            <div class="card-body">
+                <!-- Informações da Fazenda -->
+                <div class="fazenda-info">
+                    <div class="fazenda-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="fazenda-details">
+                        <strong>{{ fazenda.nome }}</strong>
+                        <span>
+                            <i class="fas fa-map-marker-alt"></i>
+                            {% if fazenda.cidade %}{{ fazenda.cidade }}{% endif %}
+                            {% if fazenda.estado %} - {{ fazenda.estado }}{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Importante:</strong> O funcionário terá acesso apenas a esta fazenda e poderá fazer login usando o nome de usuário e senha cadastrados.
+                    </div>
+                </div>
+
+                <!-- Formulário -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Dados Pessoais -->
+                    <div class="section-title">
+                        <i class="fas fa-user"></i>
+                        Dados Pessoais
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.first_name.id_for_label }}">
+                                {{ form.first_name.label }}<span class="required">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.help_text %}
+                                <span class="help-text">{{ form.first_name.help_text }}</span>
+                            {% endif %}
+                            {{ form.first_name.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.last_name.id_for_label }}">
+                                {{ form.last_name.label }}<span class="required">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.help_text %}
+                                <span class="help-text">{{ form.last_name.help_text }}</span>
+                            {% endif %}
+                            {{ form.last_name.errors }}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.telefone.id_for_label }}">
+                                {{ form.telefone.label }}
+                            </label>
+                            {{ form.telefone }}
+                            {% if form.telefone.help_text %}
+                                <span class="help-text">{{ form.telefone.help_text }}</span>
+                            {% endif %}
+                            {{ form.telefone.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.cpf.id_for_label }}">
+                                {{ form.cpf.label }}
+                            </label>
+                            {{ form.cpf }}
+                            {% if form.cpf.help_text %}
+                                <span class="help-text">{{ form.cpf.help_text }}</span>
+                            {% endif %}
+                            {{ form.cpf.errors }}
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Dados de Acesso -->
+                    <div class="section-title">
+                        <i class="fas fa-key"></i>
+                        Dados de Acesso
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.username.id_for_label }}">
+                            {{ form.username.label }}<span class="required">*</span>
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.help_text %}
+                            <span class="help-text">{{ form.username.help_text }}</span>
+                        {% endif %}
+                        {{ form.username.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.email.id_for_label }}">
+                            {{ form.email.label }}<span class="required">*</span>
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.help_text %}
+                            <span class="help-text">{{ form.email.help_text }}</span>
+                        {% endif %}
+                        {{ form.email.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.password1.id_for_label }}">
+                                {{ form.password1.label }}<span class="required">*</span>
+                            </label>
+                            {{ form.password1 }}
+                            {% if form.password1.help_text %}
+                                <span class="help-text">{{ form.password1.help_text }}</span>
+                            {% endif %}
+                            {{ form.password1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.password2.id_for_label }}">
+                                {{ form.password2.label }}<span class="required">*</span>
+                            </label>
+                            {{ form.password2 }}
+                            {% if form.password2.help_text %}
+                                <span class="help-text">{{ form.password2.help_text }}</span>
+                            {% endif %}
+                            {{ form.password2.errors }}
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="btn-container">
+                        <a href="{% url 'listar_funcionarios' fazenda.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Cadastrar Funcionário
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

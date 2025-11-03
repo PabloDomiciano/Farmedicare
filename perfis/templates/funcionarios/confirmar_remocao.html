@@ -1,0 +1,71 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>{{ titulo }} - FarMedicare</title>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Remoção
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Atenção!</strong> Você está prestes a remover o acesso deste funcionário.
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted">Funcionário:</h6>
+                        <p class="h5">
+                            <i class="fas fa-user"></i> 
+                            {{ perfil.user.get_full_name|default:perfil.user.username }}
+                        </p>
+
+                        <h6 class="text-muted mt-3">Fazenda:</h6>
+                        <p class="h5">
+                            <i class="fas fa-building"></i> 
+                            {{ fazenda.nome }}
+                        </p>
+
+                        <hr>
+
+                        <div class="alert alert-info">
+                            <strong>O que vai acontecer:</strong>
+                            <ul class="mb-0">
+                                {% if perfil.fazendas.count == 1 %}
+                                    <li>Este funcionário tem acesso apenas a esta fazenda</li>
+                                    <li class="text-danger"><strong>Ao remover, o usuário será DESATIVADO</strong></li>
+                                    <li>Ele não poderá mais fazer login no sistema</li>
+                                {% else %}
+                                    <li>O acesso a esta fazenda será removido</li>
+                                    <li>Ele ainda terá acesso a {{ perfil.fazendas.count|add:"-1" }} outra(s) fazenda(s)</li>
+                                    <li>Poderá continuar usando o sistema normalmente</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'listar_funcionarios' fazenda.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirmar Remoção
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

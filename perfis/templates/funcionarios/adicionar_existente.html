@@ -1,0 +1,335 @@
+{% extends 'modelo.html' %}
+{% load static %}
+
+{% block titulo %}
+<title>Adicionar Funcionário Existente - FarMedicare</title>
+{% endblock %}
+
+{% block cards %}
+<!-- Bloco vazio para não mostrar cards do template base -->
+{% endblock %}
+
+{% block graficos %}
+<!-- Bloco vazio para não mostrar gráficos do template base -->
+{% endblock %}
+
+{% block ultimos_registros %}
+<!-- Bloco vazio para não mostrar últimos registros do template base -->
+{% endblock %}
+
+{% block css_especifico %}
+<style>
+    /* Container Principal */
+    .form-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    /* Cabeçalho do Formulário */
+    .form-header {
+        background: linear-gradient(135deg, #4a8f29 0%, #3a7320 100%);
+        color: white;
+        padding: 2.5rem 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+    }
+
+    .form-header h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-header h2 i {
+        margin-right: 0.75rem;
+        font-size: 1.5rem;
+    }
+
+    .form-header p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Corpo do Formulário */
+    .form-body {
+        padding: 2.5rem;
+    }
+
+    /* Grupos de Formulário */
+    .form-group {
+        margin-bottom: 2rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.75rem;
+        color: #2c5219;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group label i {
+        color: #4a8f29;
+    }
+
+    .form-group select {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        border: 2px solid #e8f5e9;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background-color: #fafafa;
+        color: #333;
+        cursor: pointer;
+    }
+
+    .form-group select:hover {
+        background-color: #fff;
+        border-color: #c8e6c9;
+    }
+
+    .form-group select:focus {
+        outline: none;
+        border-color: #4a8f29;
+        background-color: #fff;
+        box-shadow: 0 0 0 4px rgba(74, 143, 41, 0.1);
+    }
+
+    /* Ações do Formulário */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2.5rem;
+        padding-top: 2rem;
+        border-top: 2px solid #f5f5f5;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .btn i {
+        font-size: 1.1rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #4a8f29 0%, #3a7320 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(74, 143, 41, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(74, 143, 41, 0.4);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+        border: 2px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+        background: #e8f5e9;
+        border-color: #4a8f29;
+        color: #4a8f29;
+    }
+
+    /* Alertas */
+    .alert {
+        padding: 1.25rem 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        line-height: 1.6;
+    }
+
+    .alert i {
+        font-size: 1.5rem;
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+        border-left: 4px solid #4a8f29;
+        color: #2c5219;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid #28a745;
+        color: #155724;
+    }
+
+    .alert-error {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+    }
+
+    /* Lista de Erros */
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0.75rem 0 0 0;
+    }
+
+    .errorlist li {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .errorlist li::before {
+        content: '⚠';
+        font-size: 1.1rem;
+    }
+
+    .has-error select {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+
+    .has-error select:focus {
+        box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
+    }
+
+    /* Texto de Ajuda */
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+        display: block;
+        font-style: italic;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 1rem;
+        }
+
+        .form-header {
+            padding: 2rem 1.5rem;
+        }
+
+        .form-body {
+            padding: 1.5rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<main class="main-content">
+    <div class="form-container">
+        <div class="form-header">
+            <h2><i class="fas fa-user-plus"></i> Adicionar Funcionário Existente</h2>
+            <p>Selecione um funcionário já cadastrado para associar à fazenda {{ fazenda.nome }}</p>
+        </div>
+
+        <div class="form-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <span>Você está adicionando um funcionário que já está cadastrado em outra fazenda. Ele terá acesso a ambas as fazendas.</span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group {% if form.funcionario.errors %}has-error{% endif %}">
+                    <label for="{{ form.funcionario.id_for_label }}">
+                        <i class="fas fa-user-tie"></i>
+                        {{ form.funcionario.label }}
+                    </label>
+                    {{ form.funcionario }}
+                    {% if form.funcionario.help_text %}
+                        <span class="help-text">{{ form.funcionario.help_text }}</span>
+                    {% endif %}
+                    {% if form.funcionario.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.funcionario.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="form-actions">
+                    <a href="{% url 'listar_funcionarios' fazenda.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i>
+                        Adicionar Funcionário
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}
