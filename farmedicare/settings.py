@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'perfis.middleware.FazendaMiddleware',  # Middleware de controle de fazenda
 ]
 
 ROOT_URLCONF = 'farmedicare.urls'
@@ -72,6 +73,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'paginas.context_processors.notificacoes_count',  # Context processor de notificações
+                'perfis.context_processors.fazenda_ativa',  # Context processor de fazenda ativa
             ],
         },
     },
