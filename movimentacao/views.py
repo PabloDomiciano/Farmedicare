@@ -420,7 +420,8 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
 ############ List Movimentação Receita ############
 class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
-    template_name = "receita/lista_receita.html"
+    # template_name = "receita/lista_receita.html"  # Template original
+    template_name = "receita/lista_receita_teste.html"  # Template de teste SEM JS
     context_object_name = "receitas"
     login_url = reverse_lazy("login")
     paginate_by = 20
@@ -428,6 +429,10 @@ class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         """Filtra receitas apenas da fazenda ativa"""
+        # Proteção: Verifica se há fazenda ativa
+        if not hasattr(self.request, 'fazenda_ativa') or not self.request.fazenda_ativa:
+            return Movimentacao.objects.none()
+        
         queryset = (
             super()
             .get_queryset()
@@ -487,6 +492,10 @@ class MovimentacaoDespesaListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         """Filtra despesas apenas da fazenda ativa"""
+        # Proteção: Verifica se há fazenda ativa
+        if not hasattr(self.request, 'fazenda_ativa') or not self.request.fazenda_ativa:
+            return Movimentacao.objects.none()
+        
         queryset = (
             super()
             .get_queryset()
