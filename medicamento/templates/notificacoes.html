@@ -11,14 +11,7 @@
         <input type="text" id="searchInput" placeholder="Pesquisar notificações..." />
         <i class="fas fa-search"></i>
       </div>
-      {% block admin %}{% endblock %}
-      <button class="btn btn-notification" id="notificationBtn">
-        <i class="fas fa-bell"></i>
-        {% if notificacoes_count > 0 %}
-        <span class="badge">{{ notificacoes_count }}</span>
-        {% endif %}
-      </button>
-    </div>
+      {% block admin %}{% endblock %}</div>
   </header>
   {% block conteudo_admin %}{% endblock %}
 {% endblock %}
