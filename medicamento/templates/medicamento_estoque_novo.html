@@ -7,16 +7,7 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <!-- Incluir barra de pesquisa do backend -->
-      {% include 'search_bar.html' %}
-      
       {% block admin %}{% endblock %}
-      <button class="btn btn-notification" id="notificationBtn">
-        <i class="fas fa-bell"></i>
-        {% if notificacoes_count > 0 %}
-        <span class="badge">{{ notificacoes_count }}</span>
-        {% endif %}
-      </button>
     </div>
   </header>
   {% block conteudo_admin %}{% endblock %}
@@ -26,6 +17,101 @@
 
 {% block graficos %}
   <style>
+    /* Barra de Pesquisa */
+    .search-container {
+      margin: 20px auto;
+      padding: 0 20px;
+      max-width: 1200px;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+      min-width: 200px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 40px 10px 15px;
+      border: 2px solid #42a5f5;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 8px rgba(66, 165, 245, 0.3);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #42a5f5;
+      pointer-events: none;
+    }
+
+    .search-btn,
+    .clear-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+
+    .search-btn {
+      background-color: #42a5f5;
+      color: white;
+    }
+
+    .search-btn:hover {
+      background-color: #1976d2;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(66, 165, 245, 0.3);
+    }
+
+    .clear-btn {
+      background-color: #6c757d;
+      color: white;
+      text-decoration: none;
+    }
+
+    .clear-btn:hover {
+      background-color: #5a6268;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+    }
+
+    .search-result-info {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+      padding: 8px 12px;
+      background: #e3f2fd;
+      border-left: 4px solid #42a5f5;
+      border-radius: 4px;
+    }
+
+    .search-result-info strong {
+      color: #1976d2;
+    }
+
     /* Tema Azul para Medicamentos */
     .medicamentos-filters {
       background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
@@ -726,6 +812,72 @@
         width: 0%;
       }
     }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .search-form {
+        gap: 8px;
+      }
+
+      .search-input-wrapper {
+        min-width: 150px;
+      }
+
+      .search-input {
+        font-size: 13px;
+        padding: 9px 35px 9px 12px;
+      }
+
+      .search-btn,
+      .clear-btn {
+        padding: 9px 16px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .search-form {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .search-input-wrapper {
+        width: 100%;
+        min-width: unset;
+      }
+
+      .search-btn,
+      .clear-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+      }
+
+      .search-result-info {
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .search-btn .btn-text,
+      .clear-btn .btn-text {
+        display: none;
+      }
+
+      .search-btn,
+      .clear-btn {
+        width: auto;
+        min-width: 45px;
+      }
+
+      .search-form {
+        flex-direction: row;
+      }
+
+      .search-input-wrapper {
+        flex: 1;
+      }
+    }
   </style>
 
   <!-- Botão de Nova Entrada -->
@@ -734,6 +886,51 @@
       <i class="fas fa-plus-circle" style="font-size: 24px;"></i>
       <span>{{ btn_cadastrar }}</span>
     </a>
+  </div>
+
+  <!-- Barra de Pesquisa -->
+  <div class="search-container">
+    <form method="get" action="" class="search-form">
+      <div class="search-input-wrapper">
+        <input 
+          type="text" 
+          name="search" 
+          id="searchInput"
+          value="{{ search_query|default:'' }}" 
+          placeholder="Pesquisar medicamentos..."
+          class="search-input"
+        />
+        <i class="fas fa-search search-icon"></i>
+      </div>
+      
+      <button type="submit" class="btn btn-primary search-btn">
+        <i class="fas fa-search"></i> 
+        <span class="btn-text">Pesquisar</span>
+      </button>
+      
+      {% if search_query %}
+      <a href="?" class="btn btn-secondary clear-btn">
+        <i class="fas fa-times"></i> 
+        <span class="btn-text">Limpar</span>
+      </a>
+      {% endif %}
+      
+      {% for key, value in request.GET.items %}
+        {% if key != 'search' and key != 'page' %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endif %}
+      {% endfor %}
+    </form>
+    
+    {% if search_query %}
+    <div class="search-result-info">
+      <i class="fas fa-info-circle"></i> 
+      Pesquisando por: <strong>{{ search_query }}</strong>
+      {% if page_obj.paginator.count %}
+        - {{ page_obj.paginator.count }} resultado(s) encontrado(s)
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 
   <!-- Filtros e Estatísticas -->

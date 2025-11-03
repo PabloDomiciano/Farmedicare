@@ -7,16 +7,7 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <!-- Incluir barra de pesquisa do backend -->
-      {% include 'search_bar.html' %}
-      
       {% block admin %}{% endblock %}
-      <button class="btn btn-notification" id="notificationBtn">
-        <i class="fas fa-bell"></i>
-        {% if notificacoes_count > 0 %}
-        <span class="badge">{{ notificacoes_count }}</span>
-        {% endif %}
-      </button>
     </div>
   </header>
   {% block conteudo_admin %}{% endblock %}
@@ -79,6 +70,7 @@
       display: flex;
       gap: 1rem;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .btn-add {
@@ -93,12 +85,108 @@
       gap: 0.5rem;
       transition: all 0.3s;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      white-space: nowrap;
     }
 
     .btn-add:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       background-color: #f5f5f5;
+    }
+
+    /* Barra de Pesquisa */
+    .search-container {
+      margin: 20px auto;
+      padding: 0 20px;
+      max-width: 1200px;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+      min-width: 200px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 40px 10px 15px;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #2e7d32;
+      box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4caf50;
+      pointer-events: none;
+    }
+
+    .search-btn,
+    .clear-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+
+    .search-btn {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .search-btn:hover {
+      background-color: #2e7d32;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .clear-btn {
+      background-color: #6c757d;
+      color: white;
+      text-decoration: none;
+    }
+
+    .clear-btn:hover {
+      background-color: #5a6268;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+    }
+
+    .search-result-info {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+      padding: 8px 12px;
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      border-radius: 4px;
+    }
+
+    .search-result-info strong {
+      color: #2e7d32;
     }
 
     /* Tema Verde para Parcelas de Receitas (A Receber) */
@@ -364,6 +452,99 @@
       opacity: 1;
       color: white;
     }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .lista-header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .lista-title-section h2 {
+        font-size: 1.75rem;
+      }
+
+      .lista-actions {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .btn-add {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .search-form {
+        gap: 8px;
+      }
+
+      .search-input-wrapper {
+        min-width: 150px;
+      }
+
+      .search-input {
+        font-size: 13px;
+        padding: 9px 35px 9px 12px;
+      }
+
+      .search-btn,
+      .clear-btn {
+        padding: 9px 16px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .lista-title-section h2 {
+        font-size: 1.5rem;
+      }
+      
+      .lista-subtitle {
+        font-size: 0.9rem;
+      }
+
+      .search-form {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .search-input-wrapper {
+        width: 100%;
+        min-width: unset;
+      }
+
+      .search-btn,
+      .clear-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+      }
+
+      .search-result-info {
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .search-btn .btn-text,
+      .clear-btn .btn-text {
+        display: none;
+      }
+
+      .search-btn,
+      .clear-btn {
+        width: auto;
+        min-width: 45px;
+      }
+
+      .search-form {
+        flex-direction: row;
+      }
+
+      .search-input-wrapper {
+        flex: 1;
+      }
+    }
   </style>
 
   <div class="lista-card">
@@ -382,6 +563,51 @@
         </a>
       </div>
     </div>
+
+  <!-- Barra de Pesquisa -->
+  <div class="search-container">
+    <form method="get" action="" class="search-form">
+      <div class="search-input-wrapper">
+        <input 
+          type="text" 
+          name="search" 
+          id="searchInput"
+          value="{{ search_query|default:'' }}" 
+          placeholder="Pesquisar parcelas..."
+          class="search-input"
+        />
+        <i class="fas fa-search search-icon"></i>
+      </div>
+      
+      <button type="submit" class="btn btn-primary search-btn">
+        <i class="fas fa-search"></i> 
+        <span class="btn-text">Pesquisar</span>
+      </button>
+      
+      {% if search_query %}
+      <a href="?" class="btn btn-secondary clear-btn">
+        <i class="fas fa-times"></i> 
+        <span class="btn-text">Limpar</span>
+      </a>
+      {% endif %}
+      
+      {% for key, value in request.GET.items %}
+        {% if key != 'search' and key != 'page' %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endif %}
+      {% endfor %}
+    </form>
+    
+    {% if search_query %}
+    <div class="search-result-info">
+      <i class="fas fa-info-circle"></i> 
+      Pesquisando por: <strong>{{ search_query }}</strong>
+      {% if page_obj.paginator.count %}
+        - {{ page_obj.paginator.count }} resultado(s) encontrado(s)
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
 
   <!-- Filtros e Estatísticas -->
   <div class="parcelas-filters">
