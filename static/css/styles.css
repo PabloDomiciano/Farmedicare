@@ -155,11 +155,114 @@ a {
 
 /* Footer da Sidebar */
 .sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid var(--light-gray);
-  text-align: center;
-  font-size: 0.8rem;
+  padding: 1.2rem 1rem;
+  border-top: 2px solid var(--light-gray);
+  background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+  font-size: 0.85rem;
   color: var(--gray);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  text-align: center;
+  width: 100%;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--light-gray);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.user-info strong {
+  display: block;
+  color: var(--dark);
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.user-info small {
+  display: block;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.sidebar-footer-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.logout-btn {
+  background: white;
+  border: 2px solid var(--light-gray);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--dark);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  position: relative;
+}
+
+.logout-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(74, 143, 41, 0.3);
+}
+
+.logout-btn i {
+  font-size: 1.1rem;
+}
+
+/* Efeito de pulso ao hover */
+.logout-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--primary-light);
+  opacity: 0;
+  transition: all 0.4s ease;
+}
+
+.logout-btn:hover::before {
+  width: 130%;
+  height: 130%;
+  opacity: 0.2;
+}
+
+/* Responsividade para botões no mobile */
+@media (max-width: 768px) {
+  .sidebar-footer-actions {
+    gap: 0.8rem;
+  }
+  
+  .logout-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
 }
 
 /* Botão de menu mobile - REMOVIDO DAQUI, agora está em responsividade.css */

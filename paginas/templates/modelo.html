@@ -641,8 +641,21 @@
 
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h2><i class="fas fa-tractor"></i> Fazenda, Domiciano</h2>
-        <p>Sistema de Gestão Agrícola</p>
+        <h2>
+          <i class="fas fa-tractor"></i> 
+          {% if request.fazenda_ativa %}
+            {{ request.fazenda_ativa.nome }}
+          {% else %}
+            FarMedicare
+          {% endif %}
+        </h2>
+        <p>
+          {% if request.fazenda_ativa and request.fazenda_ativa.cidade %}
+            {{ request.fazenda_ativa.cidade }}{% if request.fazenda_ativa.estado %}, {{ request.fazenda_ativa.estado }}{% endif %}
+          {% else %}
+            Sistema de Gestão Agrícola
+          {% endif %}
+        </p>
       </div>
 
       <nav class="sidebar-menu">
@@ -713,12 +726,14 @@
               <span>Gerenciar Categorias</span>
             </a>
           </li>
+          {% if request.fazenda_ativa and request.fazenda_ativa.dono == request.user %}
           <li class="menu-item">
-            <a href="{% url 'listar_usuarios' %}">
+            <a href="{% url 'listar_funcionarios' request.fazenda_ativa.id %}">
               <i class="fas fa-users"></i>
-              <span>Gerenciar Usuários</span>
+              <span>Funcionários</span>
             </a>
           </li>
+          {% endif %}
           <li class="menu-item">
             <a href="{% url 'listar_fazendas' %}">
               <i class="fas fa-tractor"></i>
@@ -736,20 +751,33 @@
 
       <div class="sidebar-footer">
         <div class="user-info">
-          <div>
-            <strong>{{ request.user }}</strong>
-          </div>
+          <strong>{{ request.user }}</strong>
+          {% if request.user.perfil.tipo == 'produtor' %}
+            <small style="color: #4caf50; font-weight: 600;">
+              <i class="fas fa-crown"></i> Proprietário
+            </small>
+          {% else %}
+            <small style="color: #42a5f5; font-weight: 600;">
+              <i class="fas fa-user-tie"></i> Funcionário
+            </small>
+          {% endif %}
         </div>
-        <form method="post" action="{% url 'logout' %}" style="display: inline">
-          {% csrf_token %}
-          <button
-            type="submit"
-            class="logout-btn"
-            style="background: none; border: none; padding: 0; cursor: pointer"
-          >
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
-        </form>
+        <div class="sidebar-footer-actions">
+          <a href="{% url 'selecionar_fazenda' %}" 
+             class="logout-btn"
+             title="Trocar de Fazenda">
+            <i class="fas fa-exchange-alt"></i>
+          </a>
+          <form method="post" action="{% url 'logout' %}" style="display: inline; margin: 0;">
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="logout-btn"
+              title="Sair do Sistema">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
     {% endblock %}
