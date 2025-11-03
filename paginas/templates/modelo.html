@@ -31,6 +31,17 @@
     
     <!-- CSS Notificações Popup -->
     <style>
+      /* ========== CONTAINER FIXO DO BOTÃO DE NOTIFICAÇÃO ========== */
+      .notification-btn-fixed {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .notification-container {
         position: relative;
         display: inline-block;
@@ -38,48 +49,60 @@
 
       .btn-notification {
         position: relative;
-        background: transparent;
-        border: none;
+        background: white;
+        border: 2px solid #e0e0e0;
         color: #212529;
-        font-size: 20px;
-        padding: 10px 15px;
+        font-size: 22px;
+        padding: 12px;
         border-radius: 50%;
         cursor: pointer;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .btn-notification:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: #f5f5f5;
+        border-color: #ff9800;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
       }
 
       .btn-notification.active {
-        background: rgba(0, 0, 0, 0.1);
+        background: #fff3e0;
+        border-color: #ff9800;
+        color: #ff9800;
       }
 
       .btn-notification .badge {
         position: absolute;
-        top: 5px;
-        right: 5px;
+        top: -2px;
+        right: -2px;
         background: #ef5350;
         color: white;
         font-size: 11px;
         font-weight: 600;
-        padding: 2px 6px;
-        border-radius: 10px;
-        min-width: 18px;
+        padding: 3px 7px;
+        border-radius: 12px;
+        min-width: 20px;
         text-align: center;
         animation: badgePulse 2s infinite;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
 
       @keyframes badgePulse {
         0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+        50% { transform: scale(1.15); }
       }
 
       .notification-popup {
         position: fixed;
-        top: 70px;
-        right: 20px;
+        top: 75px;
+        right: 1rem;
         width: 380px;
         max-height: 600px;
         background: white;
@@ -89,7 +112,7 @@
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 10000;
+        z-index: 9998;
         display: flex;
         flex-direction: column;
       }
@@ -548,30 +571,53 @@
       
       /* Tablet */
       @media (max-width: 992px) {
+        .notification-btn-fixed {
+          top: 0.75rem;
+          right: 0.75rem;
+        }
+
+        .btn-notification {
+          width: 46px;
+          height: 46px;
+          font-size: 20px;
+        }
+
         .notification-popup {
           width: 360px;
           max-height: 500px;
+          top: 70px;
+          right: 0.75rem;
         }
       }
 
-      /* Tablet Pequeno */
+      /* Tablet Pequeno - Ajustar botão para não sobrepor menu hambúrguer */
       @media (max-width: 768px) {
+        .notification-btn-fixed {
+          top: 0.5rem;
+          right: 4.5rem; /* Espaço para o menu hambúrguer à esquerda */
+        }
+
         .btn-notification {
+          width: 44px;
+          height: 44px;
           font-size: 18px;
-          padding: 8px 12px;
+          padding: 10px;
         }
 
         .btn-notification .badge {
           font-size: 10px;
-          padding: 2px 5px;
-          min-width: 16px;
+          padding: 2px 6px;
+          min-width: 18px;
+          top: -3px;
+          right: -3px;
         }
 
         .notification-popup {
-          width: calc(100vw - 40px);
+          width: calc(100vw - 2rem);
           max-width: 400px;
-          right: 20px;
+          right: 1rem;
           top: 60px;
+          left: auto;
           max-height: calc(100vh - 120px);
         }
 
@@ -596,30 +642,45 @@
         }
       }
 
-      /* Mobile */
+      /* Mobile - Botão ao lado do hambúrguer, popup tela cheia */
       @media (max-width: 576px) {
+        .notification-btn-fixed {
+          top: 0.5rem;
+          right: 0.5rem;
+          left: auto; /* Garantir que fique à direita */
+        }
+
+        /* Menu hambúrguer fica à esquerda */
+        .mobile-menu-btn {
+          left: 0.5rem;
+          right: auto;
+        }
+
         .btn-notification {
+          width: 42px;
+          height: 42px;
           font-size: 16px;
-          padding: 6px 10px;
+          padding: 9px;
         }
 
         .btn-notification .badge {
           font-size: 9px;
-          padding: 1px 4px;
-          min-width: 14px;
-          top: 3px;
-          right: 3px;
+          padding: 2px 5px;
+          min-width: 16px;
+          top: -2px;
+          right: -2px;
         }
 
+        /* Popup em tela cheia no mobile */
         .notification-popup {
           position: fixed;
-          top: 0;
-          right: 0;
-          left: 0;
+          top: 0 !important;
+          right: 0 !important;
+          left: 0 !important;
           bottom: 0;
-          width: 100%;
-          max-width: 100%;
-          max-height: 100%;
+          width: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
           border-radius: 0;
           transform: translateX(100%);
         }
@@ -918,19 +979,23 @@
       <i class="fas fa-bars"></i>
     </button>
 
+    <!-- Botão de Notificações Fixo no Canto Superior Direito -->
+    <div class="notification-btn-fixed">
+      <button class="btn btn-notification" id="notificationBtn">
+        <i class="fas fa-bell"></i>
+        {% if notificacoes_count > 0 %}
+        <span class="badge" id="notificationBadge">{{ notificacoes_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+
     <!-- Conteúdo Principal -->
     {% block conteudo %}
     <main class="main-content">
       <header class="content-header">
         <h1>Dashboard</h1>
         <div class="header-actions">          
-          <!-- Botão de Notificações estilo YouTube -->
-          <button class="btn btn-notification" id="notificationBtn">
-            <i class="fas fa-bell"></i>
-            {% if notificacoes_count > 0 %}
-            <span class="badge" id="notificationBadge">{{ notificacoes_count }}</span>
-            {% endif %}
-          </button>
+          <!-- Barra de pesquisa ou outros elementos -->
         </div>
       </header>
       {% endblock %}
@@ -1152,6 +1217,9 @@
             notificationPopup.classList.add('show');
             notificationBtn.classList.add('active');
             
+            // Posicionar popup corretamente
+            posicionarPopup();
+            
             // Carregar notificações apenas uma vez
             if (!notificacoesCarregadas) {
                 carregarNotificacoes();
@@ -1160,10 +1228,39 @@
         }
 
         function posicionarPopup() {
+            // No mobile (≤576px), o popup ocupa tela cheia - não precisa posicionar
+            if (window.innerWidth <= 576) {
+                return;
+            }
+            
             const btnRect = notificationBtn.getBoundingClientRect();
-            notificationPopup.style.top = (btnRect.bottom + 10) + 'px';
-            notificationPopup.style.right = '20px';
+            const espacoAbaixo = window.innerHeight - btnRect.bottom;
+            const alturPopup = 600; // Altura máxima do popup
+            
+            // Calcular posição do popup abaixo do botão
+            const topPosition = btnRect.bottom + 10;
+            
+            // Se não houver espaço suficiente abaixo, ajustar
+            if (espacoAbaixo < alturPopup) {
+                notificationPopup.style.top = Math.max(10, topPosition) + 'px';
+                notificationPopup.style.maxHeight = (espacoAbaixo - 20) + 'px';
+            } else {
+                notificationPopup.style.top = topPosition + 'px';
+                notificationPopup.style.maxHeight = '600px';
+            }
+            
+            // Posicionar à direita, alinhado com o botão
+            const rightPosition = window.innerWidth - btnRect.right;
+            notificationPopup.style.right = rightPosition + 'px';
+            notificationPopup.style.left = 'auto';
         }
+
+        // Reposicionar popup ao redimensionar janela
+        window.addEventListener('resize', function() {
+            if (notificationPopup.classList.contains('show')) {
+                posicionarPopup();
+            }
+        });
 
         function fecharPopup() {
             notificationPopup.classList.remove('show');
