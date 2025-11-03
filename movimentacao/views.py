@@ -421,6 +421,7 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
 class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
     template_name = "receita/lista_receita.html"
+    context_object_name = "receitas"
     login_url = reverse_lazy("login")
     paginate_by = 20
     filterset_class = MovimentacaoFilter
@@ -479,6 +480,7 @@ class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
 class MovimentacaoDespesaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
     template_name = "despesa/lista_despesa.html"
+    context_object_name = "despesas"
     login_url = reverse_lazy("login")
     paginate_by = 20
     filterset_class = MovimentacaoFilter
