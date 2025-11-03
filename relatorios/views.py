@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.views.generic import TemplateView
 from django.db.models import Sum, Count, Avg, Q, F
 from django.utils import timezone
@@ -26,6 +26,13 @@ class RelatoriosView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
+        # Verificar fazenda ativa
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            # Retornar contexto vazio se não há fazenda ativa
+            context['error'] = 'Nenhuma fazenda selecionada'
+            return context
+        
         # Parâmetros de filtro
         periodo = self.request.GET.get('periodo', '30')  # 30, 60, 90, 120 dias
         data_inicio = self.request.GET.get('data_inicio')
@@ -48,8 +55,9 @@ class RelatoriosView(TemplateView):
         
         # ========== DADOS DE MOVIMENTAÇÃO FINANCEIRA ==========
         
-        # Receitas - OTIMIZADO com select_related
+        # Receitas - OTIMIZADO com select_related - FILTRANDO POR FAZENDA
         receitas = Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
             categoria__tipo='receita',
             data__range=[data_inicio, data_fim]
         ).select_related('categoria', 'fazenda', 'parceiros')
@@ -60,8 +68,9 @@ class RelatoriosView(TemplateView):
         
         count_receitas = receitas.count()
         
-        # Despesas - OTIMIZADO
+        # Despesas - OTIMIZADO - FILTRANDO POR FAZENDA
         despesas = Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
             categoria__tipo='despesa',
             data__range=[data_inicio, data_fim]
         ).select_related('categoria', 'fazenda', 'parceiros')
@@ -75,8 +84,9 @@ class RelatoriosView(TemplateView):
         # Saldo
         saldo = total_receitas - total_despesas
         
-        # Parcelas pendentes - OTIMIZADO
+        # Parcelas pendentes - OTIMIZADO - FILTRANDO POR FAZENDA
         parcelas_pendentes = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             data_vencimento__range=[data_inicio, data_fim]
         ).exclude(status_pagamento='Pago').select_related('movimentacao')
         
@@ -84,8 +94,9 @@ class RelatoriosView(TemplateView):
             total=Sum('valor_parcela')
         )['total'] or Decimal('0.00')
         
-        # Parcelas pagas - OTIMIZADO
+        # Parcelas pagas - OTIMIZADO - FILTRANDO POR FAZENDA
         parcelas_pagas = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             data_quitacao__range=[data_inicio, data_fim],
             status_pagamento='Pago'
         ).select_related('movimentacao')
@@ -112,16 +123,19 @@ class RelatoriosView(TemplateView):
         
         # ========== DADOS DE MEDICAMENTOS ==========
         
-        # OTIMIZADO: Total de UNIDADES em estoque (soma de quantidade_disponivel)
+        # OTIMIZADO: Total de UNIDADES em estoque (soma de quantidade_disponivel) - FILTRANDO POR FAZENDA
         # Igual à página de estoque de medicamentos
         total_unidades_estoque = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
             quantidade_disponivel__gt=0
         ).aggregate(
             total=Sum('quantidade_disponivel')
         )['total'] or 0
         
-        # OTIMIZADO: Calcular medicamentos com estoque baixo (< 10 unidades por medicamento)
-        estoques_por_medicamento = EntradaMedicamento.objects.values(
+        # OTIMIZADO: Calcular medicamentos com estoque baixo (< 10 unidades por medicamento) - FILTRANDO POR FAZENDA
+        estoques_por_medicamento = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa
+        ).values(
             'medicamento'
         ).annotate(
             total_estoque=Sum('quantidade_disponivel')
@@ -129,8 +143,9 @@ class RelatoriosView(TemplateView):
         
         medicamentos_baixo_estoque = estoques_por_medicamento.count()
         
-        # Entradas no período - OTIMIZADO com only()
+        # Entradas no período - OTIMIZADO com only() - FILTRANDO POR FAZENDA
         entradas = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
             data_cadastro__range=[data_inicio, data_fim]
         ).only('id', 'quantidade', 'valor_medicamento', 'medicamento_id')
         
@@ -141,17 +156,19 @@ class RelatoriosView(TemplateView):
             total=Sum('valor_medicamento')
         )['total'] or Decimal('0.00')
         
-        # Medicamentos próximos ao vencimento (30 dias) - OTIMIZADO
+        # Medicamentos próximos ao vencimento (30 dias) - OTIMIZADO - FILTRANDO POR FAZENDA
         data_vencimento_limite = hoje + timedelta(days=30)
         
         medicamentos_vencer = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
             validade__lte=data_vencimento_limite,
             validade__gte=hoje,
             quantidade_disponivel__gt=0
         ).only('id').count()
         
-        # Medicamentos vencidos - OTIMIZADO
+        # Medicamentos vencidos - OTIMIZADO - FILTRANDO POR FAZENDA
         medicamentos_vencidos = EntradaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
             validade__lt=hoje,
             quantidade_disponivel__gt=0
         ).only('id').count()
@@ -166,15 +183,17 @@ class RelatoriosView(TemplateView):
         
         # ========== NOTIFICAÇÕES DE MOVIMENTAÇÕES ==========
         
-        # Parcelas vencidas (receitas e despesas) - OTIMIZADO
+        # Parcelas vencidas (receitas e despesas) - OTIMIZADO - FILTRANDO POR FAZENDA
         data_limite_vencimento = hoje + timedelta(days=5)
         
         parcelas_vencidas = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             data_vencimento__lt=hoje,
             status_pagamento__in=['Pendente', 'Atrasado']
         ).select_related('movimentacao__categoria')
         
         parcelas_vencer_5dias = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             data_vencimento__gte=hoje,
             data_vencimento__lte=data_limite_vencimento,
             status_pagamento__in=['Pendente', 'Atrasado']
@@ -189,22 +208,12 @@ class RelatoriosView(TemplateView):
         receitas_vencer = [p for p in parcelas_vencer_list if p.movimentacao.categoria.tipo == 'receita']
         despesas_vencer = [p for p in parcelas_vencer_list if p.movimentacao.categoria.tipo == 'despesa']
         
-        # Contar notificações
-        notificacoes_count = (
-            medicamentos_vencer + 
-            medicamentos_vencidos + 
-            len(receitas_vencidas) +
-            len(despesas_vencidas) +
-            len(receitas_vencer) +
-            len(despesas_vencer)
-        )
-        
         # ========== DADOS PARA GRÁFICOS ==========
         
-        # OTIMIZADO: Gráfico comparativo usando UMA query + processamento em Python + CACHE
+        # OTIMIZADO: Gráfico comparativo usando UMA query + processamento em Python + CACHE - FILTRANDO POR FAZENDA
         # Buscar últimos 6 meses de dados (iniciar 6 meses atrás)
         inicio_6_meses = (hoje - timedelta(days=180)).replace(day=1)
-        cache_key = f'grafico_comparativo_6meses_{inicio_6_meses}'
+        cache_key = f'grafico_comparativo_6meses_{inicio_6_meses}_fazenda_{fazenda_ativa.id}'
         cached_data = cache.get(cache_key)
         
         if cached_data:
@@ -212,9 +221,10 @@ class RelatoriosView(TemplateView):
             comparativo_receitas = cached_data['receitas']
             comparativo_despesas = cached_data['despesas']
         else:
-            # Uma única query para todas as movimentações dos últimos 6 meses
+            # Uma única query para todas as movimentações dos últimos 6 meses - FILTRANDO POR FAZENDA
             from django.db.models.functions import TruncMonth
             movimentacoes_mensais = Movimentacao.objects.filter(
+                fazenda=fazenda_ativa,
                 data__gte=inicio_6_meses
             ).annotate(
                 mes=TruncMonth('data')
@@ -302,8 +312,7 @@ class RelatoriosView(TemplateView):
             'medicamentos_vencidos': medicamentos_vencidos,
             'top_medicamentos': top_medicamentos,
             
-            # Notificações
-            'notificacoes_count': notificacoes_count,
+            # Notificações de parcelas (não sobrescrever notificacoes_count do context processor)
             'receitas_vencidas': receitas_vencidas,
             'despesas_vencidas': despesas_vencidas,
             'receitas_vencer': receitas_vencer,
@@ -327,7 +336,13 @@ class RelatoriosView(TemplateView):
 
 
 def gerar_pdf_relatorio(request):
-    """Gera PDF completo e detalhado do relatório"""
+    """Gera PDF completo e detalhado do relatório - FILTRADO POR FAZENDA"""
+    
+    # Obter fazenda ativa
+    fazenda_ativa = request.fazenda_ativa if hasattr(request, 'fazenda_ativa') else None
+    
+    if not fazenda_ativa:
+        return HttpResponseForbidden("Selecione uma fazenda antes de gerar o relatório.")
     
     # Parâmetros de filtro
     periodo = request.GET.get('periodo', '30')
@@ -395,6 +410,7 @@ def gerar_pdf_relatorio(request):
     
     elements.append(Paragraph("RELATÓRIO GERENCIAL COMPLETO", title_style))
     elements.append(Paragraph("FARMEDICARE - Sistema de Gestão", subheading_style))
+    elements.append(Paragraph(f"Fazenda: {fazenda_ativa.nome}", subheading_style))
     elements.append(Paragraph(
         f"Período: {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}", 
         subheading_style
@@ -410,8 +426,17 @@ def gerar_pdf_relatorio(request):
     # ====================
     elements.append(Paragraph("1. RESUMO FINANCEIRO GERAL", heading_style))
     
-    receitas = Movimentacao.objects.filter(categoria__tipo='receita', data__range=[data_inicio, data_fim])
-    despesas = Movimentacao.objects.filter(categoria__tipo='despesa', data__range=[data_inicio, data_fim])
+    # FILTRAR POR FAZENDA
+    receitas = Movimentacao.objects.filter(
+        fazenda=fazenda_ativa,
+        categoria__tipo='receita', 
+        data__range=[data_inicio, data_fim]
+    )
+    despesas = Movimentacao.objects.filter(
+        fazenda=fazenda_ativa,
+        categoria__tipo='despesa', 
+        data__range=[data_inicio, data_fim]
+    )
     
     total_receitas = receitas.aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
     total_despesas = despesas.aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
@@ -546,23 +571,28 @@ def gerar_pdf_relatorio(request):
     # ====================
     elements.append(Paragraph("4. ESTOQUE E MOVIMENTAÇÃO DE MEDICAMENTOS", heading_style))
     
-    # Estatísticas gerais
-    total_medicamentos = Medicamento.objects.count()
-    entradas_periodo = EntradaMedicamento.objects.filter(data_cadastro__range=[data_inicio, data_fim])
+    # Estatísticas gerais - FILTRADO POR FAZENDA
+    total_medicamentos = Medicamento.objects.filter(fazenda=fazenda_ativa).count()
+    entradas_periodo = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
+        data_cadastro__range=[data_inicio, data_fim]
+    )
     total_entradas = entradas_periodo.count()
     valor_total_entradas = entradas_periodo.aggregate(
         total=Sum('valor_medicamento')
     )['total'] or Decimal('0.00')
     
-    # Medicamentos vencidos e próximos ao vencimento
+    # Medicamentos vencidos e próximos ao vencimento - FILTRADO POR FAZENDA
     trinta_dias = hoje + timedelta(days=30)
     
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__lt=hoje,
         quantidade_disponivel__gt=0
     ).count()
     
     medicamentos_vencer = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__gte=hoje,
         validade__lte=trinta_dias,
         quantidade_disponivel__gt=0
@@ -600,7 +630,8 @@ def gerar_pdf_relatorio(request):
     # ====================
     elements.append(Paragraph("5. LISTA DETALHADA DE MEDICAMENTOS", heading_style))
     
-    medicamentos = Medicamento.objects.all().order_by('nome')
+    # FILTRAR POR FAZENDA
+    medicamentos = Medicamento.objects.filter(fazenda=fazenda_ativa).order_by('nome')
     
     if medicamentos:
         data_med_lista = [['Nº', 'Medicamento', 'Fazenda', 'Qtd. Total', 'Status']]
@@ -652,8 +683,9 @@ def gerar_pdf_relatorio(request):
     # ====================
     elements.append(Paragraph("6. MEDICAMENTOS: CONTROLE DE VALIDADE", heading_style))
     
-    # Medicamentos vencidos
+    # Medicamentos vencidos - FILTRADO POR FAZENDA
     entradas_vencidas = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__lt=hoje,
         quantidade_disponivel__gt=0
     ).select_related('medicamento').order_by('validade')
@@ -692,8 +724,9 @@ def gerar_pdf_relatorio(request):
         elements.append(table_vencidos)
         elements.append(Spacer(1, 15))
     
-    # Medicamentos próximos ao vencimento
+    # Medicamentos próximos ao vencimento - FILTRADO POR FAZENDA
     entradas_vencer = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__gte=hoje,
         validade__lte=trinta_dias,
         quantidade_disponivel__gt=0
@@ -769,6 +802,16 @@ def api_notificacoes(request):
     - Parcelas de despesas vencidas ou próximas do vencimento (5 dias)
     - Medicamentos vencidos ou próximos do vencimento (30 dias)
     """
+    # Obter fazenda ativa
+    fazenda_ativa = request.fazenda_ativa if hasattr(request, 'fazenda_ativa') else None
+    
+    # Se não há fazenda ativa, retornar vazio
+    if not fazenda_ativa:
+        return JsonResponse({
+            'total': 0,
+            'notificacoes': []
+        })
+    
     hoje = timezone.now().date()
     data_limite_5dias = hoje + timedelta(days=5)
     data_limite_30dias = hoje + timedelta(days=30)
@@ -777,8 +820,9 @@ def api_notificacoes(request):
     
     # ========== PARCELAS DE RECEITAS ==========
     
-    # Receitas vencidas (não pagas) - OTIMIZADO com select_related
+    # Receitas vencidas (não pagas) - OTIMIZADO com select_related - FILTRANDO POR FAZENDA
     receitas_vencidas = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='receita',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
@@ -818,8 +862,9 @@ def api_notificacoes(request):
             'id_parcela': parcela.id,
         })
     
-    # Receitas a vencer (próximas 5 dias) - OTIMIZADO
+    # Receitas a vencer (próximas 5 dias) - OTIMIZADO - FILTRANDO POR FAZENDA
     receitas_vencer = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='receita',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
@@ -866,8 +911,9 @@ def api_notificacoes(request):
     
     # ========== PARCELAS DE DESPESAS ==========
     
-    # Despesas vencidas (não pagas) - OTIMIZADO
+    # Despesas vencidas (não pagas) - OTIMIZADO - FILTRANDO POR FAZENDA
     despesas_vencidas = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='despesa',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
@@ -907,8 +953,9 @@ def api_notificacoes(request):
             'id_parcela': parcela.id,
         })
     
-    # Despesas a vencer (próximas 5 dias) - OTIMIZADO
+    # Despesas a vencer (próximas 5 dias) - OTIMIZADO - FILTRANDO POR FAZENDA
     despesas_vencer = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='despesa',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
@@ -955,8 +1002,9 @@ def api_notificacoes(request):
     
     # ========== MEDICAMENTOS ==========
     
-    # Medicamentos vencidos - OTIMIZADO
+    # Medicamentos vencidos - OTIMIZADO - FILTRANDO POR FAZENDA
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__lt=hoje,
         quantidade_disponivel__gt=0
     ).select_related('medicamento', 'medicamento__fazenda').only(
@@ -986,8 +1034,9 @@ def api_notificacoes(request):
             'id_entrada': entrada.id,
         })
     
-    # Medicamentos a vencer (30 dias) - OTIMIZADO
+    # Medicamentos a vencer (30 dias) - OTIMIZADO - FILTRANDO POR FAZENDA
     medicamentos_vencer = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__gte=hoje,
         validade__lte=data_limite_30dias,
         quantidade_disponivel__gt=0
@@ -1043,18 +1092,38 @@ def notificacoes_page(request):
     """
     Página completa de notificações estilo Facebook
     """
+    # Obter fazenda ativa
+    fazenda_ativa = request.fazenda_ativa if hasattr(request, 'fazenda_ativa') else None
+    
+    # Se não há fazenda ativa, retornar contadores zerados
+    if not fazenda_ativa:
+        context = {
+            'titulo': 'Notificações',
+            'title': 'Notificações - Farmedicare',
+            'total': 0,
+            'receitas_vencidas': 0,
+            'receitas_vencer': 0,
+            'despesas_vencidas': 0,
+            'despesas_vencer': 0,
+            'medicamentos_vencidos': 0,
+            'medicamentos_vencer': 0,
+        }
+        return render(request, 'relatorios/notificacoes_unificadas.html', context)
+    
     hoje = timezone.now().date()
     data_limite_5dias = hoje + timedelta(days=5)
     data_limite_30dias = hoje + timedelta(days=30)
     
-    # Contadores OTIMIZADOS - usar only('id') para count
+    # Contadores OTIMIZADOS - usar only('id') para count - FILTRANDO POR FAZENDA
     receitas_vencidas = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='receita',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
     ).only('id').count()
     
     receitas_vencer = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='receita',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
@@ -1062,12 +1131,14 @@ def notificacoes_page(request):
     ).only('id').count()
     
     despesas_vencidas = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='despesa',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
     ).only('id').count()
     
     despesas_vencer = Parcela.objects.filter(
+        movimentacao__fazenda=fazenda_ativa,
         movimentacao__categoria__tipo='despesa',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
@@ -1075,11 +1146,13 @@ def notificacoes_page(request):
     ).only('id').count()
     
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__lt=hoje,
         quantidade_disponivel__gt=0
     ).only('id').count()
     
     medicamentos_vencer = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda_ativa,
         validade__gte=hoje,
         validade__lte=data_limite_30dias,
         quantidade_disponivel__gt=0
