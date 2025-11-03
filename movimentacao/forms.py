@@ -57,12 +57,12 @@ class MovimentacaoForm(forms.ModelForm):
         fields = [
             'categoria',
             'parceiros',
-            'fazenda',
             'valor_total',
             'parcelas',
             'imposto_renda',
             'data',
             'descricao',
+            # 'fazenda' - definido automaticamente pela view (fazenda ativa)
             # 'cadastrada_por' - definido automaticamente pela view
         ]
         
@@ -74,10 +74,6 @@ class MovimentacaoForm(forms.ModelForm):
             'parceiros': forms.Select(attrs={
                 'class': 'form-control form-field-half',
                 'required': False,
-            }),
-            'fazenda': forms.Select(attrs={
-                'class': 'form-control form-field-half',
-                'required': True,
             }),
             'valor_total': forms.NumberInput(attrs={
                 'class': 'form-control form-field-half',
@@ -111,7 +107,6 @@ class MovimentacaoForm(forms.ModelForm):
         labels = {
             'categoria': 'Categoria',
             'parceiros': 'Parceiro/Fornecedor (Opcional)',
-            'fazenda': 'Fazenda',
             'valor_total': 'Valor Total (R$)',
             'parcelas': 'Número de Parcelas',
             'imposto_renda': 'Declarar no Imposto de Renda?',
@@ -131,16 +126,30 @@ class MovimentacaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         tipo_fixo = kwargs.pop('tipo_fixo', None)  # Novo parâmetro para tipo fixo
+        fazenda = kwargs.pop('fazenda', None)  # Fazenda ativa
         super().__init__(*args, **kwargs)
         
         # Se tipo_fixo foi passado, filtra as categorias pelo tipo
         if tipo_fixo:
-            # Filtra as categorias pelo tipo
-            self.fields['categoria'].queryset = Categoria.objects.filter(tipo=tipo_fixo).order_by('nome')
+            # Filtra as categorias pelo tipo e fazenda
+            if fazenda:
+                self.fields['categoria'].queryset = Categoria.objects.filter(
+                    tipo=tipo_fixo, 
+                    fazenda=fazenda
+                ).order_by('nome')
+            else:
+                self.fields['categoria'].queryset = Categoria.objects.filter(tipo=tipo_fixo).order_by('nome')
             # Armazena o tipo fixo para validação
             self.tipo_fixo = tipo_fixo
         else:
+            # Se não há tipo fixo, filtra apenas pela fazenda
+            if fazenda:
+                self.fields['categoria'].queryset = Categoria.objects.filter(fazenda=fazenda).order_by('nome')
             self.tipo_fixo = None
+        
+        # Filtra parceiros pela fazenda ativa
+        if fazenda:
+            self.fields['parceiros'].queryset = Parceiros.objects.filter(fazenda=fazenda).order_by('nome')
         
         # Adiciona classes personalizadas para estilização
         for field_name, field in self.fields.items():

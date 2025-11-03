@@ -27,6 +27,10 @@ class MedicamentoCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("listar_medicamentos")
     
     def form_valid(self, form):
+        # Auto-atribuir fazenda ativa
+        if hasattr(self.request, 'fazenda_ativa') and self.request.fazenda_ativa:
+            form.instance.fazenda = self.request.fazenda_ativa
+        
         messages.success(
             self.request,
             f'✅ Medicamento "{form.instance.nome}" cadastrado com sucesso!'
@@ -104,8 +108,12 @@ class MedicamentoListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")
 
     def get_queryset(self):
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            return Medicamento.objects.none()
+        
         return (
-            Medicamento.objects.all()
+            Medicamento.objects.filter(fazenda=fazenda_ativa)
             .select_related("fazenda")
             .only("id", "nome", "fazenda__nome")
             .order_by("nome")
@@ -261,8 +269,12 @@ class MedicamentoEstoqueListView(LoginRequiredMixin, ListView):
     filterset_class = EntradaMedicamentoFilter
     
     def get_queryset(self):
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            return EntradaMedicamento.objects.none()
+        
         queryset = (
-            EntradaMedicamento.objects.all()
+            EntradaMedicamento.objects.filter(medicamento__fazenda=fazenda_ativa)
             .select_related('medicamento', 'medicamento__fazenda')
             .only(
                 'id', 'quantidade', 'quantidade_disponivel', 'validade', 
@@ -372,7 +384,12 @@ class NotificacoesListView(LoginRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dados_notificacoes = gerar_notificacoes_medicamentos()
+        
+        # Obter fazenda ativa
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        
+        # Gerar notificações filtradas por fazenda
+        dados_notificacoes = gerar_notificacoes_medicamentos(fazenda=fazenda_ativa)
         
         context['notificacoes'] = dados_notificacoes['notificacoes']
         context['total'] = dados_notificacoes['total']
@@ -393,7 +410,11 @@ class NotificacoesAPIView(LoginRequiredMixin, View):
     para o popup de notificações
     """
     def get(self, request, *args, **kwargs):
-        dados_notificacoes = gerar_notificacoes_medicamentos()
+        # Obter fazenda ativa
+        fazenda_ativa = request.fazenda_ativa if hasattr(request, 'fazenda_ativa') else None
+        
+        # Gerar notificações filtradas por fazenda
+        dados_notificacoes = gerar_notificacoes_medicamentos(fazenda=fazenda_ativa)
         
         # Serializar as notificações para JSON
         notificacoes_json = []

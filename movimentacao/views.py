@@ -27,11 +27,14 @@ class MovimentacaoCreateView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda'] = self.request.fazenda_ativa
         return kwargs
 
     def form_valid(self, form):
         # Define o usuário logado como cadastrado_por
         form.instance.cadastrada_por = self.request.user
+        # Define a fazenda ativa
+        form.instance.fazenda = self.request.fazenda_ativa
         # As parcelas são geradas automaticamente pelo método save() do modelo
         response = super().form_valid(form)
         return response
@@ -57,11 +60,13 @@ class ReceitaCreateView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda'] = self.request.fazenda_ativa
         kwargs['tipo_fixo'] = 'receita'  # Define tipo fixo como receita
         return kwargs
 
     def form_valid(self, form):
         form.instance.cadastrada_por = self.request.user
+        form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
         messages.success(
             self.request,
@@ -98,11 +103,13 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda'] = self.request.fazenda_ativa
         kwargs['tipo_fixo'] = 'despesa'  # Define tipo fixo como despesa
         return kwargs
 
     def form_valid(self, form):
         form.instance.cadastrada_por = self.request.user
+        form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
         messages.success(
             self.request,
@@ -160,6 +167,8 @@ class CategoriaCreateView(LoginRequiredMixin, CreateView):
     login_url = reverse_lazy("login")
 
     def form_valid(self, form):
+        """Associa a categoria à fazenda ativa"""
+        form.instance.fazenda = self.request.fazenda_ativa
         messages.success(
             self.request,
             f'✅ Categoria "{form.instance.nome}" cadastrada com sucesso!'
@@ -191,6 +200,7 @@ class MovimentacaoUpdateView(LoginRequiredMixin, UpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda'] = self.request.fazenda_ativa
         return kwargs
 
     def form_valid(self, form):
@@ -371,22 +381,32 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
 
     def get_queryset(self):
-        return (
-            Movimentacao.objects.all()
-            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
-            .order_by("-data")
-        )
+        """Filtra movimentações apenas da fazenda ativa"""
+        if hasattr(self.request, 'fazenda_ativa'):
+            return (
+                Movimentacao.objects.filter(fazenda=self.request.fazenda_ativa)
+                .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+                .order_by("-data")
+            )
+        return Movimentacao.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["despesas"] = (
-            Movimentacao.objects.filter(categoria__tipo="despesa")
-            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
-        )
-        context["receitas"] = (
-            Movimentacao.objects.filter(categoria__tipo="receita")
-            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
-        )
+        if hasattr(self.request, 'fazenda_ativa'):
+            context["despesas"] = (
+                Movimentacao.objects.filter(
+                    categoria__tipo="despesa",
+                    fazenda=self.request.fazenda_ativa
+                )
+                .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+            )
+            context["receitas"] = (
+                Movimentacao.objects.filter(
+                    categoria__tipo="receita",
+                    fazenda=self.request.fazenda_ativa
+                )
+                .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+            )
         return context
 
     extra_context = {
@@ -406,10 +426,14 @@ class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
     filterset_class = MovimentacaoFilter
 
     def get_queryset(self):
+        """Filtra receitas apenas da fazenda ativa"""
         queryset = (
             super()
             .get_queryset()
-            .filter(categoria__tipo="receita")
+            .filter(
+                categoria__tipo="receita",
+                fazenda=self.request.fazenda_ativa
+            )
             .order_by("-data")
             .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
         )
@@ -460,10 +484,14 @@ class MovimentacaoDespesaListView(LoginRequiredMixin, ListView):
     filterset_class = MovimentacaoFilter
 
     def get_queryset(self):
+        """Filtra despesas apenas da fazenda ativa"""
         queryset = (
             super()
             .get_queryset()
-            .filter(categoria__tipo="despesa")
+            .filter(
+                categoria__tipo="despesa",
+                fazenda=self.request.fazenda_ativa
+            )
             .order_by("-data")
             .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
         )
@@ -515,7 +543,12 @@ class ParcelasReceitaListView(LoginRequiredMixin, ListView):
     filterset_class = ParcelaFilter
 
     def get_queryset(self):
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            return Parcela.objects.none()
+        
         queryset = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             movimentacao__categoria__tipo="receita"
         ).order_by("-data_vencimento").select_related(
             'movimentacao', 
@@ -563,7 +596,12 @@ class ParcelasDespesaListView(LoginRequiredMixin, ListView):
     filterset_class = ParcelaFilter
 
     def get_queryset(self):
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            return Parcela.objects.none()
+        
         queryset = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
             movimentacao__categoria__tipo="despesa"
         ).order_by("-data_vencimento").select_related(
             'movimentacao', 
@@ -609,7 +647,13 @@ class ParcelasListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")
 
     def get_queryset(self):
-        return Parcela.objects.all().order_by("-data_vencimento").select_related(
+        fazenda_ativa = self.request.fazenda_ativa if hasattr(self.request, 'fazenda_ativa') else None
+        if not fazenda_ativa:
+            return Parcela.objects.none()
+        
+        return Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa
+        ).order_by("-data_vencimento").select_related(
             'movimentacao', 
             'movimentacao__fazenda',
             'movimentacao__parceiros', 
@@ -634,7 +678,12 @@ class CategoriaListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")
 
     def get_queryset(self):
-        return Categoria.objects.all().order_by("tipo", "nome")
+        """Filtra categorias apenas da fazenda ativa"""
+        if hasattr(self.request, 'fazenda_ativa'):
+            return Categoria.objects.filter(
+                fazenda=self.request.fazenda_ativa
+            ).order_by("tipo", "nome")
+        return Categoria.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -12,7 +12,7 @@ class MedicamentoForm(forms.ModelForm):
     
     class Meta:
         model = Medicamento
-        fields = ['nome', 'fazenda']
+        fields = ['nome']  # Fazenda será auto-atribuída pela view
         
         widgets = {
             'nome': forms.TextInput(attrs={
@@ -20,20 +20,14 @@ class MedicamentoForm(forms.ModelForm):
                 'placeholder': 'Ex: Ivermectina, Dipirona, etc.',
                 'required': True,
             }),
-            'fazenda': forms.Select(attrs={
-                'class': 'form-control form-field-full',
-                'required': True,
-            }),
         }
         
         labels = {
             'nome': 'Nome do Medicamento',
-            'fazenda': 'Fazenda',
         }
         
         help_texts = {
             'nome': 'Digite o nome completo do medicamento',
-            'fazenda': 'Selecione a fazenda onde o medicamento será armazenado',
         }
     
     def __init__(self, *args, **kwargs):

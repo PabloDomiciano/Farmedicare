@@ -143,7 +143,7 @@ class Parcela(models.Model):
 ############  Categoria  ############
 class Categoria(models.Model):
     nome = models.CharField(
-        max_length=100, unique=True, verbose_name="Nome da Categoria"
+        max_length=100, verbose_name="Nome da Categoria"
     )
     tipo = models.CharField(
         max_length=50,
@@ -153,6 +153,12 @@ class Categoria(models.Model):
         ],
         verbose_name="Tipo da Categoria",
     )
+    fazenda = models.ForeignKey(
+        Fazenda,
+        on_delete=models.CASCADE,
+        verbose_name="Fazenda",
+        related_name='categorias'
+    )
 
     def __str__(self):
         return f"{self.nome} ({self.tipo})"
@@ -160,4 +166,4 @@ class Categoria(models.Model):
     class Meta:
         verbose_name_plural = "Categorias"
         ordering = ["nome"]
-        unique_together = ("nome", "tipo")
+        unique_together = [["nome", "tipo", "fazenda"]]  # Nome único por tipo e fazenda
