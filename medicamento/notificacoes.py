@@ -5,12 +5,15 @@ from datetime import date, timedelta
 from medicamento.models import Medicamento, EntradaMedicamento
 
 
-def gerar_notificacoes_medicamentos():
+def gerar_notificacoes_medicamentos(fazenda=None):
     """
     Gera notificações para medicamentos que estão próximos do vencimento (≤30 dias)
     ou já vencidos.
     
     OTIMIZADO: Filtra apenas medicamentos relevantes antes de carregar
+    
+    Args:
+        fazenda: Fazenda para filtrar notificações (None retorna vazio)
     
     Returns:
         dict: Dicionário com contadores e lista de notificações
@@ -22,9 +25,20 @@ def gerar_notificacoes_medicamentos():
     vencidos = 0
     proximos_vencer = 0
     
-    # ========== OTIMIZAÇÃO: Filtrar antes de carregar ==========
+    # Se não há fazenda, retornar vazio
+    if not fazenda:
+        return {
+            'notificacoes': [],
+            'total': 0,
+            'vencidos': 0,
+            'proximos_vencer': 0,
+            'hoje': hoje,
+        }
+    
+    # ========== OTIMIZAÇÃO: Filtrar antes de carregar + FILTRAR POR FAZENDA ==========
     # Buscar apenas entradas que precisam de notificação (≤30 dias E quantidade disponível)
     entradas = EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda,
         validade__lte=limite_critico,
         quantidade_disponivel__gt=0
     ).select_related(
@@ -89,20 +103,27 @@ def gerar_notificacoes_medicamentos():
     }
 
 
-def contar_notificacoes_nao_lidas():
+def contar_notificacoes_nao_lidas(fazenda=None):
     """
     Conta quantas notificações ativas existem (para o badge).
     
     OTIMIZADO: Usa count() direto no banco ao invés de carregar todos os objetos
     
+    Args:
+        fazenda: Fazenda para filtrar notificações (None retorna 0)
+    
     Returns:
         int: Número de notificações não lidas
     """
+    if not fazenda:
+        return 0
+    
     hoje = date.today()
     limite_critico = hoje + timedelta(days=30)
     
-    # Count direto no banco - muito mais rápido
+    # Count direto no banco - muito mais rápido - FILTRANDO POR FAZENDA
     return EntradaMedicamento.objects.filter(
+        medicamento__fazenda=fazenda,
         validade__lte=limite_critico,
         quantidade_disponivel__gt=0
     ).only('id').count()
