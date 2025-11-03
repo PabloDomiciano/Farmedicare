@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=3.0" />
     <link rel="stylesheet" href="{% static 'css/responsividade.css' %}?v=3.0" />
     <link rel="stylesheet" href="{% static 'css/tabelas_interativas.css' %}?v=3.0" />
+    <link rel="stylesheet" href="{% static 'css/pagination.css' %}?v=1.0" />
+    <link rel="stylesheet" href="{% static 'css/filters.css' %}?v=1.0" />
 
     <!-- Bloco para CSS específico de cada página -->
     {% block css_especifico %}
@@ -424,10 +426,211 @@
           max-height: calc(100vh - 80px);
         }
       }
+
+      /* ========================================
+         SISTEMA DE MENSAGENS FLASH (Toast Notifications)
+         ======================================== */
+      #flash-messages-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+        width: 100%;
+      }
+
+      .flash-message {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 16px 20px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        background: white;
+        border-left: 5px solid;
+        animation: slideInRight 0.4s ease-out, fadeOut 0.3s ease-in 4.7s forwards;
+        transition: all 0.3s ease;
+      }
+
+      .flash-message:hover {
+        transform: translateX(-5px);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Cores específicas por tipo */
+      .flash-success {
+        border-left-color: #4caf50;
+        background: linear-gradient(to right, #e8f5e9 0%, white 15%);
+      }
+
+      .flash-error,
+      .flash-danger {
+        border-left-color: #f44336;
+        background: linear-gradient(to right, #ffebee 0%, white 15%);
+      }
+
+      .flash-warning {
+        border-left-color: #ff9800;
+        background: linear-gradient(to right, #fff3e0 0%, white 15%);
+      }
+
+      .flash-info {
+        border-left-color: #2196f3;
+        background: linear-gradient(to right, #e3f2fd 0%, white 15%);
+      }
+
+      .flash-icon {
+        font-size: 28px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .flash-success .flash-icon {
+        color: #4caf50;
+      }
+
+      .flash-error .flash-icon,
+      .flash-danger .flash-icon {
+        color: #f44336;
+      }
+
+      .flash-warning .flash-icon {
+        color: #ff9800;
+      }
+
+      .flash-info .flash-icon {
+        color: #2196f3;
+      }
+
+      .flash-content {
+        flex: 1;
+      }
+
+      .flash-title {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: #212529;
+      }
+
+      .flash-text {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #555;
+      }
+
+      .flash-close {
+        background: transparent;
+        border: none;
+        color: #999;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      .flash-close:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #333;
+      }
+
+      /* Animações */
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+      }
+
+      /* Responsivo */
+      @media (max-width: 768px) {
+        #flash-messages-container {
+          top: 10px;
+          right: 10px;
+          left: 10px;
+          max-width: none;
+        }
+
+        .flash-message {
+          padding: 14px 16px;
+        }
+
+        .flash-icon {
+          font-size: 24px;
+        }
+
+        .flash-title {
+          font-size: 15px;
+        }
+
+        .flash-text {
+          font-size: 13px;
+        }
+      }
     </style>
 </head>
 
   <body>
+    <!-- Sistema de Mensagens Flash (Notificações de Sucesso/Erro) -->
+    <!-- Container de mensagens flash -->
+    <div id="flash-messages-container">
+      {% if messages %}
+        {% for message in messages %}
+        <div class="flash-message flash-{{ message.tags }}" role="alert">
+          <div class="flash-icon">
+            {% if message.tags == 'success' %}
+              <i class="fas fa-check-circle"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}
+              <i class="fas fa-exclamation-circle"></i>
+            {% elif message.tags == 'warning' %}
+              <i class="fas fa-exclamation-triangle"></i>
+            {% else %}
+              <i class="fas fa-info-circle"></i>
+            {% endif %}
+          </div>
+          <div class="flash-content">
+            <strong class="flash-title">
+              {% if message.tags == 'success' %}Sucesso!
+              {% elif message.tags == 'error' or message.tags == 'danger' %}Erro!
+              {% elif message.tags == 'warning' %}Atenção!
+              {% else %}Informação
+              {% endif %}
+            </strong>
+            <p class="flash-text">{{ message }}</p>
+          </div>
+          <button class="flash-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
     {% if request.user.is_authenticated %}
 
     <!-- Sidebar/Menu Lateral -->
@@ -907,5 +1110,21 @@
     
     <!-- Script para tabelas interativas -->
     <script src="{% static 'js/tabelas_interativas.js' %}"></script>
+
+    <!-- Script para Auto-Fechar Mensagens Flash -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-remover mensagens após 5 segundos
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(function(message) {
+            setTimeout(function() {
+                message.classList.add('fadeOut');
+                setTimeout(function() {
+                    message.remove();
+                }, 300); // Aguarda animação terminar
+            }, 5000); // 5 segundos
+        });
+    });
+    </script>
   </body>
 </html>

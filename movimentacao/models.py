@@ -9,17 +9,12 @@ from perfis.models import Fazenda, Parceiros
 
 ############  Movimentacao  ############
 class Movimentacao(models.Model):
-    tipo = models.CharField(
-        max_length=50,
-        choices=[
-            ("receita", "Receita"),
-            ("despesa", "Despesa"),
-        ],
-    )
     parceiros = models.ForeignKey(
         Parceiros,
         on_delete=models.CASCADE,
         verbose_name="Empresa Parceira",
+        blank=True,
+        null=True,
     )
     categoria = models.ForeignKey(
         "Categoria", on_delete=models.CASCADE, verbose_name="Categoria da Movimentação"
@@ -46,9 +41,11 @@ class Movimentacao(models.Model):
     )
 
     def __str__(self):
+        parceiro_info = f"Parceiro: {self.parceiros}\n" if self.parceiros else ""
         return (
-            f"Tipo: {self.tipo}\n"
-            f"Parceiro: {self.parceiros}\n"
+            f"Tipo: {self.categoria.tipo}\n"
+            f"{parceiro_info}"
+            f"Categoria: {self.categoria}\n"
             f"Valor Total: {self.valor_total}\n"
             f"Parcelas: {self.parcelas}\n"
             f"Imposto de Renda: {'Sim' if self.imposto_renda else 'Não'}\n"
@@ -92,7 +89,12 @@ class Movimentacao(models.Model):
     class Meta:
         verbose_name_plural = "Movimentações"
         ordering = ["-cadastrado_em"]
-        unique_together = ("tipo", "parceiros", "data", "fazenda")
+        # Removido unique_together pois parceiros agora é opcional
+        indexes = [
+            models.Index(fields=['-data']),
+            models.Index(fields=['categoria', '-data']),
+            models.Index(fields=['fazenda', '-data']),
+        ]
 
 
 
@@ -129,6 +131,13 @@ class Parcela(models.Model):
             f"Status do Pagamento: {self.status_pagamento}\n"
             f"Data Quitação: {self.data_quitacao if self.data_quitacao else 'Não Quitada'}"
         )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['-data_vencimento']),
+            models.Index(fields=['status_pagamento', '-data_vencimento']),
+            models.Index(fields=['movimentacao', 'ordem_parcela']),
+        ]
 
 
 ############  Categoria  ############

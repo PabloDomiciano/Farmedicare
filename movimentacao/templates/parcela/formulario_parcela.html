@@ -327,7 +327,13 @@
             <span class="info-label">
               <i class="fas fa-handshake"></i> Parceiro
             </span>
-            <span class="info-value">{{ movimentacao.parceiros }}</span>
+            <span class="info-value">
+              {% if movimentacao.parceiros %}
+                {{ movimentacao.parceiros }}
+              {% else %}
+                <em style="color: #999;">Sem parceiro</em>
+              {% endif %}
+            </span>
           </div>
           <div class="info-item">
             <span class="info-label">
@@ -490,6 +496,12 @@
       if (statusSelect.value === 'Pago') {
         dataQuitacaoField.required = true;
         requiredIndicator.style.display = 'inline';
+        
+        // Se data de quitação estiver vazia, preenche com hoje
+        if (!dataQuitacaoField.value) {
+          const hoje = new Date().toISOString().split('T')[0];
+          dataQuitacaoField.value = hoje;
+        }
       } else {
         dataQuitacaoField.required = false;
         requiredIndicator.style.display = 'none';

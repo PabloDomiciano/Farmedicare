@@ -5,8 +5,10 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView, ListView
 from django.utils import timezone
+from django.db.models import Q
 from .models import Categoria, Movimentacao, Parcela
 from .forms import MovimentacaoForm, CategoriaForm, ParcelaForm
+from .filters import MovimentacaoFilter, ParcelaFilter
 
 
 # Create your views here.
@@ -60,9 +62,20 @@ class ReceitaCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.cadastrada_por = self.request.user
-        form.instance.tipo = 'receita'  # Garante que o tipo seja receita
+        # Não precisa mais definir tipo - será obtido da categoria
+        messages.success(
+            self.request,
+            f'✅ Receita cadastrada com sucesso! Valor: R$ {form.instance.valor_total:.2f}'
+        )
         response = super().form_valid(form)
         return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao cadastrar receita. Por favor, verifique os campos e tente novamente.'
+        )
+        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -90,9 +103,20 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.cadastrada_por = self.request.user
-        form.instance.tipo = 'despesa'  # Garante que o tipo seja despesa
+        # Não precisa mais definir tipo - será obtido da categoria
+        messages.success(
+            self.request,
+            f'✅ Despesa cadastrada com sucesso! Valor: R$ {form.instance.valor_total:.2f}'
+        )
         response = super().form_valid(form)
         return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao cadastrar despesa. Por favor, verifique os campos e tente novamente.'
+        )
+        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -135,6 +159,20 @@ class CategoriaCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("listar_categorias")
     login_url = reverse_lazy("login")
 
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Categoria "{form.instance.nome}" cadastrada com sucesso!'
+        )
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao cadastrar categoria. Verifique os dados.'
+        )
+        return super().form_invalid(form)
+
     extra_context = {
         "title": "Cadastro de Categoria",
         "titulo": "Cadastro de Categoria",
@@ -155,6 +193,20 @@ class MovimentacaoUpdateView(LoginRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Movimentação atualizada com sucesso!'
+        )
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao atualizar movimentação. Verifique os dados e tente novamente.'
+        )
+        return super().form_invalid(form)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
@@ -174,7 +226,7 @@ class ParcelaUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         # Redireciona para a lista correta baseada no tipo de movimentação
-        if self.object.movimentacao.tipo == "receita":
+        if self.object.movimentacao.categoria.tipo == "receita":
             return reverse_lazy("listar_parcelas_receita")
         else:
             return reverse_lazy("listar_parcelas_despesa")
@@ -187,10 +239,10 @@ class ParcelaUpdateView(LoginRequiredMixin, UpdateView):
         context.update({
             'title': f'Editar Parcela {parcela.ordem_parcela}/{movimentacao.parcelas}',
             'titulo': f'Editar Parcela {parcela.ordem_parcela} de {movimentacao.parcelas}',
-            'subtitulo': f'{movimentacao.get_tipo_display()}: {movimentacao.categoria} - {movimentacao.parceiros}',
+            'subtitulo': f'{movimentacao.categoria.get_tipo_display()}: {movimentacao.categoria}' + (f' - {movimentacao.parceiros}' if movimentacao.parceiros else ''),
             'movimentacao': movimentacao,
             'total_parcelas': movimentacao.parcelas,
-            'tipo_movimentacao': movimentacao.tipo,
+            'tipo_movimentacao': movimentacao.categoria.tipo,
         })
         return context
 
@@ -210,6 +262,13 @@ class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("listar_categorias")
     login_url = reverse_lazy("login")
 
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Categoria "{form.instance.nome}" atualizada com sucesso!'
+        )
+        return super().form_valid(form)
+
     extra_context = {
         "title": "Edição de Categoria",
         "titulo": "Edição de Categoria",
@@ -221,8 +280,26 @@ class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
 class MovimentacaoDeleteView(LoginRequiredMixin, DeleteView):
     model = Movimentacao
     template_name = "formularios/formulario_excluir.html"
-    success_url = reverse_lazy("pagina_index")
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    login_url = reverse_lazy("login")
+
+    def get_success_url(self):
+        # Redireciona para a lista correta baseada no tipo de movimentação
+        if self.object.categoria.tipo == "receita":
+            return reverse_lazy("listar_movimentacao_receita")
+        else:
+            return reverse_lazy("listar_movimentacao_despesa")
+
+    def delete(self, request, *args, **kwargs):
+        movimentacao = self.get_object()
+        tipo = movimentacao.categoria.get_tipo_display()
+        parceiro = movimentacao.parceiros.nome if movimentacao.parceiros else "Sem parceiro"
+        valor = movimentacao.valor_total
+        
+        messages.success(
+            self.request,
+            f'🗑️ {tipo} excluída com sucesso! Parceiro: {parceiro} - Valor: R$ {valor:.2f}'
+        )
+        return super().delete(request, *args, **kwargs)
 
     extra_context = {
         "title": "Exclusão de Movimentações",
@@ -238,10 +315,24 @@ class ParcelaDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         # Redireciona para a lista correta baseada no tipo de movimentação
-        if self.object.movimentacao.tipo == "receita":
+        if self.object.movimentacao.categoria.tipo == "receita":
             return reverse_lazy("listar_parcelas_receita")
         else:
             return reverse_lazy("listar_parcelas_despesa")
+
+    def delete(self, request, *args, **kwargs):
+        parcela = self.get_object()
+        tipo = parcela.movimentacao.categoria.get_tipo_display()
+        ordem = parcela.ordem_parcela
+        total_parcelas = parcela.movimentacao.parcelas
+        parceiro = parcela.movimentacao.parceiros.nome if parcela.movimentacao.parceiros else "Sem parceiro"
+        valor = parcela.valor_parcela
+        
+        messages.success(
+            self.request,
+            f'🗑️ Parcela {ordem}/{total_parcelas} excluída com sucesso! {tipo}: {parceiro} - Valor: R$ {valor:.2f}'
+        )
+        return super().delete(request, *args, **kwargs)
 
     extra_context = {
         "title": "Exclusão de Parcelas",
@@ -256,6 +347,17 @@ class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy("listar_categorias")
     login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
 
+    def delete(self, request, *args, **kwargs):
+        categoria = self.get_object()
+        categoria_nome = categoria.nome
+        categoria_tipo = categoria.get_tipo_display()
+        
+        messages.success(
+            self.request,
+            f'🗑️ Categoria "{categoria_nome}" ({categoria_tipo}) excluída com sucesso!'
+        )
+        return super().delete(request, *args, **kwargs)
+
     extra_context = {
         "title": "Exclusão de Categorias",
         "titulo_excluir": "Exclusão de Categorias",
@@ -269,12 +371,22 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
 
     def get_queryset(self):
-        return Movimentacao.objects.all().order_by("-data")
+        return (
+            Movimentacao.objects.all()
+            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+            .order_by("-data")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["despesas"] = Movimentacao.objects.filter(tipo="despesa")
-        context["receitas"] = Movimentacao.objects.filter(tipo="receita")
+        context["despesas"] = (
+            Movimentacao.objects.filter(categoria__tipo="despesa")
+            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+        )
+        context["receitas"] = (
+            Movimentacao.objects.filter(categoria__tipo="receita")
+            .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
+        )
         return context
 
     extra_context = {
@@ -289,26 +401,44 @@ class MovimentacaoListView(LoginRequiredMixin, ListView):
 class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
     template_name = "receita/lista_receita.html"
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    login_url = reverse_lazy("login")
+    paginate_by = 20
+    filterset_class = MovimentacaoFilter
 
     def get_queryset(self):
-        return (
+        queryset = (
             super()
             .get_queryset()
-            .filter(tipo="receita")
+            .filter(categoria__tipo="receita")
             .order_by("-data")
             .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
         )
+        
+        # Pesquisa por texto (busca em todos os registros)
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(descricao__icontains=search_query) |
+                Q(parceiros__nome__icontains=search_query) |
+                Q(categoria__nome__icontains=search_query) |
+                Q(fazenda__nome__icontains=search_query)
+            )
+        
+        # Aplicar filtros
+        self.filterset = MovimentacaoFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Calcula os totais para receitas
-        total_receitas = 0
-        for receita in context["object_list"]:
-            total_receitas += receita.valor_total
+        # Adicionar parâmetro de pesquisa ao contexto
+        context['search_query'] = self.request.GET.get('search', '')
 
+        # Calcula os totais para receitas (apenas itens filtrados)
+        total_receitas = sum(receita.valor_total for receita in self.filterset.qs)
+        
         context["total_receitas"] = total_receitas
+        context["filter"] = self.filterset
 
         return context
 
@@ -325,26 +455,44 @@ class MovimentacaoReceitaListView(LoginRequiredMixin, ListView):
 class MovimentacaoDespesaListView(LoginRequiredMixin, ListView):
     model = Movimentacao
     template_name = "despesa/lista_despesa.html"
-    login_url = reverse_lazy("login")  # Altere para o nome da sua URL de login
+    login_url = reverse_lazy("login")
+    paginate_by = 20
+    filterset_class = MovimentacaoFilter
 
     def get_queryset(self):
-        return (
+        queryset = (
             super()
             .get_queryset()
-            .filter(tipo="despesa")
+            .filter(categoria__tipo="despesa")
             .order_by("-data")
             .select_related("fazenda", "categoria", "parceiros", "cadastrada_por")
         )
+        
+        # Pesquisa por texto (busca em todos os registros)
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(descricao__icontains=search_query) |
+                Q(parceiros__nome__icontains=search_query) |
+                Q(categoria__nome__icontains=search_query) |
+                Q(fazenda__nome__icontains=search_query)
+            )
+        
+        # Aplicar filtros
+        self.filterset = MovimentacaoFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Calcula os totais para despesas
-        total_despesas = 0
-        for despesa in context["object_list"]:
-            total_despesas += despesa.valor_total
+        # Adicionar parâmetro de pesquisa ao contexto
+        context['search_query'] = self.request.GET.get('search', '')
 
+        # Calcula os totais para despesas (apenas itens filtrados)
+        total_despesas = sum(despesa.valor_total for despesa in self.filterset.qs)
+        
         context["total_despesas"] = total_despesas
+        context["filter"] = self.filterset
 
         return context
 
@@ -363,23 +511,45 @@ class ParcelasReceitaListView(LoginRequiredMixin, ListView):
     template_name = "parcela/lista_parcelas_receita.html"
     context_object_name = "parcelas"
     login_url = reverse_lazy("login")
+    paginate_by = 20
+    filterset_class = ParcelaFilter
 
     def get_queryset(self):
-        return Parcela.objects.filter(
-            movimentacao__tipo="receita"
+        queryset = Parcela.objects.filter(
+            movimentacao__categoria__tipo="receita"
         ).order_by("-data_vencimento").select_related(
             'movimentacao', 
+            'movimentacao__fazenda',
             'movimentacao__parceiros', 
             'movimentacao__categoria'
         )
+        
+        # Pesquisa por texto (busca em todos os registros)
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(movimentacao__descricao__icontains=search_query) |
+                Q(movimentacao__parceiros__nome__icontains=search_query) |
+                Q(movimentacao__categoria__nome__icontains=search_query) |
+                Q(status_pagamento__icontains=search_query)
+            )
+        
+        # Aplicar filtros
+        self.filterset = ParcelaFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Adicionar parâmetro de pesquisa ao contexto
+        context['search_query'] = self.request.GET.get('search', '')
+        
         context["title"] = "Parcelas a Receber"
         context["titulo"] = "Parcelas a Receber (Receitas)"
         context["registros"] = "Nenhuma parcela de receita encontrada."
         context["btn_cadastrar"] = "Nova Receita"
         context["today"] = timezone.now().date()
+        context["filter"] = self.filterset
         return context
 
 
@@ -389,23 +559,45 @@ class ParcelasDespesaListView(LoginRequiredMixin, ListView):
     template_name = "parcela/lista_parcelas_despesa.html"
     context_object_name = "parcelas"
     login_url = reverse_lazy("login")
+    paginate_by = 20
+    filterset_class = ParcelaFilter
 
     def get_queryset(self):
-        return Parcela.objects.filter(
-            movimentacao__tipo="despesa"
+        queryset = Parcela.objects.filter(
+            movimentacao__categoria__tipo="despesa"
         ).order_by("-data_vencimento").select_related(
             'movimentacao', 
+            'movimentacao__fazenda',
             'movimentacao__parceiros', 
             'movimentacao__categoria'
         )
+        
+        # Pesquisa por texto (busca em todos os registros)
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(movimentacao__descricao__icontains=search_query) |
+                Q(movimentacao__parceiros__nome__icontains=search_query) |
+                Q(movimentacao__categoria__nome__icontains=search_query) |
+                Q(status_pagamento__icontains=search_query)
+            )
+        
+        # Aplicar filtros
+        self.filterset = ParcelaFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Adicionar parâmetro de pesquisa ao contexto
+        context['search_query'] = self.request.GET.get('search', '')
+        
         context["title"] = "Parcelas a Pagar"
         context["titulo"] = "Parcelas a Pagar (Despesas)"
         context["registros"] = "Nenhuma parcela de despesa encontrada."
         context["btn_cadastrar"] = "Nova Despesa"
         context["today"] = timezone.now().date()
+        context["filter"] = self.filterset
         return context
 
 
@@ -419,6 +611,7 @@ class ParcelasListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Parcela.objects.all().order_by("-data_vencimento").select_related(
             'movimentacao', 
+            'movimentacao__fazenda',
             'movimentacao__parceiros', 
             'movimentacao__categoria'
         )
@@ -448,8 +641,9 @@ class CategoriaListView(LoginRequiredMixin, ListView):
         context["title"] = "Lista de Categorias"
         context["titulo"] = "Categorias"
         
-        # Separar por tipo
-        context["categorias_receita"] = Categoria.objects.filter(tipo="receita").order_by("nome")
-        context["categorias_despesa"] = Categoria.objects.filter(tipo="despesa").order_by("nome")
+        # Usar apenas uma query com filtro em Python (já carregado)
+        all_categorias = list(self.get_queryset())
+        context["categorias_receita"] = [c for c in all_categorias if c.tipo == "receita"]
+        context["categorias_despesa"] = [c for c in all_categorias if c.tipo == "despesa"]
         
         return context

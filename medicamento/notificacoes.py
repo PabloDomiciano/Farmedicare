@@ -10,6 +10,8 @@ def gerar_notificacoes_medicamentos():
     Gera notificações para medicamentos que estão próximos do vencimento (≤30 dias)
     ou já vencidos.
     
+    OTIMIZADO: Filtra apenas medicamentos relevantes antes de carregar
+    
     Returns:
         dict: Dicionário com contadores e lista de notificações
     """
@@ -20,53 +22,63 @@ def gerar_notificacoes_medicamentos():
     vencidos = 0
     proximos_vencer = 0
     
-    # Buscar todas as entradas de medicamentos
-    entradas = EntradaMedicamento.objects.select_related('medicamento', 'medicamento__fazenda').order_by('validade')
+    # ========== OTIMIZAÇÃO: Filtrar antes de carregar ==========
+    # Buscar apenas entradas que precisam de notificação (≤30 dias E quantidade disponível)
+    entradas = EntradaMedicamento.objects.filter(
+        validade__lte=limite_critico,
+        quantidade_disponivel__gt=0
+    ).select_related(
+        'medicamento', 
+        'medicamento__fazenda'
+    ).only(
+        'id', 'quantidade_disponivel', 'validade', 'observacao',
+        'medicamento__id', 'medicamento__nome',
+        'medicamento__fazenda__nome'
+    ).order_by('validade')
     
     for entrada in entradas:
         dias_para_vencer = (entrada.validade - hoje).days
         
-        # Apenas notificar se estiver vencido ou próximo (≤30 dias)
-        if dias_para_vencer <= 30:
-            if dias_para_vencer < 0:
-                tipo = 'vencido'
-                urgencia = 'critica'
-                vencidos += 1
-                icone = 'fa-times-circle'
-                cor = '#ef5350'
-                mensagem = f'<strong>{entrada.medicamento.nome}</strong> venceu há <strong>{abs(dias_para_vencer)} dias</strong>!'
-            elif dias_para_vencer <= 7:
-                tipo = 'muito_proximo'
-                urgencia = 'alta'
-                proximos_vencer += 1
-                icone = 'fa-exclamation-triangle'
-                cor = '#ff9800'
-                mensagem = f'<strong>{entrada.medicamento.nome}</strong> vence em <strong>{dias_para_vencer} dias</strong>!'
-            else:  # 8-30 dias
-                tipo = 'proximo'
-                urgencia = 'media'
-                proximos_vencer += 1
-                icone = 'fa-clock'
-                cor = '#ffa726'
-                mensagem = f'<strong>{entrada.medicamento.nome}</strong> vence em <strong>{dias_para_vencer} dias</strong>.'
-            
-            notificacoes.append({
-                'tipo': tipo,
-                'urgencia': urgencia,
-                'icone': icone,
-                'cor': cor,
-                'mensagem': mensagem,
-                'medicamento': entrada.medicamento.nome,
-                'medicamento_id': entrada.medicamento.id,
-                'entrada_id': entrada.id,
-                'quantidade': entrada.quantidade,
-                'validade': entrada.validade,
-                'dias_para_vencer': dias_para_vencer,
-                'dias_vencido_abs': abs(dias_para_vencer) if dias_para_vencer < 0 else 0,
-                'fazenda': entrada.medicamento.fazenda.nome if entrada.medicamento.fazenda else '-',
-                'lote': entrada.observacao if entrada.observacao else '-',
-                'data_notificacao': hoje,
-            })
+        # Classificar por urgência
+        if dias_para_vencer < 0:
+            tipo = 'vencido'
+            urgencia = 'critica'
+            vencidos += 1
+            icone = 'fa-times-circle'
+            cor = '#ef5350'
+            mensagem = f'<strong>{entrada.medicamento.nome}</strong> venceu há <strong>{abs(dias_para_vencer)} dias</strong>!'
+        elif dias_para_vencer <= 7:
+            tipo = 'muito_proximo'
+            urgencia = 'alta'
+            proximos_vencer += 1
+            icone = 'fa-exclamation-triangle'
+            cor = '#ff9800'
+            mensagem = f'<strong>{entrada.medicamento.nome}</strong> vence em <strong>{dias_para_vencer} dias</strong>!'
+        else:  # 8-30 dias
+            tipo = 'proximo'
+            urgencia = 'media'
+            proximos_vencer += 1
+            icone = 'fa-clock'
+            cor = '#ffa726'
+            mensagem = f'<strong>{entrada.medicamento.nome}</strong> vence em <strong>{dias_para_vencer} dias</strong>.'
+        
+        notificacoes.append({
+            'tipo': tipo,
+            'urgencia': urgencia,
+            'icone': icone,
+            'cor': cor,
+            'mensagem': mensagem,
+            'medicamento': entrada.medicamento.nome,
+            'medicamento_id': entrada.medicamento.id,
+            'entrada_id': entrada.id,
+            'quantidade': entrada.quantidade_disponivel,
+            'validade': entrada.validade,
+            'dias_para_vencer': dias_para_vencer,
+            'dias_vencido_abs': abs(dias_para_vencer) if dias_para_vencer < 0 else 0,
+            'fazenda': entrada.medicamento.fazenda.nome if entrada.medicamento.fazenda else '-',
+            'lote': entrada.observacao if entrada.observacao else '-',
+            'data_notificacao': hoje,
+        })
     
     return {
         'notificacoes': notificacoes,
@@ -81,8 +93,16 @@ def contar_notificacoes_nao_lidas():
     """
     Conta quantas notificações ativas existem (para o badge).
     
+    OTIMIZADO: Usa count() direto no banco ao invés de carregar todos os objetos
+    
     Returns:
         int: Número de notificações não lidas
     """
-    dados = gerar_notificacoes_medicamentos()
-    return dados['total']
+    hoje = date.today()
+    limite_critico = hoje + timedelta(days=30)
+    
+    # Count direto no banco - muito mais rápido
+    return EntradaMedicamento.objects.filter(
+        validade__lte=limite_critico,
+        quantidade_disponivel__gt=0
+    ).only('id').count()

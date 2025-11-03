@@ -15,6 +15,81 @@
 
     <!-- CSS Styles -->
     <link rel="stylesheet" href="{% static 'css/form_login.css' %}" />
+    
+    <!-- Estilos para Mensagens Flash -->
+    <style>
+      .login-messages {
+        margin-bottom: 20px;
+      }
+
+      .flash-message {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        border-left: 4px solid;
+        animation: slideInDown 0.4s ease-out;
+      }
+
+      .flash-message.flash-success {
+        background: linear-gradient(to right, #e8f5e9 0%, #f1f8f4 100%);
+        border-left-color: #4caf50;
+        color: #2e7d32;
+      }
+
+      .flash-message.flash-error,
+      .flash-message.flash-danger {
+        background: linear-gradient(to right, #ffebee 0%, #fef5f5 100%);
+        border-left-color: #f44336;
+        color: #c62828;
+      }
+
+      .flash-message.flash-info {
+        background: linear-gradient(to right, #e3f2fd 0%, #f0f7ff 100%);
+        border-left-color: #2196f3;
+        color: #1565c0;
+      }
+
+      .flash-message.flash-warning {
+        background: linear-gradient(to right, #fff3e0 0%, #fffaf3 100%);
+        border-left-color: #ff9800;
+        color: #e65100;
+      }
+
+      .flash-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .flash-content {
+        flex: 1;
+      }
+
+      .flash-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+
+      .flash-text {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      @keyframes slideInDown {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
 
   <body>
@@ -28,12 +103,36 @@
 
         <!-- Exemplo de mensagem de erro (remover em produção) -->
         <div class="login-form-container">
+          <!-- Mensagens Flash Dinâmicas -->
+          {% if messages %}
           <div class="login-messages">
-            <div class="alert alert-error" style="display: none">
-              <i class="fas fa-exclamation-circle"></i>
-              <span>Usuário ou senha incorretos. Tente novamente.</span>
+            {% for message in messages %}
+            <div class="flash-message flash-{{ message.tags }}">
+              <div class="flash-icon">
+                {% if message.tags == 'success' %}
+                  <i class="fas fa-check-circle"></i>
+                {% elif message.tags == 'error' or message.tags == 'danger' %}
+                  <i class="fas fa-exclamation-circle"></i>
+                {% elif message.tags == 'warning' %}
+                  <i class="fas fa-exclamation-triangle"></i>
+                {% else %}
+                  <i class="fas fa-info-circle"></i>
+                {% endif %}
+              </div>
+              <div class="flash-content">
+                <div class="flash-title">
+                  {% if message.tags == 'success' %}Sucesso!
+                  {% elif message.tags == 'error' or message.tags == 'danger' %}Erro!
+                  {% elif message.tags == 'warning' %}Atenção!
+                  {% else %}Informação
+                  {% endif %}
+                </div>
+                <p class="flash-text">{{ message }}</p>
+              </div>
             </div>
+            {% endfor %}
           </div>
+          {% endif %}
 
           <form class="login-form" method="POST">
             {% csrf_token %}

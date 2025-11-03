@@ -8,12 +8,14 @@ from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.db.models import Q
 from datetime import date, timedelta
 import json
 
 from medicamento.models import EntradaMedicamento, Medicamento, SaidaMedicamento
 from medicamento.notificacoes import gerar_notificacoes_medicamentos
 from medicamento.forms import MedicamentoForm, EntradaMedicamentoForm
+from medicamento.filters import EntradaMedicamentoFilter
 from perfis.models import Fazenda
 
 
@@ -23,6 +25,20 @@ class MedicamentoCreateView(LoginRequiredMixin, CreateView):
     form_class = MedicamentoForm
     template_name = "medicamento/cadastro_medicamento.html"
     success_url = reverse_lazy("listar_medicamentos")
+    
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Medicamento "{form.instance.nome}" cadastrado com sucesso!'
+        )
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao cadastrar medicamento. Verifique os dados.'
+        )
+        return super().form_invalid(form)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -41,6 +57,13 @@ class MedicamentoUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "medicamento/cadastro_medicamento.html"
     success_url = reverse_lazy("listar_medicamentos")
     
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Medicamento "{form.instance.nome}" atualizado com sucesso!'
+        )
+        return super().form_valid(form)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update({
@@ -57,6 +80,16 @@ class MedicamentoDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "formularios/formulario_excluir.html"
     success_url = reverse_lazy("listar_medicamentos")
     
+    def delete(self, request, *args, **kwargs):
+        medicamento = self.get_object()
+        medicamento_nome = medicamento.nome
+        fazenda_nome = medicamento.fazenda.nome
+        messages.success(
+            self.request,
+            f'🗑️ Medicamento "{medicamento_nome}" excluído com sucesso! Fazenda: {fazenda_nome}'
+        )
+        return super().delete(request, *args, **kwargs)
+    
     extra_context = {
         "title": "Exclusão de Medicamento",
         "titulo_excluir": "Exclusão de Medicamento",
@@ -71,14 +104,19 @@ class MedicamentoListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("login")
 
     def get_queryset(self):
-        return Medicamento.objects.all().order_by("nome").select_related("fazenda")
+        return (
+            Medicamento.objects.all()
+            .select_related("fazenda")
+            .only("id", "nome", "fazenda__nome")
+            .order_by("nome")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Lista de Medicamentos"
         context["titulo"] = "Medicamentos"
         
-        # Calcular total de medicamentos
+        # Calcular total de medicamentos (usar count() ao invés de len())
         context["total_medicamentos"] = self.get_queryset().count()
         
         return context
@@ -95,6 +133,20 @@ class EntradaMedicamentoCreateView(LoginRequiredMixin, CreateView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+    
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'✅ Entrada de medicamento "{form.instance.medicamento.nome}" registrada! Quantidade: {form.instance.quantidade}'
+        )
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            'Erro ao registrar entrada de medicamento. Verifique os dados.'
+        )
+        return super().form_invalid(form)
     
     def form_valid(self, form):
         # Define o usuário logado como cadastrado_por
@@ -154,6 +206,21 @@ class EntradaMedicamentoDeleteView(LoginRequiredMixin, DeleteView):
     extra_context = {
         "titulo": "Confirmação de Exclusão",
     }
+    
+    def delete(self, request, *args, **kwargs):
+        entrada = self.get_object()
+        medicamento_nome = entrada.medicamento.nome
+        quantidade = entrada.quantidade
+        quantidade_disponivel = entrada.quantidade_disponivel
+        data_validade = entrada.validade.strftime('%d/%m/%Y')
+        fazenda_nome = entrada.medicamento.fazenda.nome
+        
+        messages.success(
+            self.request,
+            f'🗑️ Entrada de medicamento excluída com sucesso! {medicamento_nome} - '
+            f'Qtd: {quantidade_disponivel}/{quantidade} - Validade: {data_validade} - Fazenda: {fazenda_nome}'
+        )
+        return super().delete(request, *args, **kwargs)
 
 
 ############ List EntradaMedicamento (Legado) ############
@@ -190,14 +257,42 @@ class MedicamentoEstoqueListView(LoginRequiredMixin, ListView):
     model = EntradaMedicamento
     template_name = "medicamento_estoque_novo.html"
     context_object_name = "entradas"
+    paginate_by = 20
+    filterset_class = EntradaMedicamentoFilter
     
     def get_queryset(self):
-        return EntradaMedicamento.objects.all().select_related('medicamento__fazenda').order_by('validade')
+        queryset = (
+            EntradaMedicamento.objects.all()
+            .select_related('medicamento', 'medicamento__fazenda')
+            .only(
+                'id', 'quantidade', 'quantidade_disponivel', 'validade', 
+                'valor_medicamento', 'observacao', 'data_cadastro',
+                'medicamento__id', 'medicamento__nome', 
+                'medicamento__fazenda__id', 'medicamento__fazenda__nome'
+            )
+            .order_by('validade')
+        )
+        
+        # Pesquisa por texto (busca em todos os registros)
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(medicamento__nome__icontains=search_query) |
+                Q(medicamento__fazenda__nome__icontains=search_query) |
+                Q(observacao__icontains=search_query)
+            )
+        
+        # Aplicar filtros
+        self.filterset = EntradaMedicamentoFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs
     
     def get_context_data(self, **kwargs):
         from datetime import date, timedelta
         context = super().get_context_data(**kwargs)
         hoje = date.today()
+        
+        # Adicionar parâmetro de pesquisa ao contexto
+        context['search_query'] = self.request.GET.get('search', '')
         
         # Preparar dados das entradas com informações de validade
         entradas_data = []
@@ -207,7 +302,8 @@ class MedicamentoEstoqueListView(LoginRequiredMixin, ListView):
         proximo_vencer = 0  # 30 dias
         atencao = 0  # 60 dias
         
-        for entrada in context['entradas']:
+        # Usar queryset filtrado para os cálculos
+        for entrada in self.filterset.qs:
             medicamento = entrada.medicamento
             
             # Usar quantidade_disponivel (descontando saídas)
@@ -265,6 +361,7 @@ class MedicamentoEstoqueListView(LoginRequiredMixin, ListView):
         context['titulo'] = "Controle de Validade de Medicamentos"
         context['btn_cadastrar'] = "Nova Entrada"
         context['registros'] = "Nenhuma entrada de medicamento encontrada."
+        context['filter'] = self.filterset
         
         return context
 
@@ -333,6 +430,8 @@ class SaidaMedicamentoAPIView(LoginRequiredMixin, View):
     Implementa lógica FIFO (First In, First Out) - saída das entradas mais antigas primeiro
     """
     def post(self, request, *args, **kwargs):
+        from django.db import transaction
+        
         try:
             print(f"DEBUG - Request body: {request.body}")
             
@@ -364,91 +463,94 @@ class SaidaMedicamentoAPIView(LoginRequiredMixin, View):
                     'error': 'Quantidade deve ser um número positivo.'
                 }, status=400)
             
-            # Buscar o medicamento
-            medicamento = get_object_or_404(Medicamento, id=medicamento_id)
-            print(f"DEBUG - Medicamento encontrado: {medicamento.nome}")
-            
-            # Buscar entradas com quantidade disponível, ordenadas por validade (FIFO)
-            entradas_disponiveis = EntradaMedicamento.objects.filter(
-                medicamento=medicamento,
-                quantidade_disponivel__gt=0
-            ).order_by('validade')
-            
-            if not entradas_disponiveis.exists():
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Não há estoque disponível para este medicamento.'
-                }, status=400)
-            
-            # Verificar se há estoque suficiente total
-            estoque_total = sum(e.quantidade_disponivel for e in entradas_disponiveis)
-            print(f"DEBUG - Estoque total disponível: {estoque_total}")
-            
-            if quantidade_solicitada > estoque_total:
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Estoque insuficiente. Disponível: {estoque_total} unidades.'
-                }, status=400)
-            
-            # Implementar lógica FIFO - retirar das entradas mais antigas primeiro
-            quantidade_restante = quantidade_solicitada
-            entradas_processadas = []
-            
-            for entrada in entradas_disponiveis:
-                if quantidade_restante <= 0:
-                    break
+            # Usar transaction para garantir atomicidade e select_for_update para evitar race condition
+            with transaction.atomic():
+                # Buscar o medicamento
+                medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+                print(f"DEBUG - Medicamento encontrado: {medicamento.nome}")
                 
-                # Quantidade a retirar desta entrada
-                quantidade_desta_entrada = min(quantidade_restante, entrada.quantidade_disponivel)
-                
-                # Atualizar quantidade disponível da entrada
-                entrada.quantidade_disponivel -= quantidade_desta_entrada
-                entrada.save()
-                
-                # Registrar a saída
-                saida = SaidaMedicamento.objects.create(
+                # Buscar entradas com quantidade disponível, ordenadas por validade (FIFO)
+                # select_for_update() trava as linhas para evitar concorrência
+                entradas_disponiveis = EntradaMedicamento.objects.select_for_update().filter(
                     medicamento=medicamento,
-                    entrada=entrada,
-                    quantidade=quantidade_desta_entrada,
-                    motivo=motivo,
-                    registrada_por=request.user
-                )
+                    quantidade_disponivel__gt=0
+                ).order_by('validade')
                 
-                entradas_processadas.append({
-                    'entrada_id': entrada.id,
-                    'quantidade': quantidade_desta_entrada,
-                    'saida_id': saida.id
+                if not entradas_disponiveis.exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Não há estoque disponível para este medicamento.'
+                    }, status=400)
+                
+                # Verificar se há estoque suficiente total
+                estoque_total = sum(e.quantidade_disponivel for e in entradas_disponiveis)
+                print(f"DEBUG - Estoque total disponível: {estoque_total}")
+                
+                if quantidade_solicitada > estoque_total:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Estoque insuficiente. Disponível: {estoque_total} unidades.'
+                    }, status=400)
+                
+                # Implementar lógica FIFO - retirar das entradas mais antigas primeiro
+                quantidade_restante = quantidade_solicitada
+                entradas_processadas = []
+                
+                for entrada in entradas_disponiveis:
+                    if quantidade_restante <= 0:
+                        break
+                    
+                    # Quantidade a retirar desta entrada
+                    quantidade_desta_entrada = min(quantidade_restante, entrada.quantidade_disponivel)
+                    
+                    # Atualizar quantidade disponível da entrada
+                    entrada.quantidade_disponivel -= quantidade_desta_entrada
+                    entrada.save(update_fields=['quantidade_disponivel'])
+                    
+                    # Registrar a saída
+                    saida = SaidaMedicamento.objects.create(
+                        medicamento=medicamento,
+                        entrada=entrada,
+                        quantidade=quantidade_desta_entrada,
+                        motivo=motivo,
+                        registrada_por=request.user
+                    )
+                    
+                    entradas_processadas.append({
+                        'entrada_id': entrada.id,
+                        'quantidade': quantidade_desta_entrada,
+                        'saida_id': saida.id
+                    })
+                    
+                    print(f"DEBUG - Saída criada: {quantidade_desta_entrada} da entrada #{entrada.id}")
+                    
+                    # Reduzir quantidade restante
+                    quantidade_restante -= quantidade_desta_entrada
+                    
+                    # Se a entrada zerou, ela não será mais exibida (filtro na view)
+                    if entrada.quantidade_disponivel == 0:
+                        print(f"DEBUG - Entrada #{entrada.id} zerada (não será mais exibida)")
+                
+                # Calcular novo estoque total
+                novo_estoque = medicamento.quantidade_total
+                print(f"DEBUG - Novo estoque total: {novo_estoque}")
+                
+                # Se o estoque zerou completamente, deletar o medicamento
+                if novo_estoque <= 0:
+                    nome_medicamento = medicamento.nome
+                    medicamento.delete()  # Isso também deleta as entradas e saídas por CASCADE
+                    print(f"DEBUG - Medicamento {nome_medicamento} removido (estoque zerado)")
+                    mensagem = f'Saída de {quantidade_solicitada} unidades registrada! O medicamento {nome_medicamento} foi removido do estoque (quantidade zerada).'
+                else:
+                    mensagem = f'Saída de {quantidade_solicitada} unidades registrada com sucesso!'
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': mensagem,
+                    'novo_estoque': novo_estoque,
+                    'estoque_zerado': novo_estoque <= 0,
+                    'entradas_processadas': entradas_processadas
                 })
-                
-                print(f"DEBUG - Saída criada: {quantidade_desta_entrada} da entrada #{entrada.id}")
-                
-                # Reduzir quantidade restante
-                quantidade_restante -= quantidade_desta_entrada
-                
-                # Se a entrada zerou, ela não será mais exibida (filtro na view)
-                if entrada.quantidade_disponivel == 0:
-                    print(f"DEBUG - Entrada #{entrada.id} zerada (não será mais exibida)")
-            
-            # Calcular novo estoque total
-            novo_estoque = medicamento.quantidade_total
-            print(f"DEBUG - Novo estoque total: {novo_estoque}")
-            
-            # Se o estoque zerou completamente, deletar o medicamento
-            if novo_estoque <= 0:
-                nome_medicamento = medicamento.nome
-                medicamento.delete()  # Isso também deleta as entradas e saídas por CASCADE
-                print(f"DEBUG - Medicamento {nome_medicamento} removido (estoque zerado)")
-                mensagem = f'Saída de {quantidade_solicitada} unidades registrada! O medicamento {nome_medicamento} foi removido do estoque (quantidade zerada).'
-            else:
-                mensagem = f'Saída de {quantidade_solicitada} unidades registrada com sucesso!'
-            
-            return JsonResponse({
-                'success': True,
-                'message': mensagem,
-                'novo_estoque': novo_estoque,
-                'estoque_zerado': novo_estoque <= 0,
-                'entradas_processadas': entradas_processadas
-            })
             
         except json.JSONDecodeError:
             print("DEBUG - Erro ao decodificar JSON")

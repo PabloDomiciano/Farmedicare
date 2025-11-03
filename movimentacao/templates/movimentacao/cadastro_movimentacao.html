@@ -276,19 +276,6 @@
       </h3>
       <div class="form-grid">
         <div class="form-group">
-          <label for="{{ form.tipo.id_for_label }}">
-            {{ form.tipo.label }} <span style="color: red;">*</span>
-          </label>
-          {{ form.tipo }}
-          {% if form.tipo.help_text %}
-          <small class="helptext">{{ form.tipo.help_text }}</small>
-          {% endif %}
-          {% if form.tipo.errors %}
-          <small style="color: #dc3545;">{{ form.tipo.errors }}</small>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
           <label for="{{ form.categoria.id_for_label }}">
             {{ form.categoria.label }} <span style="color: red;">*</span>
           </label>
@@ -303,7 +290,7 @@
 
         <div class="form-group">
           <label for="{{ form.parceiros.id_for_label }}">
-            {{ form.parceiros.label }} <span style="color: red;">*</span>
+            {{ form.parceiros.label }}
           </label>
           {{ form.parceiros }}
           {% if form.parceiros.errors %}

@@ -1,0 +1,68 @@
+{% load filtros %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination-container">
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            Mostrando 
+            <strong>{{ page_obj.start_index }}</strong> a 
+            <strong>{{ page_obj.end_index }}</strong> de 
+            <strong>{{ page_obj.paginator.count }}</strong> 
+            registro{{ page_obj.paginator.count|pluralize }}
+        </div>
+        
+        <nav class="pagination-nav" aria-label="Navegação de páginas">
+            {% if page_obj.has_previous %}
+                <a class="page-link page-first" href="?{% param_replace page=1 %}">
+                    <i class="fas fa-angle-double-left"></i>
+                    <span>Primeira</span>
+                </a>
+            
+                {% if page_obj.previous_page_number != 1 %}
+                <a class="page-link page-prev" href="?{% param_replace page=page_obj.previous_page_number %}">
+                    <i class="fas fa-angle-left"></i>
+                    <span>Anterior</span>
+                </a>
+                {% endif %}
+            {% else %}
+                <span class="page-link disabled page-first">
+                    <i class="fas fa-angle-double-left"></i>
+                    <span>Primeira</span>
+                </span>
+                <span class="page-link disabled page-prev">
+                    <i class="fas fa-angle-left"></i>
+                    <span>Anterior</span>
+                </span>
+            {% endif %}
+
+            <span class="page-current">
+                <i class="fas fa-file-alt"></i>
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                {% if page_obj.next_page_number != page_obj.paginator.num_pages %}
+                <a class="page-link page-next" href="?{% param_replace page=page_obj.next_page_number %}">
+                    <span>Próxima</span>
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                {% endif %}
+
+                <a class="page-link page-last" href="?{% param_replace page=page_obj.paginator.num_pages %}">
+                    <span>Última</span>
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled page-next">
+                    <span>Próxima</span>
+                    <i class="fas fa-angle-right"></i>
+                </span>
+                <span class="page-link disabled page-last">
+                    <span>Última</span>
+                    <i class="fas fa-angle-double-right"></i>
+                </span>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+{% endif %}

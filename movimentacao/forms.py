@@ -49,12 +49,12 @@ class MovimentacaoForm(forms.ModelForm):
     """
     Formulário personalizado para cadastro de movimentações.
     Layout otimizado com campos lado a lado para melhor usabilidade.
+    O tipo da movimentação é determinado pela categoria selecionada.
     """
     
     class Meta:
         model = Movimentacao
         fields = [
-            'tipo',
             'categoria',
             'parceiros',
             'fazenda',
@@ -67,17 +67,13 @@ class MovimentacaoForm(forms.ModelForm):
         ]
         
         widgets = {
-            'tipo': forms.Select(attrs={
-                'class': 'form-control form-field-half',
-                'required': True,
-            }),
             'categoria': forms.Select(attrs={
                 'class': 'form-control form-field-half',
                 'required': True,
             }),
             'parceiros': forms.Select(attrs={
                 'class': 'form-control form-field-half',
-                'required': True,
+                'required': False,
             }),
             'fazenda': forms.Select(attrs={
                 'class': 'form-control form-field-half',
@@ -113,9 +109,8 @@ class MovimentacaoForm(forms.ModelForm):
         }
         
         labels = {
-            'tipo': 'Tipo de Movimentação',
             'categoria': 'Categoria',
-            'parceiros': 'Parceiro/Fornecedor',
+            'parceiros': 'Parceiro/Fornecedor (Opcional)',
             'fazenda': 'Fazenda',
             'valor_total': 'Valor Total (R$)',
             'parcelas': 'Número de Parcelas',
@@ -125,7 +120,8 @@ class MovimentacaoForm(forms.ModelForm):
         }
         
         help_texts = {
-            'tipo': 'Selecione se é uma receita ou despesa',
+            'categoria': 'Selecione a categoria (que define se é receita ou despesa)',
+            'parceiros': 'Opcional: selecione apenas se houver um parceiro/fornecedor específico',
             'valor_total': 'Valor total da movimentação',
             'parcelas': 'Quantidade de parcelas para pagamento/recebimento',
             'imposto_renda': 'Marque se esta movimentação deve ser declarada no IR',
@@ -137,18 +133,12 @@ class MovimentacaoForm(forms.ModelForm):
         tipo_fixo = kwargs.pop('tipo_fixo', None)  # Novo parâmetro para tipo fixo
         super().__init__(*args, **kwargs)
         
-        # Se tipo_fixo foi passado, configura o campo como disabled e com valor fixo
+        # Se tipo_fixo foi passado, filtra as categorias pelo tipo
         if tipo_fixo:
-            self.fields['tipo'].initial = tipo_fixo
-            self.fields['tipo'].widget.attrs.update({
-                'disabled': True,
-                'class': 'form-control form-field-half campo-bloqueado',
-            })
-            # Armazena o tipo fixo para usar no clean
-            self.tipo_fixo = tipo_fixo
-            
             # Filtra as categorias pelo tipo
             self.fields['categoria'].queryset = Categoria.objects.filter(tipo=tipo_fixo).order_by('nome')
+            # Armazena o tipo fixo para validação
+            self.tipo_fixo = tipo_fixo
         else:
             self.tipo_fixo = None
         
@@ -159,13 +149,17 @@ class MovimentacaoForm(forms.ModelForm):
                     'autocomplete': 'off'
                 })
     
-    def clean_tipo(self):
+    def clean_categoria(self):
         """
-        Garante que o tipo fixo seja mantido mesmo com o campo disabled
+        Valida se a categoria selecionada corresponde ao tipo fixo (se houver)
         """
-        if self.tipo_fixo:
-            return self.tipo_fixo
-        return self.cleaned_data.get('tipo')
+        categoria = self.cleaned_data.get('categoria')
+        if self.tipo_fixo and categoria:
+            if categoria.tipo != self.tipo_fixo:
+                raise forms.ValidationError(
+                    f'Esta categoria é de {categoria.get_tipo_display()}, mas você está cadastrando uma {self.tipo_fixo}.'
+                )
+        return categoria
     
     # Removido clean_cadastrada_por - campo não está mais no formulário
 
@@ -196,10 +190,13 @@ class ParcelaForm(forms.ModelForm):
                 'class': 'form-control',
                 'required': True,
             }),
-            'data_quitacao': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-            }),
+            'data_quitacao': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date',
+                }
+            ),
         }
         
         labels = {
@@ -217,22 +214,30 @@ class ParcelaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        from datetime import date
+        
         # Se já está pago, torna data_quitacao obrigatória
         instance = kwargs.get('instance')
         if instance:
             # Se a parcela está pendente, preenche com valores padrão para facilitar
             if instance.status_pagamento == 'Pendente':
-                from datetime import date
                 # Define valor pago igual ao valor da parcela
                 self.initial['valor_pago'] = instance.valor_parcela
                 # Define status como Pago
                 self.initial['status_pagamento'] = 'Pago'
                 # Define data de quitação como hoje
                 self.initial['data_quitacao'] = date.today()
+            else:
+                # Mesmo se já estiver pago, atualiza a data para hoje se não houver data
+                if not instance.data_quitacao:
+                    self.initial['data_quitacao'] = date.today()
             
             if instance.status_pagamento == 'Pago':
                 self.fields['data_quitacao'].required = True
                 self.fields['data_quitacao'].widget.attrs['required'] = True
+        else:
+            # Se for uma nova parcela, define data atual por padrão
+            self.initial['data_quitacao'] = date.today()
         
         # Adiciona autocomplete off para todos os campos
         for field_name, field in self.fields.items():

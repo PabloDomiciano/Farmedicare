@@ -1,0 +1,68 @@
+<!-- Barra de Pesquisa (Backend - Django) -->
+<div class="search-container" style="margin-bottom: 20px;">
+    <form method="get" action="" style="display: flex; gap: 10px; align-items: center;">
+        <!-- Campo de pesquisa -->
+        <div style="flex: 1; position: relative;">
+            <input 
+                type="text" 
+                name="search" 
+                id="searchInput"
+                value="{{ search_query|default:'' }}" 
+                placeholder="Pesquisar em todos os registros..." 
+                style="width: 100%; padding: 10px 40px 10px 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
+            />
+            <i class="fas fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+        </div>
+        
+        <!-- Botão de pesquisa -->
+        <button 
+            type="submit" 
+            class="btn btn-primary" 
+            style="padding: 10px 20px; background-color: #4a8f29; border: none; color: white; border-radius: 5px; cursor: pointer; white-space: nowrap;"
+        >
+            <i class="fas fa-search"></i> Pesquisar
+        </button>
+        
+        <!-- Botão para limpar pesquisa -->
+        {% if search_query %}
+        <a 
+            href="?" 
+            class="btn btn-secondary" 
+            style="padding: 10px 20px; background-color: #6c757d; border: none; color: white; border-radius: 5px; text-decoration: none; white-space: nowrap;"
+        >
+            <i class="fas fa-times"></i> Limpar
+        </a>
+        {% endif %}
+        
+        <!-- Preservar outros parâmetros GET (filtros) -->
+        {% for key, value in request.GET.items %}
+            {% if key != 'search' and key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
+    </form>
+    
+    {% if search_query %}
+    <div style="margin-top: 10px; color: #666; font-size: 14px;">
+        <i class="fas fa-info-circle"></i> 
+        Pesquisando por: <strong>{{ search_query }}</strong>
+        {% if page_obj.paginator.count %}
+            - {{ page_obj.paginator.count }} resultado(s) encontrado(s)
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .search-container input[type="text"]:focus {
+        outline: none;
+        border-color: #4a8f29;
+        box-shadow: 0 0 5px rgba(74, 143, 41, 0.3);
+    }
+    
+    .search-container .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        transition: all 0.2s;
+    }
+</style>

@@ -1,4 +1,5 @@
 {% extends 'modelo.html' %}
+
 {% load static %}
 {% block titulo %}<title>{{ title }}</title>{% endblock %}
 
@@ -7,10 +8,9 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar despesas..." />
-        <i class="fas fa-search"></i>
-      </div>
+      <!-- Incluir barra de pesquisa do backend -->
+      {% include 'search_bar.html' %}
+      
       {% block admin %}{% endblock %}
       <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
@@ -366,14 +366,20 @@
           <tr class="despesa-row {% if despesa.valor_total > 5000 %}despesa-alta{% endif %}"
               data-parcelas="{{ despesa.parcelas }}"
               data-valor="{{ despesa.valor_total }}"
-              data-parceiro="{{ despesa.parceiros.nome }}"
+              data-parceiro="{% if despesa.parceiros %}{{ despesa.parceiros.nome }}{% else %}Sem parceiro{% endif %}"
               data-categoria="{{ despesa.categoria.nome }}"
               data-fazenda="{{ despesa.fazenda.nome }}"
               data-data="{{ despesa.data|date:'Y-m-d' }}"
-              data-search="{{ despesa.parceiros.nome }} {{ despesa.categoria.nome }} {{ despesa.fazenda.nome }}">
+              data-search="{% if despesa.parceiros %}{{ despesa.parceiros.nome }}{% endif %} {{ despesa.categoria.nome }} {{ despesa.fazenda.nome }}">
             
             <td>
-              <strong style="color: #f57c00;">{{ despesa.parceiros.nome }}</strong>
+              <strong style="color: #f57c00;">
+                {% if despesa.parceiros %}
+                  {{ despesa.parceiros.nome }}
+                {% else %}
+                  <em style="color: #999;">Sem parceiro</em>
+                {% endif %}
+              </strong>
             </td>
             
             <td>
@@ -385,7 +391,7 @@
               {% endif %}
             </td>
             
-            <td class="valor-despesa">
+            <td class="valor-despesa" data-sort="{{ despesa.valor_total|floatformat:2}}">
               R$ {{ despesa.valor_total|floatformat:2 }}
               {% if despesa.valor_total > 5000 %}
                 <div style="font-size: 11px; color: #ff9800; margin-top: 3px;">
@@ -406,7 +412,7 @@
               {% endif %}
             </td>
             
-            <td>
+            <td data-sort="{{ despesa.data|date:'Ymd' }}">
               <strong>{{ despesa.data|date:"d/m/Y" }}</strong>
               <div style="font-size: 12px; color: #666; margin-top: 4px;">
                 {{ despesa.data|date:"D" }}
@@ -442,7 +448,9 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table >
+      <!-- Paginação --> 
+			{% include "paginacao.html" %}
     </div>
   </div>
 

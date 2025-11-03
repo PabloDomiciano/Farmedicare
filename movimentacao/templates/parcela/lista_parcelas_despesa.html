@@ -7,10 +7,9 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar parcelas a pagar..." />
-        <i class="fas fa-search"></i>
-      </div>
+      <!-- Incluir barra de pesquisa do backend -->
+      {% include 'search_bar.html' %}
+      
       {% block admin %}{% endblock %}
       <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
@@ -444,14 +443,20 @@
                 data-status="{% if parcela.status_pagamento == 'Pago' %}pago{% elif parcela.data_vencimento|date:'Y-m-d' < today and parcela.status_pagamento != 'Pago' %}vencido{% else %}pendente{% endif %}"
                 data-valor="{{ parcela.valor_parcela }}"
                 data-valor-pago="{{ parcela.valor_pago }}"
-                data-parceiro="{{ parcela.movimentacao.parceiros.nome }}"
+                data-parceiro="{% if parcela.movimentacao.parceiros %}{{ parcela.movimentacao.parceiros.nome }}{% else %}Sem parceiro{% endif %}"
                 data-parcela="{{ parcela.ordem_parcela }}"
                 data-vencimento="{{ parcela.data_vencimento|date:'Y-m-d' }}"
                 data-pagamento="{% if parcela.data_quitacao %}{{ parcela.data_quitacao|date:'Y-m-d' }}{% else %}9999-12-31{% endif %}"
-                data-search="{{ parcela.movimentacao.tipo }} {{ parcela.movimentacao.parceiros.nome }} {{ parcela.ordem_parcela }}">
+                data-search="{{ parcela.movimentacao.categoria.tipo }} {% if parcela.movimentacao.parceiros %}{{ parcela.movimentacao.parceiros.nome }}{% endif %} {{ parcela.ordem_parcela }}">
               
               <td>
-                <strong style="color: #f57c00;">{{ parcela.movimentacao.parceiros.nome }}</strong>
+                <strong style="color: #f57c00;">
+                  {% if parcela.movimentacao.parceiros %}
+                    {{ parcela.movimentacao.parceiros.nome }}
+                  {% else %}
+                    <em style="color: #999;">Sem parceiro</em>
+                  {% endif %}
+                </strong>
                 <div class="info-movimentacao">
                   <i class="fas fa-tag" style="color: #fb8c00;"></i> {{ parcela.movimentacao.categoria.nome }}
                   | <i class="fas fa-home" style="color: #fb8c00;"></i> {{ parcela.movimentacao.fazenda.nome }}
@@ -531,6 +536,8 @@
           {% endfor %}
         </tbody>
       </table>
+      <!-- Paginação -->
+      {% include "paginacao.html" %}
     </div>
   </div>
 
@@ -581,19 +588,17 @@
         });
       });
 
-      searchInput.addEventListener('input', aplicarFiltros);
+      // Pesquisa agora é feita no backend via formulário
+      // Removido: searchInput.addEventListener('input', aplicarFiltros);
 
       function aplicarFiltros() {
-        const searchTerm = searchInput.value.toLowerCase();
-        
+        // Filtro apenas por status (não por pesquisa - isso é backend)
         parcelaRows.forEach(row => {
           const status = row.dataset.status;
-          const searchData = row.dataset.search.toLowerCase();
           
           const statusMatch = currentFilter === 'todos' || status === currentFilter;
-          const searchMatch = searchTerm === '' || searchData.includes(searchTerm);
           
-          row.style.display = (statusMatch && searchMatch) ? '' : 'none';
+          row.style.display = statusMatch ? '' : 'none';
         });
         
         calcularEstatisticas();

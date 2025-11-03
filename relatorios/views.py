@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.generic import TemplateView
 from django.db.models import Sum, Count, Avg, Q, F
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import timedelta, datetime
 from decimal import Decimal
 import pytz
@@ -47,11 +48,11 @@ class RelatoriosView(TemplateView):
         
         # ========== DADOS DE MOVIMENTAÇÃO FINANCEIRA ==========
         
-        # Receitas
+        # Receitas - OTIMIZADO com select_related
         receitas = Movimentacao.objects.filter(
-            tipo='receita',
+            categoria__tipo='receita',
             data__range=[data_inicio, data_fim]
-        )
+        ).select_related('categoria', 'fazenda', 'parceiros')
         
         total_receitas = receitas.aggregate(
             total=Sum('valor_total')
@@ -59,11 +60,11 @@ class RelatoriosView(TemplateView):
         
         count_receitas = receitas.count()
         
-        # Despesas
+        # Despesas - OTIMIZADO
         despesas = Movimentacao.objects.filter(
-            tipo='despesa',
+            categoria__tipo='despesa',
             data__range=[data_inicio, data_fim]
-        )
+        ).select_related('categoria', 'fazenda', 'parceiros')
         
         total_despesas = despesas.aggregate(
             total=Sum('valor_total')
@@ -74,20 +75,20 @@ class RelatoriosView(TemplateView):
         # Saldo
         saldo = total_receitas - total_despesas
         
-        # Parcelas pendentes
+        # Parcelas pendentes - OTIMIZADO
         parcelas_pendentes = Parcela.objects.filter(
             data_vencimento__range=[data_inicio, data_fim]
-        ).exclude(status_pagamento='Pago')
+        ).exclude(status_pagamento='Pago').select_related('movimentacao')
         
         total_pendente = parcelas_pendentes.aggregate(
             total=Sum('valor_parcela')
         )['total'] or Decimal('0.00')
         
-        # Parcelas pagas
+        # Parcelas pagas - OTIMIZADO
         parcelas_pagas = Parcela.objects.filter(
             data_quitacao__range=[data_inicio, data_fim],
             status_pagamento='Pago'
-        )
+        ).select_related('movimentacao')
         
         total_pago = parcelas_pagas.aggregate(
             total=Sum('valor_pago')
@@ -111,13 +112,27 @@ class RelatoriosView(TemplateView):
         
         # ========== DADOS DE MEDICAMENTOS ==========
         
-        # Total de medicamentos cadastrados
-        total_medicamentos = Medicamento.objects.count()
+        # OTIMIZADO: Total de UNIDADES em estoque (soma de quantidade_disponivel)
+        # Igual à página de estoque de medicamentos
+        total_unidades_estoque = EntradaMedicamento.objects.filter(
+            quantidade_disponivel__gt=0
+        ).aggregate(
+            total=Sum('quantidade_disponivel')
+        )['total'] or 0
         
-        # Entradas no período
+        # OTIMIZADO: Calcular medicamentos com estoque baixo (< 10 unidades por medicamento)
+        estoques_por_medicamento = EntradaMedicamento.objects.values(
+            'medicamento'
+        ).annotate(
+            total_estoque=Sum('quantidade_disponivel')
+        ).filter(total_estoque__gt=0, total_estoque__lt=10)
+        
+        medicamentos_baixo_estoque = estoques_por_medicamento.count()
+        
+        # Entradas no período - OTIMIZADO com only()
         entradas = EntradaMedicamento.objects.filter(
             data_cadastro__range=[data_inicio, data_fim]
-        )
+        ).only('id', 'quantidade', 'valor_medicamento', 'medicamento_id')
         
         total_entradas = entradas.count()
         
@@ -126,26 +141,22 @@ class RelatoriosView(TemplateView):
             total=Sum('valor_medicamento')
         )['total'] or Decimal('0.00')
         
-        # Medicamentos com estoque baixo (menos de 10 unidades)
-        # Como Medicamento não tem campo direto de estoque, vamos contar por entradas com quantidade baixa
-        medicamentos_baixo_estoque = 0  # Removido o filtro que causava erro
-        
-        # Medicamentos próximos ao vencimento (30 dias)
+        # Medicamentos próximos ao vencimento (30 dias) - OTIMIZADO
         data_vencimento_limite = hoje + timedelta(days=30)
         
         medicamentos_vencer = EntradaMedicamento.objects.filter(
             validade__lte=data_vencimento_limite,
             validade__gte=hoje,
-            quantidade__gt=0
-        ).count()
+            quantidade_disponivel__gt=0
+        ).only('id').count()
         
-        # Medicamentos vencidos
+        # Medicamentos vencidos - OTIMIZADO
         medicamentos_vencidos = EntradaMedicamento.objects.filter(
             validade__lt=hoje,
-            quantidade__gt=0
-        ).count()
+            quantidade_disponivel__gt=0
+        ).only('id').count()
         
-        # Top 5 medicamentos mais movimentados (por quantidade total de entradas)
+        # Top 5 medicamentos mais movimentados - OTIMIZADO com only()
         top_medicamentos = entradas.values(
             'medicamento__nome',
             'medicamento__fazenda__nome'
@@ -155,66 +166,94 @@ class RelatoriosView(TemplateView):
         
         # ========== NOTIFICAÇÕES DE MOVIMENTAÇÕES ==========
         
-        # Parcelas vencidas (receitas e despesas)
+        # Parcelas vencidas (receitas e despesas) - OTIMIZADO
         data_limite_vencimento = hoje + timedelta(days=5)
         
         parcelas_vencidas = Parcela.objects.filter(
             data_vencimento__lt=hoje,
             status_pagamento__in=['Pendente', 'Atrasado']
-        ).select_related('movimentacao')
+        ).select_related('movimentacao__categoria')
         
         parcelas_vencer_5dias = Parcela.objects.filter(
             data_vencimento__gte=hoje,
             data_vencimento__lte=data_limite_vencimento,
             status_pagamento__in=['Pendente', 'Atrasado']
-        ).select_related('movimentacao')
+        ).select_related('movimentacao__categoria')
         
-        # Separar por tipo
-        receitas_vencidas = parcelas_vencidas.filter(movimentacao__tipo='receita')
-        despesas_vencidas = parcelas_vencidas.filter(movimentacao__tipo='despesa')
-        receitas_vencer = parcelas_vencer_5dias.filter(movimentacao__tipo='receita')
-        despesas_vencer = parcelas_vencer_5dias.filter(movimentacao__tipo='despesa')
+        # Separar por tipo (em Python, evitando queries extras)
+        parcelas_vencidas_list = list(parcelas_vencidas)
+        parcelas_vencer_list = list(parcelas_vencer_5dias)
+        
+        receitas_vencidas = [p for p in parcelas_vencidas_list if p.movimentacao.categoria.tipo == 'receita']
+        despesas_vencidas = [p for p in parcelas_vencidas_list if p.movimentacao.categoria.tipo == 'despesa']
+        receitas_vencer = [p for p in parcelas_vencer_list if p.movimentacao.categoria.tipo == 'receita']
+        despesas_vencer = [p for p in parcelas_vencer_list if p.movimentacao.categoria.tipo == 'despesa']
         
         # Contar notificações
         notificacoes_count = (
             medicamentos_vencer + 
             medicamentos_vencidos + 
-            receitas_vencidas.count() +
-            despesas_vencidas.count() +
-            receitas_vencer.count() +
-            despesas_vencer.count()
+            len(receitas_vencidas) +
+            len(despesas_vencidas) +
+            len(receitas_vencer) +
+            len(despesas_vencer)
         )
         
         # ========== DADOS PARA GRÁFICOS ==========
         
-        # Gráfico comparativo: Receitas vs Despesas por mês (últimos 6 meses)
-        comparativo_labels = []
-        comparativo_receitas = []
-        comparativo_despesas = []
+        # OTIMIZADO: Gráfico comparativo usando UMA query + processamento em Python + CACHE
+        # Buscar últimos 6 meses de dados (iniciar 6 meses atrás)
+        inicio_6_meses = (hoje - timedelta(days=180)).replace(day=1)
+        cache_key = f'grafico_comparativo_6meses_{inicio_6_meses}'
+        cached_data = cache.get(cache_key)
         
-        for i in range(5, -1, -1):
-            data_ref = hoje - timedelta(days=30*i)
-            mes_inicio = data_ref.replace(day=1)
+        if cached_data:
+            comparativo_labels = cached_data['labels']
+            comparativo_receitas = cached_data['receitas']
+            comparativo_despesas = cached_data['despesas']
+        else:
+            # Uma única query para todas as movimentações dos últimos 6 meses
+            from django.db.models.functions import TruncMonth
+            movimentacoes_mensais = Movimentacao.objects.filter(
+                data__gte=inicio_6_meses
+            ).annotate(
+                mes=TruncMonth('data')
+            ).values('mes', 'categoria__tipo').annotate(
+                total=Sum('valor_total')
+            ).order_by('mes', 'categoria__tipo')
             
-            if i == 0:
-                mes_fim = hoje
-            else:
-                proximo_mes = (mes_inicio + timedelta(days=32)).replace(day=1)
-                mes_fim = proximo_mes - timedelta(days=1)
+            # Preparar estrutura dos últimos 6 meses
+            comparativo_labels = []
+            comparativo_receitas = []
+            comparativo_despesas = []
             
-            receita_mes = Movimentacao.objects.filter(
-                tipo='receita',
-                data__range=[mes_inicio, mes_fim]
-            ).aggregate(total=Sum('valor_total'))['total'] or 0
+            # Criar dicionário para facilitar lookup
+            dados_por_mes = {}
+            for mov in movimentacoes_mensais:
+                mes_key = mov['mes'].strftime('%Y-%m')
+                if mes_key not in dados_por_mes:
+                    dados_por_mes[mes_key] = {'receita': 0, 'despesa': 0}
+                
+                tipo = mov['categoria__tipo']
+                valor = float(mov['total'] or 0)
+                dados_por_mes[mes_key][tipo] = valor
             
-            despesa_mes = Movimentacao.objects.filter(
-                tipo='despesa',
-                data__range=[mes_inicio, mes_fim]
-            ).aggregate(total=Sum('valor_total'))['total'] or 0
+            # Preencher arrays dos últimos 6 meses
+            for i in range(5, -1, -1):
+                data_ref = hoje - timedelta(days=30*i)
+                mes_key = data_ref.strftime('%Y-%m')
+                mes_label = data_ref.strftime('%b/%y')
+                
+                comparativo_labels.append(mes_label)
+                comparativo_receitas.append(dados_por_mes.get(mes_key, {}).get('receita', 0))
+                comparativo_despesas.append(dados_por_mes.get(mes_key, {}).get('despesa', 0))
             
-            comparativo_labels.append(mes_inicio.strftime('%b/%y'))
-            comparativo_receitas.append(float(receita_mes))
-            comparativo_despesas.append(float(despesa_mes))
+            # Guardar no cache por 5 minutos (300 segundos)
+            cache.set(cache_key, {
+                'labels': comparativo_labels,
+                'receitas': comparativo_receitas,
+                'despesas': comparativo_despesas
+            }, 300)
         
         # ========== DADOS PARA GRÁFICOS DE COLUNAS ==========
         
@@ -255,7 +294,7 @@ class RelatoriosView(TemplateView):
             'top_despesas_categoria': top_despesas_categoria,
             
             # Medicamentos
-            'total_medicamentos': total_medicamentos,
+            'total_medicamentos': total_unidades_estoque,  # Total de UNIDADES em estoque (ex: 86)
             'total_entradas': total_entradas,
             'valor_total_estoque': valor_total_estoque,
             'medicamentos_baixo_estoque': medicamentos_baixo_estoque,
@@ -371,8 +410,8 @@ def gerar_pdf_relatorio(request):
     # ====================
     elements.append(Paragraph("1. RESUMO FINANCEIRO GERAL", heading_style))
     
-    receitas = Movimentacao.objects.filter(tipo='receita', data__range=[data_inicio, data_fim])
-    despesas = Movimentacao.objects.filter(tipo='despesa', data__range=[data_inicio, data_fim])
+    receitas = Movimentacao.objects.filter(categoria__tipo='receita', data__range=[data_inicio, data_fim])
+    despesas = Movimentacao.objects.filter(categoria__tipo='despesa', data__range=[data_inicio, data_fim])
     
     total_receitas = receitas.aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
     total_despesas = despesas.aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
@@ -520,13 +559,13 @@ def gerar_pdf_relatorio(request):
     
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
         validade__lt=hoje,
-        quantidade__gt=0
+        quantidade_disponivel__gt=0
     ).count()
     
     medicamentos_vencer = EntradaMedicamento.objects.filter(
         validade__gte=hoje,
         validade__lte=trinta_dias,
-        quantidade__gt=0
+        quantidade_disponivel__gt=0
     ).count()
     
     data_med_resumo = [
@@ -616,7 +655,7 @@ def gerar_pdf_relatorio(request):
     # Medicamentos vencidos
     entradas_vencidas = EntradaMedicamento.objects.filter(
         validade__lt=hoje,
-        quantidade__gt=0
+        quantidade_disponivel__gt=0
     ).select_related('medicamento').order_by('validade')
     
     if entradas_vencidas:
@@ -631,7 +670,7 @@ def gerar_pdf_relatorio(request):
             dias_vencido = (hoje - entrada.validade).days
             data_vencidos.append([
                 entrada.medicamento.nome,
-                str(entrada.quantidade),
+                str(entrada.quantidade_disponivel),
                 entrada.validade.strftime('%d/%m/%Y'),
                 f'{dias_vencido} dia(s)'
             ])
@@ -657,7 +696,7 @@ def gerar_pdf_relatorio(request):
     entradas_vencer = EntradaMedicamento.objects.filter(
         validade__gte=hoje,
         validade__lte=trinta_dias,
-        quantidade__gt=0
+        quantidade_disponivel__gt=0
     ).select_related('medicamento').order_by('validade')
     
     if entradas_vencer:
@@ -672,7 +711,7 @@ def gerar_pdf_relatorio(request):
             dias_restantes = (entrada.validade - hoje).days
             data_vencer.append([
                 entrada.medicamento.nome,
-                str(entrada.quantidade),
+                str(entrada.quantidade_disponivel),
                 entrada.validade.strftime('%d/%m/%Y'),
                 f'{dias_restantes} dia(s)'
             ])
@@ -738,12 +777,22 @@ def api_notificacoes(request):
     
     # ========== PARCELAS DE RECEITAS ==========
     
-    # Receitas vencidas (não pagas)
+    # Receitas vencidas (não pagas) - OTIMIZADO com select_related
     receitas_vencidas = Parcela.objects.filter(
-        movimentacao__tipo='receita',
+        movimentacao__categoria__tipo='receita',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
-    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    ).select_related(
+        'movimentacao__parceiros', 
+        'movimentacao__categoria', 
+        'movimentacao__fazenda'
+    ).only(
+        'id', 'ordem_parcela', 'valor_parcela', 'data_vencimento',
+        'movimentacao__parcelas', 'movimentacao__descricao',
+        'movimentacao__parceiros__nome',
+        'movimentacao__categoria__nome',
+        'movimentacao__fazenda__nome'
+    )
     
     for parcela in receitas_vencidas:
         dias_atraso = (hoje - parcela.data_vencimento).days
@@ -762,20 +811,30 @@ def api_notificacoes(request):
             'valor': float(parcela.valor_parcela),
             'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
             'data_vencimento_raw': parcela.data_vencimento.isoformat(),
-            'parceiro': parcela.movimentacao.parceiros.nome,
+            'parceiro': parcela.movimentacao.parceiros.nome if parcela.movimentacao.parceiros else 'Sem parceiro',
             'categoria_nome': parcela.movimentacao.categoria.nome,
             'descricao': parcela.movimentacao.descricao or '',
             'fazenda': parcela.movimentacao.fazenda.nome,
             'id_parcela': parcela.id,
         })
     
-    # Receitas a vencer (próximas 5 dias)
+    # Receitas a vencer (próximas 5 dias) - OTIMIZADO
     receitas_vencer = Parcela.objects.filter(
-        movimentacao__tipo='receita',
+        movimentacao__categoria__tipo='receita',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
         status_pagamento='Pendente'
-    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    ).select_related(
+        'movimentacao__parceiros', 
+        'movimentacao__categoria', 
+        'movimentacao__fazenda'
+    ).only(
+        'id', 'ordem_parcela', 'valor_parcela', 'data_vencimento',
+        'movimentacao__parcelas', 'movimentacao__descricao',
+        'movimentacao__parceiros__nome',
+        'movimentacao__categoria__nome',
+        'movimentacao__fazenda__nome'
+    )
     
     for parcela in receitas_vencer:
         dias_restantes = (parcela.data_vencimento - hoje).days
@@ -798,7 +857,7 @@ def api_notificacoes(request):
             'valor': float(parcela.valor_parcela),
             'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
             'data_vencimento_raw': parcela.data_vencimento.isoformat(),
-            'parceiro': parcela.movimentacao.parceiros.nome,
+            'parceiro': parcela.movimentacao.parceiros.nome if parcela.movimentacao.parceiros else 'Sem parceiro',
             'categoria_nome': parcela.movimentacao.categoria.nome,
             'descricao': parcela.movimentacao.descricao or '',
             'fazenda': parcela.movimentacao.fazenda.nome,
@@ -807,12 +866,22 @@ def api_notificacoes(request):
     
     # ========== PARCELAS DE DESPESAS ==========
     
-    # Despesas vencidas (não pagas)
+    # Despesas vencidas (não pagas) - OTIMIZADO
     despesas_vencidas = Parcela.objects.filter(
-        movimentacao__tipo='despesa',
+        movimentacao__categoria__tipo='despesa',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
-    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    ).select_related(
+        'movimentacao__parceiros', 
+        'movimentacao__categoria', 
+        'movimentacao__fazenda'
+    ).only(
+        'id', 'ordem_parcela', 'valor_parcela', 'data_vencimento',
+        'movimentacao__parcelas', 'movimentacao__descricao',
+        'movimentacao__parceiros__nome',
+        'movimentacao__categoria__nome',
+        'movimentacao__fazenda__nome'
+    )
     
     for parcela in despesas_vencidas:
         dias_atraso = (hoje - parcela.data_vencimento).days
@@ -831,20 +900,30 @@ def api_notificacoes(request):
             'valor': float(parcela.valor_parcela),
             'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
             'data_vencimento_raw': parcela.data_vencimento.isoformat(),
-            'parceiro': parcela.movimentacao.parceiros.nome,
+            'parceiro': parcela.movimentacao.parceiros.nome if parcela.movimentacao.parceiros else 'Sem parceiro',
             'categoria_nome': parcela.movimentacao.categoria.nome,
             'descricao': parcela.movimentacao.descricao or '',
             'fazenda': parcela.movimentacao.fazenda.nome,
             'id_parcela': parcela.id,
         })
     
-    # Despesas a vencer (próximas 5 dias)
+    # Despesas a vencer (próximas 5 dias) - OTIMIZADO
     despesas_vencer = Parcela.objects.filter(
-        movimentacao__tipo='despesa',
+        movimentacao__categoria__tipo='despesa',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
         status_pagamento='Pendente'
-    ).select_related('movimentacao', 'movimentacao__parceiros', 'movimentacao__categoria', 'movimentacao__fazenda')
+    ).select_related(
+        'movimentacao__parceiros', 
+        'movimentacao__categoria', 
+        'movimentacao__fazenda'
+    ).only(
+        'id', 'ordem_parcela', 'valor_parcela', 'data_vencimento',
+        'movimentacao__parcelas', 'movimentacao__descricao',
+        'movimentacao__parceiros__nome',
+        'movimentacao__categoria__nome',
+        'movimentacao__fazenda__nome'
+    )
     
     for parcela in despesas_vencer:
         dias_restantes = (parcela.data_vencimento - hoje).days
@@ -867,7 +946,7 @@ def api_notificacoes(request):
             'valor': float(parcela.valor_parcela),
             'data_vencimento': parcela.data_vencimento.strftime('%d/%m/%Y'),
             'data_vencimento_raw': parcela.data_vencimento.isoformat(),
-            'parceiro': parcela.movimentacao.parceiros.nome,
+            'parceiro': parcela.movimentacao.parceiros.nome if parcela.movimentacao.parceiros else 'Sem parceiro',
             'categoria_nome': parcela.movimentacao.categoria.nome,
             'descricao': parcela.movimentacao.descricao or '',
             'fazenda': parcela.movimentacao.fazenda.nome,
@@ -876,11 +955,15 @@ def api_notificacoes(request):
     
     # ========== MEDICAMENTOS ==========
     
-    # Medicamentos vencidos
+    # Medicamentos vencidos - OTIMIZADO
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
         validade__lt=hoje,
-        quantidade__gt=0
-    ).select_related('medicamento', 'medicamento__fazenda')
+        quantidade_disponivel__gt=0
+    ).select_related('medicamento', 'medicamento__fazenda').only(
+        'id', 'quantidade_disponivel', 'validade',
+        'medicamento__id', 'medicamento__nome',
+        'medicamento__fazenda__nome'
+    )
     
     for entrada in medicamentos_vencidos:
         dias_vencido = (hoje - entrada.validade).days
@@ -897,18 +980,22 @@ def api_notificacoes(request):
             'medicamento': entrada.medicamento.nome,
             'fazenda': entrada.medicamento.fazenda.nome,
             'lote': f'ID-{entrada.id}',
-            'quantidade': entrada.quantidade,
+            'quantidade': entrada.quantidade_disponivel,
             'validade': entrada.validade.strftime('%d/%m/%Y'),
             'validade_raw': entrada.validade.isoformat(),
             'id_entrada': entrada.id,
         })
     
-    # Medicamentos a vencer (30 dias)
+    # Medicamentos a vencer (30 dias) - OTIMIZADO
     medicamentos_vencer = EntradaMedicamento.objects.filter(
         validade__gte=hoje,
         validade__lte=data_limite_30dias,
-        quantidade__gt=0
-    ).select_related('medicamento', 'medicamento__fazenda')
+        quantidade_disponivel__gt=0
+    ).select_related('medicamento', 'medicamento__fazenda').only(
+        'id', 'quantidade_disponivel', 'validade',
+        'medicamento__id', 'medicamento__nome',
+        'medicamento__fazenda__nome'
+    )
     
     for entrada in medicamentos_vencer:
         dias_restantes = (entrada.validade - hoje).days
@@ -934,7 +1021,7 @@ def api_notificacoes(request):
             'medicamento': entrada.medicamento.nome,
             'fazenda': entrada.medicamento.fazenda.nome,
             'lote': f'ID-{entrada.id}',
-            'quantidade': entrada.quantidade,
+            'quantidade': entrada.quantidade_disponivel,
             'validade': entrada.validade.strftime('%d/%m/%Y'),
             'validade_raw': entrada.validade.isoformat(),
             'id_entrada': entrada.id,
@@ -960,43 +1047,43 @@ def notificacoes_page(request):
     data_limite_5dias = hoje + timedelta(days=5)
     data_limite_30dias = hoje + timedelta(days=30)
     
-    # Contadores
+    # Contadores OTIMIZADOS - usar only('id') para count
     receitas_vencidas = Parcela.objects.filter(
-        movimentacao__tipo='receita',
+        movimentacao__categoria__tipo='receita',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
-    ).count()
+    ).only('id').count()
     
     receitas_vencer = Parcela.objects.filter(
-        movimentacao__tipo='receita',
+        movimentacao__categoria__tipo='receita',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
         status_pagamento='Pendente'
-    ).count()
+    ).only('id').count()
     
     despesas_vencidas = Parcela.objects.filter(
-        movimentacao__tipo='despesa',
+        movimentacao__categoria__tipo='despesa',
         data_vencimento__lt=hoje,
         status_pagamento='Pendente'
-    ).count()
+    ).only('id').count()
     
     despesas_vencer = Parcela.objects.filter(
-        movimentacao__tipo='despesa',
+        movimentacao__categoria__tipo='despesa',
         data_vencimento__gte=hoje,
         data_vencimento__lte=data_limite_5dias,
         status_pagamento='Pendente'
-    ).count()
+    ).only('id').count()
     
     medicamentos_vencidos = EntradaMedicamento.objects.filter(
         validade__lt=hoje,
-        quantidade__gt=0
-    ).count()
+        quantidade_disponivel__gt=0
+    ).only('id').count()
     
     medicamentos_vencer = EntradaMedicamento.objects.filter(
         validade__gte=hoje,
         validade__lte=data_limite_30dias,
-        quantidade__gt=0
-    ).count()
+        quantidade_disponivel__gt=0
+    ).only('id').count()
     
     total = (
         receitas_vencidas + receitas_vencer +
@@ -1017,4 +1104,5 @@ def notificacoes_page(request):
     }
     
     return render(request, 'relatorios/notificacoes_unificadas.html', context)
+
 

@@ -1,0 +1,38 @@
+{% load static %}
+
+<div class="filter-container">
+    <div class="filter-header">
+        <div class="filter-title">
+            <i class="fas fa-filter"></i>
+            Filtros
+            {% if filter.form.is_bound %}
+            <span class="filter-badge">Ativo</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="get" class="filter-form-wrapper">
+        <div class="filter-form">
+            {% for field in filter.form %}
+                <div class="filter-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <small class="text-danger">{{ field.errors }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter btn-apply-filter">
+                <i class="fas fa-check"></i>
+                Aplicar Filtros
+            </button>
+            <a href="{{ request.path }}" class="btn-filter btn-clear-filter">
+                <i class="fas fa-times"></i>
+                Limpar Filtros
+            </a>
+        </div>
+    </form>
+</div>

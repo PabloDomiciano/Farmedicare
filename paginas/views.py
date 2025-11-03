@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, date
 from django.views.generic import TemplateView
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
+from django.core.cache import cache
 from movimentacao.models import Movimentacao, Parcela
 from medicamento.models import EntradaMedicamento, Medicamento
 import json
@@ -12,51 +13,56 @@ class PaginaView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Total de receitas
-        total_receitas = (
-            Movimentacao.objects.filter(tipo="receita").aggregate(
-                total=Sum("valor_total")
-            )["total"]
-            or 0
+        hoje = date.today()
+        
+        # ========== OTIMIZAÇÃO: Uma única query para totais de receitas e despesas ==========
+        totais = Movimentacao.objects.aggregate(
+            total_receitas=Sum('valor_total', filter=Q(categoria__tipo='receita')),
+            total_despesas=Sum('valor_total', filter=Q(categoria__tipo='despesa'))
         )
-
-        # Total de despesas
-        total_despesas = (
-            Movimentacao.objects.filter(tipo="despesa").aggregate(
-                total=Sum("valor_total")
-            )["total"]
-            or 0
-        )
-
-        # Saldo (receitas - despesas)
+        
+        total_receitas = totais['total_receitas'] or 0
+        total_despesas = totais['total_despesas'] or 0
         saldo = total_receitas - total_despesas
 
-        # Calcular crescimento de receitas do mês atual comparado com mês anterior
-        mes_atual = datetime.now().strftime("%Y-%m")
-        mes_anterior = (datetime.now() - timedelta(days=30)).strftime("%Y-%m")
+        # ========== OTIMIZAÇÃO: Calcular meses uma vez ==========
+        mes_atual_inicio = datetime.now().replace(day=1).date()
+        mes_anterior_inicio = (mes_atual_inicio - timedelta(days=1)).replace(day=1)
+        mes_atual_fim = hoje
+        mes_anterior_fim = mes_atual_inicio - timedelta(days=1)
         
-        receitas_mes_atual = (
-            Movimentacao.objects.filter(tipo="receita", data__startswith=mes_atual)
-            .aggregate(total=Sum("valor_total"))["total"] or 0
+        # Query otimizada para receitas e despesas dos 2 meses (uma query)
+        crescimento_data = Movimentacao.objects.filter(
+            data__gte=mes_anterior_inicio
+        ).aggregate(
+            receitas_mes_atual=Sum('valor_total', filter=Q(
+                categoria__tipo='receita',
+                data__gte=mes_atual_inicio
+            )),
+            receitas_mes_anterior=Sum('valor_total', filter=Q(
+                categoria__tipo='receita',
+                data__gte=mes_anterior_inicio,
+                data__lt=mes_atual_inicio
+            )),
+            despesas_mes_atual=Sum('valor_total', filter=Q(
+                categoria__tipo='despesa',
+                data__gte=mes_atual_inicio
+            )),
+            despesas_mes_anterior=Sum('valor_total', filter=Q(
+                categoria__tipo='despesa',
+                data__gte=mes_anterior_inicio,
+                data__lt=mes_atual_inicio
+            ))
         )
-        receitas_mes_anterior = (
-            Movimentacao.objects.filter(tipo="receita", data__startswith=mes_anterior)
-            .aggregate(total=Sum("valor_total"))["total"] or 1
-        )
+        
+        receitas_mes_atual = crescimento_data['receitas_mes_atual'] or 0
+        receitas_mes_anterior = crescimento_data['receitas_mes_anterior'] or 1
+        despesas_mes_atual = crescimento_data['despesas_mes_atual'] or 0
+        despesas_mes_anterior = crescimento_data['despesas_mes_anterior'] or 1
         
         crescimento_receitas = (
             ((receitas_mes_atual - receitas_mes_anterior) / receitas_mes_anterior) * 100
             if receitas_mes_anterior > 0 else 0
-        )
-
-        # Calcular crescimento de despesas do mês atual comparado com mês anterior
-        despesas_mes_atual = (
-            Movimentacao.objects.filter(tipo="despesa", data__startswith=mes_atual)
-            .aggregate(total=Sum("valor_total"))["total"] or 0
-        )
-        despesas_mes_anterior = (
-            Movimentacao.objects.filter(tipo="despesa", data__startswith=mes_anterior)
-            .aggregate(total=Sum("valor_total"))["total"] or 1
         )
         
         crescimento_despesas = (
@@ -64,48 +70,72 @@ class PaginaView(TemplateView):
             if despesas_mes_anterior > 0 else 0
         )
 
-        # Buscar as entradas de medicamentos
-        entradas_medicamentos = EntradaMedicamento.objects.select_related(
-            "medicamento"
-        ).all()
-        context["entradas_medicamentos"] = entradas_medicamentos
+        # ========== OTIMIZAÇÃO: Aggregate para totais de medicamentos (uma query) ==========
+        totais_medicamentos = EntradaMedicamento.objects.aggregate(
+            total_quantidade=Sum('quantidade'),
+            total_valor=Sum('valor_medicamento')
+        )
+        
+        total_quantidade = totais_medicamentos['total_quantidade'] or 0
+        total_valor = totais_medicamentos['total_valor'] or 0
 
-        total_quantidade = 0
-        total_valor = 0
+        # ========== OTIMIZAÇÃO: Contagens de medicamentos (uma query com agregação) ==========
+        data_limite_30 = hoje + timedelta(days=30)
+        data_limite_7 = hoje + timedelta(days=7)
+        
+        contagens_medicamentos = EntradaMedicamento.objects.aggregate(
+            total_medicamentos=Count('id', filter=Q(quantidade_disponivel__gt=0)),
+            proximos_vencer_30=Count('id', filter=Q(
+                validade__lte=data_limite_30,
+                validade__gte=hoje
+            )),
+            alertas_urgentes_7=Count('id', filter=Q(validade__lte=data_limite_7))
+        )
+        
+        total_medicamentos_count = contagens_medicamentos['total_medicamentos']
+        medicamentos_proximos_vencer = contagens_medicamentos['proximos_vencer_30']
+        alertas_urgentes = contagens_medicamentos['alertas_urgentes_7']
 
-        for entrada in entradas_medicamentos:
-            total_quantidade += entrada.quantidade
-            total_valor += entrada.valor_medicamento
-
-        # Medicamentos próximos de vencer (próximos 30 dias)
-        data_limite = date.today() + timedelta(days=30)
-        medicamentos_proximos_vencer = EntradaMedicamento.objects.filter(
-            validade__lte=data_limite,
-            validade__gte=date.today()
-        ).count()
-
-        # Contar alertas urgentes (medicamentos vencidos + próximos 7 dias)
-        data_urgente = date.today() + timedelta(days=7)
-        alertas_urgentes = EntradaMedicamento.objects.filter(
-            validade__lte=data_urgente
-        ).count()
-
-        # Total de alertas (parcelas pendentes + medicamentos próximos de vencer)
-        parcelas_pendentes = Parcela.objects.filter(status_pagamento="Pendente").count()
+        # ========== OTIMIZAÇÃO: Parcelas pendentes ==========
+        parcelas_pendentes = Parcela.objects.filter(
+            status_pagamento="Pendente"
+        ).only('id').count()
+        
         total_alertas = parcelas_pendentes + medicamentos_proximos_vencer
 
-        # Últimas receitas (3 mais recentes)
-        ultimas_receitas = Movimentacao.objects.filter(tipo="receita").order_by("-data")[:3]
+        # ========== OTIMIZAÇÃO: Últimas receitas e despesas - converter para lista para evitar re-queries ==========
+        ultimas_receitas = list(Movimentacao.objects.filter(
+            categoria__tipo="receita"
+        ).select_related(
+            'categoria', 'fazenda', 'parceiros'
+        ).only(
+            'id', 'valor_total', 'data', 'descricao', 'parcelas',
+            'categoria__nome', 'fazenda__nome', 'parceiros__nome'
+        ).order_by("-data")[:3])
 
-        # Últimas despesas (3 mais recentes)
-        ultimas_despesas = Movimentacao.objects.filter(tipo="despesa").order_by("-data")[:3]
+        ultimas_despesas = list(Movimentacao.objects.filter(
+            categoria__tipo="despesa"
+        ).select_related(
+            'categoria', 'fazenda', 'parceiros'
+        ).only(
+            'id', 'valor_total', 'data', 'descricao', 'parcelas',
+            'categoria__nome', 'fazenda__nome', 'parceiros__nome'
+        ).order_by("-data")[:3])
 
-        # Medicamentos próximos de vencer para listagem (3 mais urgentes)
-        medicamentos_vencimento = EntradaMedicamento.objects.select_related(
-            "medicamento"
-        ).filter(
-            validade__gte=date.today()
-        ).order_by("validade")[:3]
+        # ========== OTIMIZAÇÃO: Medicamentos próximos de vencer - converter para lista ==========
+        medicamentos_vencimento = list(EntradaMedicamento.objects.filter(
+            validade__gte=hoje,
+            quantidade_disponivel__gt=0
+        ).select_related(
+            'medicamento', 'medicamento__fazenda'
+        ).only(
+            'id', 'validade', 'quantidade_disponivel', 'quantidade',
+            'medicamento__id', 'medicamento__nome',
+            'medicamento__fazenda__nome'
+        ).order_by("validade")[:3])
+
+        # Não carregar TODAS as entradas - removido para economizar memória
+        # context["entradas_medicamentos"] = entradas_medicamentos
 
         context["total_quantidade"] = total_quantidade
         context["total_valor"] = total_valor
@@ -114,14 +144,14 @@ class PaginaView(TemplateView):
         context["saldo"] = saldo
         context["crescimento_receitas"] = round(crescimento_receitas, 1)
         context["crescimento_despesas"] = round(crescimento_despesas, 1)
-        context["total_medicamentos"] = EntradaMedicamento.objects.filter(quantidade_disponivel__gt=0).count()  # Conta entradas disponíveis
+        context["total_medicamentos"] = total_medicamentos_count
         context["medicamentos_proximos_vencer"] = medicamentos_proximos_vencer
         context["alertas_urgentes"] = alertas_urgentes
         context["total_alertas"] = total_alertas
         context["ultimas_receitas"] = ultimas_receitas
         context["ultimas_despesas"] = ultimas_despesas
         context["medicamentos_vencimento"] = medicamentos_vencimento
-        context["today"] = date.today()
+        context["today"] = hoje
 
         # Dados para os gráficos
         grafico_linhas = self.get_dados_grafico_linhas()
@@ -149,42 +179,75 @@ class PaginaView(TemplateView):
         return context
 
     def get_dados_grafico_linhas(self):
-        # Dados dos últimos 6 meses
+        """
+        OTIMIZADO: Busca dados dos últimos 6 meses em uma única query + Cache
+        """
+        # Verificar cache primeiro (60 segundos)
+        cache_key = 'grafico_linhas_6meses'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
+        
+        # Calcular range dos últimos 6 meses
+        hoje = date.today()
+        inicio_periodo = (datetime.now() - timedelta(days=180)).replace(day=1).date()
+        
+        # Uma única query para todos os meses - converter para lista
+        movimentacoes = list(Movimentacao.objects.filter(
+            data__gte=inicio_periodo
+        ).values(
+            'data', 'categoria__tipo', 'valor_total'
+        ))
+        
+        # Processar em Python (mais eficiente que 12 queries separadas)
+        meses_dict = {}
+        for i in range(5, -1, -1):
+            mes = (datetime.now() - timedelta(days=30 * i)).strftime("%Y-%m")
+            meses_dict[mes] = {'receitas': 0, 'despesas': 0}
+        
+        # Agregar valores
+        for mov in movimentacoes:
+            mes = mov['data'].strftime("%Y-%m")
+            if mes in meses_dict:
+                tipo = mov['categoria__tipo']
+                valor = float(mov['valor_total'] or 0)
+                if tipo == 'receita':
+                    meses_dict[mes]['receitas'] += valor
+                else:
+                    meses_dict[mes]['despesas'] += valor
+        
+        # Preparar arrays ordenados
         meses = []
         receitas_mensais = []
         despesas_mensais = []
-
-        for i in range(5, -1, -1):  # Últimos 6 meses em ordem cronológica
-            mes = (datetime.now() - timedelta(days=30 * i)).strftime("%Y-%m")
+        
+        for mes in sorted(meses_dict.keys()):
             meses.append(mes)
+            receitas_mensais.append(meses_dict[mes]['receitas'])
+            despesas_mensais.append(meses_dict[mes]['despesas'])
 
-            receitas = (
-                Movimentacao.objects.filter(
-                    tipo="receita", data__startswith=mes
-                ).aggregate(total=Sum("valor_total"))["total"]
-                or 0
-            )
-
-            despesas = (
-                Movimentacao.objects.filter(
-                    tipo="despesa", data__startswith=mes
-                ).aggregate(total=Sum("valor_total"))["total"]
-                or 0
-            )
-
-            receitas_mensais.append(float(receitas))
-            despesas_mensais.append(float(despesas))
-
-        return {
+        result = {
             "meses": meses,
             "receitas": receitas_mensais,
             "despesas": despesas_mensais,
         }
+        
+        # Guardar no cache por 60 segundos
+        cache.set(cache_key, result, 60)
+        return result
 
     def get_dados_grafico_pizza(self):
-        # Distribuição de despesas por categoria
-        categorias = (
-            Movimentacao.objects.filter(tipo="despesa")
+        """
+        OTIMIZADO: Distribuição de despesas por categoria (uma query) + Cache
+        """
+        # Verificar cache primeiro (60 segundos)
+        cache_key = 'grafico_pizza_despesas'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
+        
+        categorias = list(
+            Movimentacao.objects.filter(categoria__tipo="despesa")
             .values("categoria__nome")
             .annotate(total=Sum("valor_total"))
             .order_by("-total")
@@ -194,9 +257,14 @@ class PaginaView(TemplateView):
         if not categorias:
             return {"categorias": [], "valores": []}
 
-        return {
+        result = {
             "categorias": [
                 cat["categoria__nome"] or "Sem Categoria" for cat in categorias
             ],
             "valores": [float(cat["total"] or 0) for cat in categorias],
         }
+        
+        # Guardar no cache por 60 segundos
+        cache.set(cache_key, result, 60)
+        return result
+

@@ -7,10 +7,9 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar receitas..." />
-        <i class="fas fa-search"></i>
-      </div>
+      <!-- Incluir barra de pesquisa do backend -->
+      {% include 'search_bar.html' %}
+      
       {% block admin %}{% endblock %}
       <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
@@ -394,14 +393,20 @@
               data-parcelas="{{ receita.parcelas }}"
               data-ir="{% if receita.imposto_renda %}sim{% else %}nao{% endif %}"
               data-valor="{{ receita.valor_total }}"
-              data-parceiro="{{ receita.parceiros.nome }}"
+              data-parceiro="{% if receita.parceiros %}{{ receita.parceiros.nome }}{% else %}Sem parceiro{% endif %}"
               data-categoria="{{ receita.categoria.nome }}"
               data-fazenda="{{ receita.fazenda.nome }}"
               data-data="{{ receita.data|date:'Y-m-d' }}"
-              data-search="{{ receita.parceiros.nome }} {{ receita.categoria.nome }} {{ receita.fazenda.nome }}">
+              data-search="{% if receita.parceiros %}{{ receita.parceiros.nome }}{% endif %} {{ receita.categoria.nome }} {{ receita.fazenda.nome }}">
             
             <td>
-              <strong style="color: #2e7d32;">{{ receita.parceiros.nome }}</strong>
+              <strong style="color: #2e7d32;">
+                {% if receita.parceiros %}
+                  {{ receita.parceiros.nome }}
+                {% else %}
+                  <em style="color: #999;">Sem parceiro</em>
+                {% endif %}
+              </strong>
             </td>
             
             <td>
@@ -474,6 +479,8 @@
           {% endfor %}
         </tbody>
       </table>
+      <!-- Paginação -->
+      {% include "paginacao.html" %}
     </div>
   </div>
 

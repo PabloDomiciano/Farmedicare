@@ -72,6 +72,12 @@ class EntradaMedicamento(models.Model):
         verbose_name = "Entrada de Medicamento"
         verbose_name_plural = "Entradas de Medicamentos"
         ordering = ["validade"]
+        indexes = [
+            models.Index(fields=['validade']),
+            models.Index(fields=['validade', 'quantidade_disponivel']),
+            models.Index(fields=['medicamento', 'validade']),
+            models.Index(fields=['-data_cadastro']),
+        ]
 
 
 class SaidaMedicamento(models.Model):

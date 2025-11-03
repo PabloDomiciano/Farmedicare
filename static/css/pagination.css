@@ -1,0 +1,237 @@
+/* ========================================
+   PAGINAÇÃO PADRÃO - FARMEDICARE
+   Estilos modernos e responsivos para todas as listas
+   ======================================== */
+
+.pagination-container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin: 25px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e0e6ed;
+}
+
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* Informações de registros */
+.pagination-info {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pagination-info strong {
+    color: #1976d2;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+/* Navegação de páginas */
+.pagination-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.pagination-nav .page-link {
+    min-width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    background: white;
+    color: #495057;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.pagination-nav .page-link:hover {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    border-color: #1976d2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.pagination-nav .page-link.active {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    border-color: #1976d2;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+}
+
+.pagination-nav .page-link.disabled {
+    background: #f8f9fa;
+    color: #adb5bd;
+    border-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination-nav .page-link.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: #f8f9fa;
+    color: #adb5bd;
+    border-color: #e9ecef;
+}
+
+/* Indicador de página atual */
+.page-current {
+    min-width: auto;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #0d47a1;
+    border: 2px solid #42a5f5;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-current i {
+    font-size: 12px;
+}
+
+/* Botões de navegação extremos */
+.page-link.page-first,
+.page-link.page-last {
+    font-weight: 700;
+    min-width: auto;
+    padding: 8px 16px;
+}
+
+.page-link.page-first:hover,
+.page-link.page-last:hover {
+    background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+    border-color: #2e7d32;
+}
+
+/* Botões anterior/próximo */
+.page-link.page-prev,
+.page-link.page-next {
+    font-weight: 600;
+}
+
+/* Ícones */
+.pagination-nav i {
+    font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pagination-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pagination-info {
+        text-align: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .pagination-nav {
+        justify-content: center;
+        margin-top: 10px;
+    }
+    
+    .pagination-nav .page-link {
+        min-width: 36px;
+        height: 36px;
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    .page-current {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-container {
+        padding: 15px;
+    }
+    
+    .pagination-nav {
+        gap: 5px;
+    }
+    
+    .pagination-nav .page-link {
+        min-width: 32px;
+        height: 32px;
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+    
+    .page-link.page-first,
+    .page-link.page-last {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+    
+    .page-current {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+    
+    /* Esconder texto em mobile, manter apenas ícones */
+    .page-link.page-first span,
+    .page-link.page-last span,
+    .page-link.page-prev span,
+    .page-link.page-next span {
+        display: none;
+    }
+}
+
+/* Animação de fade-in */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pagination-container {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Estados de hover melhorados */
+.pagination-nav .page-link:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Badge contador */
+.pagination-badge {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+}

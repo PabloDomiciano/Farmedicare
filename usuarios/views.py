@@ -3,9 +3,42 @@ from django.views.generic.edit import CreateView
 from django.views.generic import ListView, UpdateView, DeleteView
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.shortcuts import redirect
 from .forms import UsuarioCadastroForm, UsuarioUpdateForm
+
+
+class CustomLoginView(LoginView):
+    """View customizada de login com mensagens de sucesso/erro"""
+    template_name = 'usuarios/login.html'
+    redirect_authenticated_user = True
+    
+    def form_valid(self, form):
+        """Login bem-sucedido - exibe mensagem de boas-vindas na página index"""
+        messages.success(
+            self.request,
+            f'Bem-vindo(a) ao sistema, {form.get_user().get_full_name() or form.get_user().username}!'
+        )
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        """Mensagem de erro ao falhar login - exibe na própria página de login"""
+        messages.error(
+            self.request,
+            'Usuário ou senha incorretos. Por favor, tente novamente.'
+        )
+        return super().form_invalid(form)
+
+
+class CustomLogoutView(LogoutView):
+    """View customizada de logout com mensagem"""
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            messages.info(request, 'Você saiu do sistema. Até logo!')
+        return super().dispatch(request, *args, **kwargs)
+
 
 class CadastroUsuarioView(CreateView):
     model = User
@@ -82,3 +115,14 @@ class UsuarioDeleteView(LoginRequiredMixin, DeleteView):
         "title": "Exclusão de Usuário",
         "titulo_excluir": "Exclusão de Usuário",
     }
+    
+    def delete(self, request, *args, **kwargs):
+        usuario = self.get_object()
+        username = usuario.username
+        nome_completo = usuario.get_full_name() or 'Nome não informado'
+        
+        messages.success(
+            self.request,
+            f'🗑️ Usuário "{username}" excluído com sucesso! Nome: {nome_completo}'
+        )
+        return super().delete(request, *args, **kwargs)

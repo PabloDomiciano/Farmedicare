@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-o^g$5_jw(8rf(z9r=^t^58zs4o1azmin7+#%w(b3w+&%x^eu5$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-
+ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'debug_toolbar',  # Django Debug Toolbar
+    'django_filters',
     'usuarios.apps.UsuariosConfig',
     'paginas.apps.PaginasConfig',
     'perfis.apps.PerfisConfig',
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',  # Django Debug Toolbar (deve estar no topo)
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,3 +150,19 @@ MESSAGE_TAGS = {
 LOGIN_REDIRECT_URL = 'pagina_index'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# Django Debug Toolbar
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
+# Cache Configuration (Local Memory Cache para desenvolvimento)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'farmedicare-cache',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }
+    }
+}

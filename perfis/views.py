@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 
 from .models import Fazenda, Parceiros
 from .forms import ParceirosForm, FazendaForm
@@ -55,6 +56,17 @@ class ParceirosDeleteView(LoginRequiredMixin, DeleteView):
         context['objeto'] = self.object
         context['tipo'] = 'parceiro'
         return context
+    
+    def delete(self, request, *args, **kwargs):
+        parceiro = self.get_object()
+        parceiro_nome = parceiro.nome
+        telefone = parceiro.telefone or 'Não informado'
+        
+        messages.success(
+            self.request,
+            f'🗑️ Parceiro "{parceiro_nome}" excluído com sucesso! Telefone: {telefone}'
+        )
+        return super().delete(request, *args, **kwargs)
 
 # ============================================
 # VIEWS PARA FAZENDAS
@@ -104,7 +116,18 @@ class FazendaDeleteView(LoginRequiredMixin, DeleteView):
         context['titulo'] = 'Excluir Fazenda'
         context['objeto'] = self.object
         context['tipo'] = 'fazenda'
-        return context 
+        return context
+    
+    def delete(self, request, *args, **kwargs):
+        fazenda = self.get_object()
+        fazenda_nome = fazenda.nome
+        cidade = fazenda.cidade or 'Não informada'
+        
+        messages.success(
+            self.request,
+            f'🗑️ Fazenda "{fazenda_nome}" excluída com sucesso! Cidade: {cidade}'
+        )
+        return super().delete(request, *args, **kwargs) 
 
 
 

@@ -7,10 +7,9 @@
   <header class="content-header">
     <h1>{{ titulo }}</h1>
     <div class="header-actions">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar medicamentos..." />
-        <i class="fas fa-search"></i>
-      </div>
+      <!-- Incluir barra de pesquisa do backend -->
+      {% include 'search_bar.html' %}
+      
       {% block admin %}{% endblock %}
       <button class="btn btn-notification" id="notificationBtn">
         <i class="fas fa-bell"></i>
@@ -887,6 +886,8 @@
           {% endfor %}
         </tbody>
       </table>
+      <!-- Paginação -->
+      {% include "paginacao.html" %}
     </div>
   </div>
 
@@ -989,7 +990,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       const filterButtons = document.querySelectorAll('.filter-btn-med');
       const medRows = document.querySelectorAll('.med-row');
-      const searchInput = document.getElementById('searchInput');
       let currentFilter = 'todos';
 
       filterButtons.forEach(button => {
@@ -1001,19 +1001,12 @@
         });
       });
 
-      searchInput.addEventListener('input', aplicarFiltros);
-
+      // Função de filtro agora só filtra por status (a pesquisa é feita no backend)
       function aplicarFiltros() {
-        const searchTerm = searchInput.value.toLowerCase();
-        
         medRows.forEach(row => {
           const status = row.dataset.status;
-          const searchData = row.dataset.search.toLowerCase();
-          
           const statusMatch = currentFilter === 'todos' || status === currentFilter;
-          const searchMatch = searchTerm === '' || searchData.includes(searchTerm);
-          
-          row.style.display = (statusMatch && searchMatch) ? '' : 'none';
+          row.style.display = statusMatch ? '' : 'none';
         });
       }
     });
