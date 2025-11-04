@@ -129,7 +129,7 @@ class PaginaView(TemplateView):
         
         total_medicamentos_count = contagens_medicamentos['total_medicamentos']
         medicamentos_proximos_vencer = contagens_medicamentos['proximos_vencer_30']
-        alertas_urgentes = contagens_medicamentos['alertas_urgentes_7']
+        medicamentos_urgentes_7dias = contagens_medicamentos['alertas_urgentes_7']
 
         # ========== OTIMIZAÇÃO: Parcelas pendentes - FILTRANDO POR FAZENDA ==========
         parcelas_pendentes = Parcela.objects.filter(
@@ -137,7 +137,19 @@ class PaginaView(TemplateView):
             status_pagamento="Pendente"
         ).only('id').count()
         
+        # Parcelas vencidas ou que vencem em até 7 dias (URGENTES)
+        data_limite_parcelas_urgentes = hoje + timedelta(days=7)
+        parcelas_urgentes = Parcela.objects.filter(
+            movimentacao__fazenda=fazenda_ativa,
+            status_pagamento="Pendente",
+            data_vencimento__lte=data_limite_parcelas_urgentes
+        ).only('id').count()
+        
+        # Total de alertas = todas as parcelas pendentes + medicamentos próximos de vencer (30 dias)
         total_alertas = parcelas_pendentes + medicamentos_proximos_vencer
+        
+        # Alertas urgentes = parcelas que vencem em 7 dias + medicamentos que vencem em 7 dias
+        alertas_urgentes = parcelas_urgentes + medicamentos_urgentes_7dias
 
         # ========== OTIMIZAÇÃO: Últimas receitas e despesas - FILTRANDO POR FAZENDA ==========
         ultimas_receitas = list(Movimentacao.objects.filter(

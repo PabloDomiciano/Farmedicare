@@ -6,12 +6,6 @@
 <main class="main-content">
   <header class="content-header">
     <h1><i class="fas fa-bell"></i> {{ titulo }}</h1>
-    <div class="header-actions">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar notificações..." />
-        <i class="fas fa-search"></i>
-      </div>
-    </div>
   </header>
 
   <style>
@@ -338,7 +332,6 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const container = document.getElementById('notificacoesContainer');
-      const searchInput = document.getElementById('searchInput');
       let todasNotificacoes = [];
 
       // Carregar notificações
@@ -358,22 +351,6 @@
             </div>
           `;
         });
-
-      // Busca
-      searchInput.addEventListener('input', function() {
-        const termo = this.value.toLowerCase();
-        const filtradas = todasNotificacoes.filter(notif => {
-          const textos = [
-            notif.titulo,
-            notif.medicamento || notif.descricao || '',
-            notif.fazenda || '',
-            notif.categoria_nome || '',
-            notif.lote || ''
-          ].join(' ').toLowerCase();
-          return textos.includes(termo);
-        });
-        renderizarNotificacoes(filtradas);
-      });
 
       function renderizarNotificacoes(notificacoes) {
         if (!notificacoes || notificacoes.length === 0) {

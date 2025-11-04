@@ -31,6 +31,7 @@ class MedicamentoForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        self.fazenda_ativa = kwargs.pop('fazenda_ativa', None)
         super().__init__(*args, **kwargs)
         
         # Adiciona classes personalizadas
@@ -38,6 +39,30 @@ class MedicamentoForm(forms.ModelForm):
             field.widget.attrs.update({
                 'autocomplete': 'off'
             })
+    
+    def clean_nome(self):
+        """Valida se o medicamento já existe na fazenda"""
+        nome = self.cleaned_data.get('nome')
+        
+        if nome and self.fazenda_ativa:
+            # Verifica se já existe um medicamento com esse nome na fazenda
+            # Exclui o próprio objeto se estiver editando
+            queryset = Medicamento.objects.filter(
+                nome__iexact=nome,  # Case-insensitive
+                fazenda=self.fazenda_ativa
+            )
+            
+            # Se estiver editando, exclui o próprio registro
+            if self.instance and self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise forms.ValidationError(
+                    f'O medicamento "{nome}" já está cadastrado nesta fazenda. '
+                    'Por favor, use outro nome ou adicione uma entrada para o medicamento existente.'
+                )
+        
+        return nome
 
 
 class EntradaMedicamentoForm(forms.ModelForm):
@@ -68,12 +93,11 @@ class EntradaMedicamentoForm(forms.ModelForm):
                 'min': '1',
                 'required': True,
             }),
-            'valor_medicamento': forms.NumberInput(attrs={
-                'class': 'form-control form-field-half',
-                'placeholder': 'R$ 0,00',
-                'step': '0.01',
-                'min': '0',
+            'valor_medicamento': forms.TextInput(attrs={
+                'class': 'form-control form-field-half money-input',
+                'placeholder': '0,00',
                 'required': True,
+                'inputmode': 'decimal',
             }),
             'validade': forms.DateInput(attrs={
                 'class': 'form-control form-field-half',
@@ -105,7 +129,17 @@ class EntradaMedicamentoForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        fazenda_ativa = kwargs.pop('fazenda_ativa', None)
         super().__init__(*args, **kwargs)
+        
+        # Filtrar medicamentos apenas da fazenda ativa
+        if fazenda_ativa:
+            self.fields['medicamento'].queryset = Medicamento.objects.filter(
+                fazenda=fazenda_ativa
+            ).order_by('nome')
+        else:
+            # Se não houver fazenda ativa, não mostra nenhum medicamento
+            self.fields['medicamento'].queryset = Medicamento.objects.none()
         
         # Define data mínima para validade (hoje)
         hoje = date.today()

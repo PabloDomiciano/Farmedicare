@@ -35,6 +35,11 @@ class Medicamento(models.Model):
         verbose_name = "Medicamento"
         verbose_name_plural = "Medicamentos"
         ordering = ["nome"]
+        # Garante que o mesmo medicamento não seja cadastrado duas vezes na mesma fazenda
+        unique_together = [['nome', 'fazenda']]
+        indexes = [
+            models.Index(fields=['fazenda', 'nome']),
+        ]
 
 
 class EntradaMedicamento(models.Model):

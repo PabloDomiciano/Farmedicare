@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from decimal import Decimal
 import pytz
 
-from medicamento.models import Medicamento, EntradaMedicamento
+from medicamento.models import Medicamento, EntradaMedicamento, SaidaMedicamento
 from movimentacao.models import Movimentacao, Parcela
 
 import io
@@ -173,8 +173,16 @@ class RelatoriosView(TemplateView):
             quantidade_disponivel__gt=0
         ).only('id').count()
         
-        # Top 5 medicamentos mais movimentados - OTIMIZADO com only()
-        top_medicamentos = entradas.values(
+        # Converter datas para datetime aware para filtros de DateTimeField
+        data_inicio_datetime = timezone.make_aware(datetime.combine(data_inicio, datetime.min.time()))
+        data_fim_datetime = timezone.make_aware(datetime.combine(data_fim, datetime.max.time()))
+        
+        # Top 5 medicamentos mais movimentados (baseado em SAÍDAS) - OTIMIZADO com only()
+        top_medicamentos = SaidaMedicamento.objects.filter(
+            medicamento__fazenda=fazenda_ativa,
+            data_saida__gte=data_inicio_datetime,
+            data_saida__lte=data_fim_datetime
+        ).values(
             'medicamento__nome',
             'medicamento__fazenda__nome'
         ).annotate(
@@ -353,12 +361,16 @@ def gerar_pdf_relatorio(request):
     hoje = timezone.now().date()
     
     if data_inicio and data_fim:
-        data_inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date()
-        data_fim = datetime.strptime(data_fim, '%Y-%m-%d').date()
+        data_inicio_date = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+        data_fim_date = datetime.strptime(data_fim, '%Y-%m-%d').date()
     else:
         dias = int(periodo)
-        data_inicio = hoje - timedelta(days=dias)
-        data_fim = hoje
+        data_inicio_date = hoje - timedelta(days=dias)
+        data_fim_date = hoje
+    
+    # Converter para datetime aware para filtros de DateTimeField
+    data_inicio_datetime = timezone.make_aware(datetime.combine(data_inicio_date, datetime.min.time()))
+    data_fim_datetime = timezone.make_aware(datetime.combine(data_fim_date, datetime.max.time()))
     
     # Criar buffer
     buffer = io.BytesIO()
@@ -412,7 +424,7 @@ def gerar_pdf_relatorio(request):
     elements.append(Paragraph("FARMEDICARE - Sistema de Gestão", subheading_style))
     elements.append(Paragraph(f"Fazenda: {fazenda_ativa.nome}", subheading_style))
     elements.append(Paragraph(
-        f"Período: {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}", 
+        f"Período: {data_inicio_date.strftime('%d/%m/%Y')} até {data_fim_date.strftime('%d/%m/%Y')}", 
         subheading_style
     ))
     elements.append(Paragraph(
@@ -430,12 +442,12 @@ def gerar_pdf_relatorio(request):
     receitas = Movimentacao.objects.filter(
         fazenda=fazenda_ativa,
         categoria__tipo='receita', 
-        data__range=[data_inicio, data_fim]
+        data__range=[data_inicio_date, data_fim_date]
     )
     despesas = Movimentacao.objects.filter(
         fazenda=fazenda_ativa,
         categoria__tipo='despesa', 
-        data__range=[data_inicio, data_fim]
+        data__range=[data_inicio_date, data_fim_date]
     )
     
     total_receitas = receitas.aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
@@ -575,9 +587,11 @@ def gerar_pdf_relatorio(request):
     total_medicamentos = Medicamento.objects.filter(fazenda=fazenda_ativa).count()
     entradas_periodo = EntradaMedicamento.objects.filter(
         medicamento__fazenda=fazenda_ativa,
-        data_cadastro__range=[data_inicio, data_fim]
+        data_cadastro__range=[data_inicio_datetime, data_fim_datetime]
     )
     total_entradas = entradas_periodo.count()
+    
+    # Calcular valor total das entradas (valor_medicamento já é o valor TOTAL da entrada)
     valor_total_entradas = entradas_periodo.aggregate(
         total=Sum('valor_medicamento')
     )['total'] or Decimal('0.00')
@@ -788,7 +802,7 @@ def gerar_pdf_relatorio(request):
     # Retornar resposta
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="relatorio_completo_{data_inicio.strftime("%Y%m%d")}_{data_fim.strftime("%Y%m%d")}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="relatorio_completo_{data_inicio_date.strftime("%Y%m%d")}_{data_fim_date.strftime("%Y%m%d")}.pdf"'
     
     return response
 

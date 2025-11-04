@@ -838,7 +838,7 @@
           {% if request.fazenda_ativa %}
             {{ request.fazenda_ativa.nome }}
           {% else %}
-            FarMedicare
+            Farmedicare
           {% endif %}
         </h2>
         <p>
@@ -1316,24 +1316,21 @@
             // Determinar título e mensagem baseado no tipo
             let titulo = '';
             let mensagem = '';
+            let dataExibicao = '';
             
             if (notif.tipo.includes('medicamento')) {
                 titulo = notif.medicamento || 'Medicamento';
-                if (notif.dias_para_vencer < 0) {
-                    mensagem = `Venceu há ${notif.dias_vencido_abs} dias`;
-                } else if (notif.dias_para_vencer === 0) {
-                    mensagem = 'Vence hoje!';
-                } else if (notif.dias_para_vencer === 1) {
-                    mensagem = 'Vence amanhã!';
-                } else {
-                    mensagem = `Vence em ${notif.dias_para_vencer} dias`;
-                }
+                // Usar os campos que a API realmente retorna
+                mensagem = notif.mensagem || 'Sem informação de validade';
+                dataExibicao = notif.validade || '';
             } else if (notif.tipo.includes('receita')) {
                 titulo = notif.parceiro || 'Receita';
                 mensagem = `R$ ${parseFloat(notif.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} - ${notif.categoria_nome || 'Sem categoria'}`;
+                dataExibicao = notif.data_vencimento || '';
             } else if (notif.tipo.includes('despesa')) {
                 titulo = notif.parceiro || 'Despesa';
                 mensagem = `R$ ${parseFloat(notif.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})} - ${notif.categoria_nome || 'Sem categoria'}`;
+                dataExibicao = notif.data_vencimento || '';
             }
             
             return `
@@ -1345,7 +1342,7 @@
                     <div class="notification-content">
                         <div class="notification-title">${titulo}</div>
                         <div class="notification-message">${mensagem}</div>
-                        <div class="notification-time">${notif.data_vencimento || notif.validade || ''}</div>
+                        <div class="notification-time">${dataExibicao}</div>
                     </div>
                 </div>
             `;
@@ -1366,6 +1363,9 @@
     
     <!-- Script para tabelas interativas -->
     <script src="{% static 'js/tabelas_interativas.js' %}"></script>
+    
+    <!-- Script para formatação de campos monetários -->
+    <script src="{% static 'js/money_input.js' %}?v=1.0"></script>
 
     <!-- Script para Auto-Fechar Mensagens Flash -->
     <script>

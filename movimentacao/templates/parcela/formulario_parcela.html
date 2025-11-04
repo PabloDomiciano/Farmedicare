@@ -447,15 +447,18 @@
           dataQuitacaoField.value = hoje;
         }
         
-        // Se valor pago for zero, preenche com valor da parcela
-        if (parseFloat(valorPagoField.value) === 0) {
-          valorPagoField.value = valorParcela.toFixed(2);
+        // Se valor pago estiver vazio ou zerado, preenche com valor da parcela formatado
+        const valorPagoAtual = valorPagoField.value.replace(/R\$/g, '').trim().replace(/\./g, '').replace(',', '.');
+        if (!valorPagoAtual || parseFloat(valorPagoAtual) === 0) {
+          // Formata com ponto de milhar e vírgula
+          const valorFormatado = 'R$ ' + valorParcela.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          valorPagoField.value = valorFormatado;
         }
       } else {
         dataQuitacaoField.required = false;
         requiredIndicator.style.display = 'none';
         dataQuitacaoField.value = '';
-        valorPagoField.value = '0.00';
+        valorPagoField.value = 'R$ 0,00';
       }
       
       calcularDiferenca();
@@ -463,7 +466,14 @@
 
     // Calcular diferença entre valor pago e valor da parcela
     function calcularDiferenca() {
-      const valorPago = parseFloat(document.getElementById('{{ form.valor_pago.id_for_label }}').value) || 0;
+      const valorPagoField = document.getElementById('{{ form.valor_pago.id_for_label }}');
+      let valorPagoStr = valorPagoField.value || '0';
+      
+      // Remove R$, espaços, pontos de milhar e converte vírgula em ponto
+      valorPagoStr = valorPagoStr.replace(/R\$/g, '').trim();
+      valorPagoStr = valorPagoStr.replace(/\./g, '').replace(',', '.');
+      
+      const valorPago = parseFloat(valorPagoStr) || 0;
       const status = document.getElementById('{{ form.status_pagamento.id_for_label }}').value;
       
       const diferenca = Math.abs(valorPago - valorParcela);
@@ -474,10 +484,10 @@
         diferencaContainer.classList.add('show');
         
         if (valorPago > valorParcela) {
-          diferencaValor.innerHTML = `<i class="fas fa-arrow-up"></i> Pago R$ ${diferenca.toFixed(2)} a mais`;
+          diferencaValor.innerHTML = `<i class="fas fa-arrow-up"></i> Pago R$ ${diferenca.toFixed(2).replace('.', ',')} a mais`;
           diferencaValor.style.color = '#2e7d32';
         } else {
-          diferencaValor.innerHTML = `<i class="fas fa-arrow-down"></i> Pago R$ ${diferenca.toFixed(2)} a menos`;
+          diferencaValor.innerHTML = `<i class="fas fa-arrow-down"></i> Pago R$ ${diferenca.toFixed(2).replace('.', ',')} a menos`;
           diferencaValor.style.color = '#d32f2f';
         }
       } else {
@@ -507,15 +517,25 @@
         requiredIndicator.style.display = 'none';
       }
       
-      // Calcular diferença inicial
-      calcularDiferenca();
+      // Espera o money_input.js processar primeiro (100ms delay)
+      setTimeout(function() {
+        // Calcular diferença inicial
+        calcularDiferenca();
+      }, 150);
       
       // Adicionar listeners
       statusSelect.addEventListener('change', function() {
         toggleDataQuitacao(this);
       });
       
-      valorPagoInput.addEventListener('input', calcularDiferenca);
+      // Listener para recalcular quando o valor mudar (após formatação do money_input.js)
+      valorPagoInput.addEventListener('blur', function() {
+        setTimeout(calcularDiferenca, 50);
+      });
+      
+      valorPagoInput.addEventListener('input', function() {
+        setTimeout(calcularDiferenca, 50);
+      });
     });
   </script>
 </main>

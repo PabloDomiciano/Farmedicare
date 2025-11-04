@@ -26,6 +26,11 @@ class MedicamentoCreateView(LoginRequiredMixin, CreateView):
     template_name = "medicamento/cadastro_medicamento.html"
     success_url = reverse_lazy("listar_medicamentos")
     
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['fazenda_ativa'] = getattr(self.request, 'fazenda_ativa', None)
+        return kwargs
+    
     def form_valid(self, form):
         # Auto-atribuir fazenda ativa
         if hasattr(self.request, 'fazenda_ativa') and self.request.fazenda_ativa:
@@ -61,6 +66,18 @@ class MedicamentoUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "medicamento/cadastro_medicamento.html"
     success_url = reverse_lazy("listar_medicamentos")
     
+    def get_queryset(self):
+        """Garante que só pode editar medicamentos da fazenda ativa"""
+        fazenda_ativa = getattr(self.request, 'fazenda_ativa', None)
+        if not fazenda_ativa:
+            return Medicamento.objects.none()
+        return Medicamento.objects.filter(fazenda=fazenda_ativa)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['fazenda_ativa'] = getattr(self.request, 'fazenda_ativa', None)
+        return kwargs
+    
     def form_valid(self, form):
         messages.success(
             self.request,
@@ -83,6 +100,13 @@ class MedicamentoDeleteView(LoginRequiredMixin, DeleteView):
     model = Medicamento
     template_name = "formularios/formulario_excluir.html"
     success_url = reverse_lazy("listar_medicamentos")
+    
+    def get_queryset(self):
+        """Garante que só pode deletar medicamentos da fazenda ativa"""
+        fazenda_ativa = getattr(self.request, 'fazenda_ativa', None)
+        if not fazenda_ativa:
+            return Medicamento.objects.none()
+        return Medicamento.objects.filter(fazenda=fazenda_ativa)
     
     def delete(self, request, *args, **kwargs):
         medicamento = self.get_object()
@@ -140,6 +164,7 @@ class EntradaMedicamentoCreateView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda_ativa'] = getattr(self.request, 'fazenda_ativa', None)
         return kwargs
     
     def form_valid(self, form):
@@ -184,9 +209,17 @@ class EntradaMedicamentoUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "medicamento/cadastro_entrada.html"
     success_url = reverse_lazy("medicamento_estoque")
     
+    def get_queryset(self):
+        """Garante que só pode editar entradas da fazenda ativa"""
+        fazenda_ativa = getattr(self.request, 'fazenda_ativa', None)
+        if not fazenda_ativa:
+            return EntradaMedicamento.objects.none()
+        return EntradaMedicamento.objects.filter(medicamento__fazenda=fazenda_ativa)
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['fazenda_ativa'] = getattr(self.request, 'fazenda_ativa', None)
         return kwargs
     
     def form_valid(self, form):
@@ -214,6 +247,13 @@ class EntradaMedicamentoDeleteView(LoginRequiredMixin, DeleteView):
     extra_context = {
         "titulo": "Confirmação de Exclusão",
     }
+    
+    def get_queryset(self):
+        """Garante que só pode deletar entradas da fazenda ativa"""
+        fazenda_ativa = getattr(self.request, 'fazenda_ativa', None)
+        if not fazenda_ativa:
+            return EntradaMedicamento.objects.none()
+        return EntradaMedicamento.objects.filter(medicamento__fazenda=fazenda_ativa)
     
     def delete(self, request, *args, **kwargs):
         entrada = self.get_object()
@@ -486,8 +526,26 @@ class SaidaMedicamentoAPIView(LoginRequiredMixin, View):
             
             # Usar transaction para garantir atomicidade e select_for_update para evitar race condition
             with transaction.atomic():
-                # Buscar o medicamento
-                medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+                # Buscar o medicamento e validar que pertence à fazenda ativa
+                fazenda_ativa = getattr(request, 'fazenda_ativa', None)
+                if not fazenda_ativa:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Nenhuma fazenda ativa selecionada.'
+                    }, status=400)
+                
+                # Buscar medicamento apenas da fazenda ativa
+                try:
+                    medicamento = Medicamento.objects.get(
+                        id=medicamento_id,
+                        fazenda=fazenda_ativa
+                    )
+                except Medicamento.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Medicamento não encontrado ou não pertence à fazenda ativa.'
+                    }, status=404)
+                
                 print(f"DEBUG - Medicamento encontrado: {medicamento.nome}")
                 
                 # Buscar entradas com quantidade disponível, ordenadas por validade (FIFO)
@@ -556,12 +614,11 @@ class SaidaMedicamentoAPIView(LoginRequiredMixin, View):
                 novo_estoque = medicamento.quantidade_total
                 print(f"DEBUG - Novo estoque total: {novo_estoque}")
                 
-                # Se o estoque zerou completamente, deletar o medicamento
+                # Manter o medicamento cadastrado mesmo se o estoque zerar
+                # O medicamento permanece para futuras entradas
                 if novo_estoque <= 0:
-                    nome_medicamento = medicamento.nome
-                    medicamento.delete()  # Isso também deleta as entradas e saídas por CASCADE
-                    print(f"DEBUG - Medicamento {nome_medicamento} removido (estoque zerado)")
-                    mensagem = f'Saída de {quantidade_solicitada} unidades registrada! O medicamento {nome_medicamento} foi removido do estoque (quantidade zerada).'
+                    print(f"DEBUG - Estoque zerado, mas medicamento {medicamento.nome} permanece cadastrado")
+                    mensagem = f'Saída de {quantidade_solicitada} unidades registrada! O estoque de {medicamento.nome} está zerado.'
                 else:
                     mensagem = f'Saída de {quantidade_solicitada} unidades registrada com sucesso!'
                 

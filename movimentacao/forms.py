@@ -75,12 +75,11 @@ class MovimentacaoForm(forms.ModelForm):
                 'class': 'form-control form-field-half',
                 'required': False,
             }),
-            'valor_total': forms.NumberInput(attrs={
-                'class': 'form-control form-field-half',
-                'placeholder': 'R$ 0,00',
-                'step': '0.01',
-                'min': '0',
+            'valor_total': forms.TextInput(attrs={
+                'class': 'form-control form-field-half money-input',
+                'placeholder': '0,00',
                 'required': True,
+                'inputmode': 'decimal',
             }),
             'parcelas': forms.NumberInput(attrs={
                 'class': 'form-control form-field-half',
@@ -188,12 +187,11 @@ class ParcelaForm(forms.ModelForm):
         ]
         
         widgets = {
-            'valor_pago': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'R$ 0,00',
-                'step': '0.01',
-                'min': '0',
+            'valor_pago': forms.TextInput(attrs={
+                'class': 'form-control money-input',
+                'placeholder': '0,00',
                 'required': True,
+                'inputmode': 'decimal',
             }),
             'status_pagamento': forms.Select(attrs={
                 'class': 'form-control',
@@ -257,12 +255,10 @@ class ParcelaForm(forms.ModelForm):
         # Adiciona classe de destaque para campos importantes
         self.fields['status_pagamento'].widget.attrs.update({
             'class': 'form-control status-select',
-            'onchange': 'toggleDataQuitacao(this)',
         })
         
         self.fields['valor_pago'].widget.attrs.update({
-            'class': 'form-control valor-pago-input',
-            'oninput': 'calcularDiferenca()',
+            'class': 'form-control money-input',
         })
     
     def clean(self):
