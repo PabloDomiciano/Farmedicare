@@ -69,7 +69,7 @@ a {
   flex-direction: column;
   position: fixed;
   height: 100vh;
-  z-index: 999;
+  z-index: 1000; /* Ajustado para 1000 (acima do overlay 999) */
   overflow-y: auto;
   transition: transform var(--transition-speed) ease;
 }
@@ -265,7 +265,7 @@ a {
   }
 }
 
-/* Botão de menu mobile - REMOVIDO DAQUI, agora está em responsividade.css */
+/* Menu Off-Canvas com Handle - CÓDIGO está em responsividade.css */
 
 /* Conteúdo Principal */
 .main-content {

@@ -1,32 +1,51 @@
+// ============================================
+// OFF-CANVAS MENU COM HANDLE - FARMEDICARE
+// Menu lateral deslizante com alça/aba lateral
+// ============================================
+
 document.addEventListener("DOMContentLoaded", function () {
   const sidebar = document.querySelector(".sidebar");
   const overlay = document.querySelector(".sidebar-overlay");
-  const mobileBtn = document.querySelector(".mobile-menu-btn");
+  const menuHandle = document.querySelector(".menu-handle");
 
-  if (!sidebar) {
+  if (!sidebar || !menuHandle) {
     return;
   }
 
-  if (!mobileBtn) {
-    return;
-  }
-
-  function toggleMenu() {
-    sidebar.classList.toggle("active");
-    mobileBtn.classList.toggle("active"); // Adiciona/remove classe active no botão
+  // Função para abrir o menu
+  function openMenu() {
+    sidebar.classList.add("active");
+    document.body.classList.add("menu-open");
     if (overlay) {
-      overlay.classList.toggle("active");
+      overlay.classList.add("active");
     }
-    document.body.style.overflow = sidebar.classList.contains("active")
-      ? "hidden"
-      : "";
+    document.body.style.overflow = "hidden";
+  }
+
+  // Função para fechar o menu
+  function closeMenu() {
+    sidebar.classList.remove("active");
+    document.body.classList.remove("menu-open");
+    if (overlay) {
+      overlay.classList.remove("active");
+    }
+    document.body.style.overflow = "";
+    closeAllSubmenus();
+  }
+
+  // Função para alternar menu (toggle)
+  function toggleMenu() {
+    if (sidebar.classList.contains("active")) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
   }
 
   // Função para toggle dos submenus
   function toggleSubmenu(submenuToggle) {
     const parent = submenuToggle.closest(".has-submenu");
-    const isActive = parent.classList.contains("active");
-
+    
     // Fecha todos os outros submenus
     document.querySelectorAll(".has-submenu").forEach(function (item) {
       if (item !== parent) {
@@ -45,10 +64,18 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Event listeners para menu mobile
-  mobileBtn.addEventListener("click", toggleMenu);
+  // Event listener para o handle (alça)
+  menuHandle.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  // Event listener para o overlay (fechar ao clicar fora)
   if (overlay) {
-    overlay.addEventListener("click", toggleMenu);
+    overlay.addEventListener("click", function() {
+      closeMenu();
+    });
   }
 
   // Event listeners para submenus
@@ -67,9 +94,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Tecla ESC fecha os submenus
+  // Tecla ESC fecha o menu e submenus
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
+      closeMenu();
       closeAllSubmenus();
     }
   });
@@ -82,25 +110,47 @@ document.addEventListener("DOMContentLoaded", function () {
         !this.classList.contains("submenu-toggle") &&
         window.innerWidth <= 992
       ) {
-        toggleMenu();
+        closeMenu();
       }
     });
   });
 
-  // Responsividade - remove classes ao redimensionar
+  // Responsividade - remove classes ao redimensionar para desktop
   window.addEventListener("resize", function () {
     if (window.innerWidth > 992) {
-      sidebar.classList.remove("active");
-      mobileBtn.classList.remove("active");
-      if (overlay) {
-        overlay.classList.remove("active");
-      }
-      document.body.style.overflow = "";
-      // Opcional: fecha submenus ao redimensionar para desktop
+      closeMenu();
       closeAllSubmenus();
     }
   });
 
   // Fecha todos os submenus inicialmente
   closeAllSubmenus();
+
+  // Suporte a gestos de swipe (opcional - para mobile)
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    const swipeDistance = touchEndX - touchStartX;
+    const minSwipeDistance = 50;
+
+    // Swipe da esquerda para direita abre o menu
+    if (swipeDistance > minSwipeDistance && touchStartX < 50 && !sidebar.classList.contains("active")) {
+      openMenu();
+    }
+
+    // Swipe da direita para esquerda fecha o menu
+    if (swipeDistance < -minSwipeDistance && sidebar.classList.contains("active")) {
+      closeMenu();
+    }
+  }
 });

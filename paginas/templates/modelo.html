@@ -12,8 +12,9 @@
     {% endblock %}
 
     <!-- CSS principal -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=3.0" />
-    <link rel="stylesheet" href="{% static 'css/responsividade.css' %}?v=3.0" />
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=3.1" />
+    <link rel="stylesheet" href="{% static 'css/responsividade.css' %}?v=3.4" />
+    <link rel="stylesheet" href="{% static 'css/off_canvas_menu.css' %}?v=1.4" />
     <link rel="stylesheet" href="{% static 'css/tabelas_interativas.css' %}?v=3.0" />
     <link rel="stylesheet" href="{% static 'css/pagination.css' %}?v=1.0" />
     <link rel="stylesheet" href="{% static 'css/filters.css' %}?v=1.0" />
@@ -36,7 +37,7 @@
         position: fixed;
         top: 1rem;
         right: 1rem;
-        z-index: 9999;
+        z-index: 1001; /* Abaixo do botão hambúrguer (1002), acima da sidebar (1000) */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -590,11 +591,11 @@
         }
       }
 
-      /* Tablet Pequeno - Ajustar botão para não sobrepor menu hambúrguer */
+      /* Tablet Pequeno - Ajustar para não sobrepor menu handle */
       @media (max-width: 768px) {
         .notification-btn-fixed {
           top: 0.5rem;
-          right: 4.5rem; /* Espaço para o menu hambúrguer à esquerda */
+          right: 0.5rem; /* Alinhado à direita, handle fica à esquerda */
         }
 
         .btn-notification {
@@ -642,18 +643,17 @@
         }
       }
 
-      /* Mobile - Botão ao lado do hambúrguer, popup tela cheia */
+      /* Mobile - Botão ao lado direito, handle à esquerda */
       @media (max-width: 576px) {
         .notification-btn-fixed {
           top: 0.5rem;
           right: 0.5rem;
-          left: auto; /* Garantir que fique à direita */
+          left: auto;
         }
 
-        /* Menu hambúrguer fica à esquerda */
-        .mobile-menu-btn {
-          left: 0.5rem;
-          right: auto;
+        /* Menu handle fica à esquerda */
+        .menu-handle {
+          left: 0;
         }
 
         .btn-notification {
@@ -972,12 +972,12 @@
         </div>
       </div>
     </aside>
-    {% endblock %}
 
-    <!-- Botão Menu Mobile (fora do bloco para aparecer em todas páginas) -->
-    <button class="mobile-menu-btn" id="mobileMenuBtn">
-      <i class="fas fa-bars"></i>
+    <!-- Handle do Menu Off-Canvas (Alça/Aba Lateral) - DEVE ESTAR IMEDIATAMENTE APÓS SIDEBAR! -->
+    <button class="menu-handle" aria-label="Abrir/Fechar Menu">
+      <i class="fas fa-chevron-right handle-icon"></i>
     </button>
+    {% endblock %}
 
     <!-- Botão de Notificações Fixo no Canto Superior Direito -->
     <div class="notification-btn-fixed">
@@ -1155,7 +1155,7 @@
   
     
     <!-- Script principal primeiro -->
-    <script src="{% static 'js/mobile.js' %}?v=4.0"></script>
+    <script src="{% static 'js/mobile.js' %}?v=7.0"></script>
     
     <!-- Depois os outros scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
