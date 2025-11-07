@@ -68,11 +68,16 @@ class ReceitaCreateView(LoginRequiredMixin, CreateView):
         form.instance.cadastrada_por = self.request.user
         form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
+        response = super().form_valid(form)
+        
+        # Force commit to database immediately
+        from django.db import transaction
+        transaction.commit()
+        
         messages.success(
             self.request,
             f'✅ Receita cadastrada com sucesso! Valor: R$ {form.instance.valor_total:.2f}'
         )
-        response = super().form_valid(form)
         return response
 
     def form_invalid(self, form):
@@ -111,11 +116,16 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
         form.instance.cadastrada_por = self.request.user
         form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
+        response = super().form_valid(form)
+        
+        # Force commit to database immediately
+        from django.db import transaction
+        transaction.commit()
+        
         messages.success(
             self.request,
             f'✅ Despesa cadastrada com sucesso! Valor: R$ {form.instance.valor_total:.2f}'
         )
-        response = super().form_valid(form)
         return response
 
     def form_invalid(self, form):
