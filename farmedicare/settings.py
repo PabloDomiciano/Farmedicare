@@ -160,13 +160,9 @@ INTERNAL_IPS = [
     '127.0.0.1',
 ]
 
-# Cache Configuration (Local Memory Cache para desenvolvimento)
+# Cache Configuration - DESABILITADO para evitar problemas de sincronização
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'farmedicare-cache',
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000
-        }
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 } 

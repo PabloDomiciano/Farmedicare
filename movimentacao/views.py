@@ -68,11 +68,13 @@ class ReceitaCreateView(LoginRequiredMixin, CreateView):
         form.instance.cadastrada_por = self.request.user
         form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
+        
+        # Salva o objeto
         response = super().form_valid(form)
         
-        # Force commit to database immediately
-        from django.db import transaction
-        transaction.commit()
+        # Garante que as parcelas sejam criadas antes do redirect
+        # Recarrega o objeto do banco para ter certeza de que foi salvo
+        form.instance.refresh_from_db()
         
         messages.success(
             self.request,
@@ -116,11 +118,13 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
         form.instance.cadastrada_por = self.request.user
         form.instance.fazenda = self.request.fazenda_ativa
         # Não precisa mais definir tipo - será obtido da categoria
+        
+        # Salva o objeto
         response = super().form_valid(form)
         
-        # Force commit to database immediately
-        from django.db import transaction
-        transaction.commit()
+        # Garante que as parcelas sejam criadas antes do redirect
+        # Recarrega o objeto do banco para ter certeza de que foi salvo
+        form.instance.refresh_from_db()
         
         messages.success(
             self.request,
