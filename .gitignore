@@ -34,3 +34,7 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test Impact Analysis
+.testmondata
+.testmondata-journal
