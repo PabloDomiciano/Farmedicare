@@ -273,29 +273,160 @@ class RelatoriosView(TemplateView):
                 'despesas': comparativo_despesas
             }, 300)
         
-        # ========== DADOS PARA GRÁFICOS DE COLUNAS ==========
+        # ========== DADOS PARA GRÁFICOS APEXCHARTS ==========
         
         # Top 5 categorias de receita para gráfico
         top_5_receitas_labels = []
         top_5_receitas_valores = []
         for item in top_receitas_categoria:
             top_5_receitas_labels.append(item['categoria__nome'] or 'Sem Categoria')
-            top_5_receitas_valores.append(float(item['total']))
+            # ApexCharts precisa formato 000000.00 (ponto decimal)
+            top_5_receitas_valores.append(f"{float(item['total']):.2f}")
         
         # Top 5 categorias de despesa para gráfico
         top_5_despesas_labels = []
         top_5_despesas_valores = []
         for item in top_despesas_categoria:
             top_5_despesas_labels.append(item['categoria__nome'] or 'Sem Categoria')
-            top_5_despesas_valores.append(float(item['total']))
+            top_5_despesas_valores.append(f"{float(item['total']):.2f}")
         
         # Top 5 medicamentos para gráfico
         top_5_medicamentos_labels = []
         top_5_medicamentos_valores = []
         for item in top_medicamentos:
-            nome_completo = f"{item['medicamento__nome']} - {item['medicamento__fazenda__nome']}"
+            nome_completo = f"{item['medicamento__nome']}"
             top_5_medicamentos_labels.append(nome_completo)
             top_5_medicamentos_valores.append(int(item['quantidade_total']))
+        
+        # ========== NOVOS GRÁFICOS: ANÁLISE POR CENTRO DE RECEITA/DESPESA ==========
+        
+        # Receitas por Parceiro (Centro de Receita)
+        receitas_por_parceiro = receitas.exclude(
+            parceiros__isnull=True
+        ).values(
+            'parceiros__nome'
+        ).annotate(
+            total=Sum('valor_total'),
+            quantidade=Count('id')
+        ).order_by('-total')[:10]  # Top 10
+        
+        receitas_parceiro_labels = []
+        receitas_parceiro_valores = []
+        for item in receitas_por_parceiro:
+            receitas_parceiro_labels.append(item['parceiros__nome'])
+            receitas_parceiro_valores.append(f"{float(item['total']):.2f}")
+        
+        # Despesas por Parceiro (Centro de Despesa)
+        despesas_por_parceiro = despesas.exclude(
+            parceiros__isnull=True
+        ).values(
+            'parceiros__nome'
+        ).annotate(
+            total=Sum('valor_total'),
+            quantidade=Count('id')
+        ).order_by('-total')[:10]  # Top 10
+        
+        despesas_parceiro_labels = []
+        despesas_parceiro_valores = []
+        for item in despesas_por_parceiro:
+            despesas_parceiro_labels.append(item['parceiros__nome'])
+            despesas_parceiro_valores.append(f"{float(item['total']):.2f}")
+        
+        # ========== GRÁFICO: DISTRIBUIÇÃO PERCENTUAL RECEITAS ==========
+        # Para gráfico de pizza/donut: mostrar % de cada categoria
+        receitas_dist_labels = []
+        receitas_dist_valores = []
+        receitas_dist_percentuais = []
+        
+        for item in top_receitas_categoria[:5]:  # Top 5 apenas
+            receitas_dist_labels.append(item['categoria__nome'] or 'Sem Categoria')
+            valor = float(item['total'])
+            percentual = (valor / float(total_receitas) * 100) if total_receitas > 0 else 0
+            receitas_dist_valores.append(f"{valor:.2f}")
+            receitas_dist_percentuais.append(f"{percentual:.1f}")
+        
+        # ========== GRÁFICO: DISTRIBUIÇÃO PERCENTUAL DESPESAS ==========
+        despesas_dist_labels = []
+        despesas_dist_valores = []
+        despesas_dist_percentuais = []
+        
+        for item in top_despesas_categoria[:5]:
+            despesas_dist_labels.append(item['categoria__nome'] or 'Sem Categoria')
+            valor = float(item['total'])
+            percentual = (valor / float(total_despesas) * 100) if total_despesas > 0 else 0
+            despesas_dist_valores.append(f"{valor:.2f}")
+            despesas_dist_percentuais.append(f"{percentual:.1f}")
+        
+        # ========== GRÁFICO: EVOLUÇÃO MENSAL DETALHADA (12 MESES) ==========
+        inicio_12_meses = (hoje - timedelta(days=365)).replace(day=1)
+        
+        from django.db.models.functions import TruncMonth
+        movimentacoes_12_meses = Movimentacao.objects.filter(
+            fazenda=fazenda_ativa,
+            data__gte=inicio_12_meses
+        ).annotate(
+            mes=TruncMonth('data')
+        ).values('mes', 'categoria__tipo').annotate(
+            total=Sum('valor_total')
+        ).order_by('mes', 'categoria__tipo')
+        
+        # Estrutura para 12 meses
+        evolucao_12_labels = []
+        evolucao_12_receitas = []
+        evolucao_12_despesas = []
+        evolucao_12_saldo = []
+        
+        dados_12_meses = {}
+        for mov in movimentacoes_12_meses:
+            mes_key = mov['mes'].strftime('%Y-%m')
+            if mes_key not in dados_12_meses:
+                dados_12_meses[mes_key] = {'receita': 0, 'despesa': 0}
+            
+            tipo = mov['categoria__tipo']
+            valor = float(mov['total'] or 0)
+            dados_12_meses[mes_key][tipo] = valor
+        
+        # Preencher arrays dos últimos 12 meses
+        for i in range(11, -1, -1):
+            data_ref = hoje - timedelta(days=30*i)
+            mes_key = data_ref.strftime('%Y-%m')
+            mes_label = data_ref.strftime('%b/%y')
+            
+            evolucao_12_labels.append(mes_label)
+            
+            receita_mes = dados_12_meses.get(mes_key, {}).get('receita', 0)
+            despesa_mes = dados_12_meses.get(mes_key, {}).get('despesa', 0)
+            saldo_mes = receita_mes - despesa_mes
+            
+            evolucao_12_receitas.append(f"{receita_mes:.2f}")
+            evolucao_12_despesas.append(f"{despesa_mes:.2f}")
+            evolucao_12_saldo.append(f"{saldo_mes:.2f}")
+        
+        # ========== GRÁFICO: COMPARATIVO CATEGORIA + PARCEIRO ==========
+        # Matriz: Qual categoria gera mais receita com qual parceiro
+        receitas_categoria_parceiro = receitas.exclude(
+            parceiros__isnull=True
+        ).values(
+            'categoria__nome',
+            'parceiros__nome'
+        ).annotate(
+            total=Sum('valor_total')
+        ).order_by('-total')[:15]  # Top 15 combinações
+        
+        matriz_cat_parc_labels = []
+        matriz_cat_parc_categorias = []
+        matriz_cat_parc_parceiros = []
+        matriz_cat_parc_valores = []
+        
+        for item in receitas_categoria_parceiro:
+            categoria = item['categoria__nome'] or 'Sem Categoria'
+            parceiro = item['parceiros__nome']
+            valor = float(item['total'])
+            
+            matriz_cat_parc_labels.append(f"{categoria} - {parceiro}")
+            matriz_cat_parc_categorias.append(categoria)
+            matriz_cat_parc_parceiros.append(parceiro)
+            matriz_cat_parc_valores.append(f"{valor:.2f}")
         
         # ========== CONTEXTO ==========
         
@@ -326,18 +457,46 @@ class RelatoriosView(TemplateView):
             'receitas_vencer': receitas_vencer,
             'despesas_vencer': despesas_vencer,
             
-            # Gráfico Comparativo (linha)
+            # Gráfico Comparativo (linha) - 6 meses
             'comparativo_labels': comparativo_labels,
             'comparativo_receitas': comparativo_receitas,
             'comparativo_despesas': comparativo_despesas,
             
-            # Gráficos de colunas (JSON)
+            # ========== DADOS APEXCHARTS ==========
+            
+            # Gráficos de categoria (Top 5)
             'top_5_receitas_labels': top_5_receitas_labels,
             'top_5_receitas_valores': top_5_receitas_valores,
             'top_5_despesas_labels': top_5_despesas_labels,
             'top_5_despesas_valores': top_5_despesas_valores,
             'top_5_medicamentos_labels': top_5_medicamentos_labels,
             'top_5_medicamentos_valores': top_5_medicamentos_valores,
+            
+            # Gráficos por Parceiro (Centro de Receita/Despesa)
+            'receitas_parceiro_labels': receitas_parceiro_labels,
+            'receitas_parceiro_valores': receitas_parceiro_valores,
+            'despesas_parceiro_labels': despesas_parceiro_labels,
+            'despesas_parceiro_valores': despesas_parceiro_valores,
+            
+            # Distribuição Percentual
+            'receitas_dist_labels': receitas_dist_labels,
+            'receitas_dist_valores': receitas_dist_valores,
+            'receitas_dist_percentuais': receitas_dist_percentuais,
+            'despesas_dist_labels': despesas_dist_labels,
+            'despesas_dist_valores': despesas_dist_valores,
+            'despesas_dist_percentuais': despesas_dist_percentuais,
+            
+            # Evolução 12 meses
+            'evolucao_12_labels': evolucao_12_labels,
+            'evolucao_12_receitas': evolucao_12_receitas,
+            'evolucao_12_despesas': evolucao_12_despesas,
+            'evolucao_12_saldo': evolucao_12_saldo,
+            
+            # Matriz Categoria x Parceiro
+            'matriz_cat_parc_labels': matriz_cat_parc_labels,
+            'matriz_cat_parc_categorias': matriz_cat_parc_categorias,
+            'matriz_cat_parc_parceiros': matriz_cat_parc_parceiros,
+            'matriz_cat_parc_valores': matriz_cat_parc_valores,
         })
         
         return context

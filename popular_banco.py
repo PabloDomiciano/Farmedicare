@@ -12,7 +12,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'farmedicare.settings')
 django.setup()
 
 from django.contrib.auth.models import User, Group
-from perfis.models import Fazenda, Parceiros
+from perfis.models import Fazenda, Parceiros, PerfilUsuario
 from medicamento.models import Medicamento, EntradaMedicamento
 from movimentacao.models import Categoria, Movimentacao, Parcela
 
@@ -41,7 +41,7 @@ def criar_usuarios():
     grupo_admin, _ = Group.objects.get_or_create(name='Administrador')
     grupo_func, _ = Group.objects.get_or_create(name='Funcionario')
     
-    # Criar admin
+    # Criar admin (produtor/proprietário)
     admin = User.objects.create_superuser(
         username='admin',
         email='admin@farmedicare.com',
@@ -51,6 +51,10 @@ def criar_usuarios():
     )
     admin.groups.add(grupo_admin)
     
+    # Configurar perfil do admin como produtor
+    admin.perfil.tipo = 'produtor'
+    admin.perfil.save()
+    
     # Criar funcionários
     funcionarios = [
         ('joao.silva', 'João', 'Silva', 'joao@farmedicare.com'),
@@ -58,7 +62,7 @@ def criar_usuarios():
         ('pedro.oliveira', 'Pedro', 'Oliveira', 'pedro@farmedicare.com'),
     ]
     
-    users_list = [admin]
+    funcionarios_list = []
     for username, first, last, email in funcionarios:
         user = User.objects.create_user(
             username=username,
@@ -68,13 +72,20 @@ def criar_usuarios():
             last_name=last
         )
         user.groups.add(grupo_func)
-        users_list.append(user)
+        
+        # Configurar perfil como funcionário
+        user.perfil.tipo = 'funcionario'
+        user.perfil.save()
+        
+        funcionarios_list.append(user)
     
-    print(f"✅ Criados {len(users_list)} usuários")
-    return users_list
+    print(f"✅ Criados {1 + len(funcionarios_list)} usuários")
+    print(f"   - 1 Admin (Produtor)")
+    print(f"   - {len(funcionarios_list)} Funcionários")
+    return admin, funcionarios_list
 
-def criar_fazendas(users):
-    """Cria fazendas"""
+def criar_fazendas(admin, funcionarios):
+    """Cria fazendas com admin como proprietário e associa funcionários"""
     print("\n🏡 Criando fazendas...")
     
     fazendas_data = [
@@ -84,20 +95,33 @@ def criar_fazendas(users):
     ]
     
     fazendas = []
-    for nome, cidade, desc in fazendas_data:
+    for i, (nome, cidade, desc) in enumerate(fazendas_data):
+        # Admin é o dono de todas as fazendas
         fazenda = Fazenda.objects.create(
             nome=nome,
             cidade=cidade,
-            descricao=desc
+            descricao=desc,
+            dono=admin
         )
-        # Adicionar usuários responsáveis
-        fazenda.usuarios.add(*random.sample(users, k=random.randint(1, 2)))
+        
+        # Associar admin às suas fazendas
+        admin.perfil.fazendas.add(fazenda)
+        
+        # Distribuir funcionários entre as fazendas
+        # Cada fazenda terá 1 ou 2 funcionários
+        num_funcionarios = random.randint(1, min(2, len(funcionarios)))
+        funcionarios_selecionados = random.sample(funcionarios, num_funcionarios)
+        
+        for func in funcionarios_selecionados:
+            func.perfil.fazendas.add(fazenda)
+        
         fazendas.append(fazenda)
+        print(f"   ✓ {nome}: {num_funcionarios} funcionário(s) associado(s)")
     
-    print(f"✅ Criadas {len(fazendas)} fazendas")
+    print(f"✅ Criadas {len(fazendas)} fazendas (proprietário: {admin.username})")
     return fazendas
 
-def criar_parceiros():
+def criar_parceiros(fazendas):
     """Cria empresas parceiras"""
     print("\n🤝 Criando parceiros...")
     
@@ -113,19 +137,22 @@ def criar_parceiros():
     ]
     
     parceiros = []
-    for nome, tel, email in parceiros_data:
+    for i, (nome, tel, email) in enumerate(parceiros_data):
+        # Distribui parceiros entre as fazendas
+        fazenda = fazendas[i % len(fazendas)]
         parceiro = Parceiros.objects.create(
             nome=nome,
             telefone=tel,
             email=email,
-            if_adicionais=f'Parceiro comercial há mais de 2 anos'
+            if_adicionais=f'Parceiro comercial há mais de 2 anos',
+            fazenda=fazenda
         )
         parceiros.append(parceiro)
     
     print(f"✅ Criados {len(parceiros)} parceiros")
     return parceiros
 
-def criar_categorias():
+def criar_categorias(fazendas):
     """Cria categorias de movimentação"""
     print("\n📊 Criando categorias...")
     
@@ -151,18 +178,20 @@ def criar_categorias():
     
     categorias = []
     
-    for nome in categorias_receita:
-        cat = Categoria.objects.create(nome=nome, tipo='receita')
-        categorias.append(cat)
-    
-    for nome in categorias_despesa:
-        cat = Categoria.objects.create(nome=nome, tipo='despesa')
-        categorias.append(cat)
+    # Criar categorias para cada fazenda
+    for fazenda in fazendas:
+        for nome in categorias_receita:
+            cat = Categoria.objects.create(nome=nome, tipo='receita', fazenda=fazenda)
+            categorias.append(cat)
+        
+        for nome in categorias_despesa:
+            cat = Categoria.objects.create(nome=nome, tipo='despesa', fazenda=fazenda)
+            categorias.append(cat)
     
     print(f"✅ Criadas {len(categorias)} categorias")
     return categorias
 
-def criar_medicamentos(fazendas, users):
+def criar_medicamentos(fazendas, admin):
     """Cria medicamentos e suas entradas"""
     print("\n💊 Criando medicamentos e entradas...")
     
@@ -206,14 +235,14 @@ def criar_medicamentos(fazendas, users):
                     valor_medicamento=Decimal(random.uniform(150, 2500)).quantize(Decimal('0.01')),
                     quantidade=random.randint(10, 200),
                     validade=validade,
-                    cadastrada_por=random.choice(users),
+                    cadastrada_por=admin,
                     observacao=f'Lote {random.randint(1000, 9999)}'
                 )
                 total_entradas += 1
     
     print(f"✅ Criados {Medicamento.objects.count()} medicamentos com {total_entradas} entradas")
 
-def criar_movimentacoes(fazendas, parceiros, categorias, users):
+def criar_movimentacoes(fazendas, parceiros, categorias, admin):
     """Cria movimentações financeiras dos últimos 6 meses"""
     print("\n💰 Criando movimentações financeiras...")
     
@@ -227,6 +256,11 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
     for fazenda in fazendas:
         # Rastrear combinações já usadas: (tipo, parceiro_id, data, fazenda_id)
         combinacoes_usadas = set()
+        
+        # Filtrar categorias e parceiros desta fazenda
+        cats_receita_fazenda = [c for c in categorias_receita if c.fazenda == fazenda]
+        cats_despesa_fazenda = [c for c in categorias_despesa if c.fazenda == fazenda]
+        parceiros_fazenda = [p for p in parceiros if p.fazenda == fazenda]
         
         # Criar movimentações para cada mês
         for mes in range(6):
@@ -243,7 +277,7 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                     
                     dias_offset = random.randint(0, 28)
                     data_mov = data_base + timedelta(days=dias_offset)
-                    parceiro = random.choice(parceiros)
+                    parceiro = random.choice(parceiros_fazenda)
                     
                     # Criar combinação única
                     combinacao = ('receita', parceiro.id, data_mov.date(), fazenda.id)
@@ -251,12 +285,11 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                     if combinacao in combinacoes_usadas:
                         continue  # Tentar outra combinação
                     
-                    categoria = random.choice(categorias_receita)
+                    categoria = random.choice(cats_receita_fazenda)
                     parcelas = random.choice([1, 1, 1, 2, 3])  # Mais provável ser à vista
                     
                     try:
                         mov = Movimentacao.objects.create(
-                            tipo='receita',
                             parceiros=parceiro,
                             categoria=categoria,
                             valor_total=Decimal(random.uniform(5000, 25000)).quantize(Decimal('0.01')),
@@ -265,7 +298,7 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                             descricao=f'Receita de {categoria.nome.lower()} - {data_mov.strftime("%B/%Y")}',
                             data=data_mov.date(),
                             fazenda=fazenda,
-                            cadastrada_por=random.choice(users)
+                            cadastrada_por=admin
                         )
                         
                         combinacoes_usadas.add(combinacao)
@@ -295,7 +328,7 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                     
                     dias_offset = random.randint(0, 28)
                     data_mov = data_base + timedelta(days=dias_offset)
-                    parceiro = random.choice(parceiros)
+                    parceiro = random.choice(parceiros_fazenda)
                     
                     # Criar combinação única
                     combinacao = ('despesa', parceiro.id, data_mov.date(), fazenda.id)
@@ -303,12 +336,11 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                     if combinacao in combinacoes_usadas:
                         continue  # Tentar outra combinação
                     
-                    categoria = random.choice(categorias_despesa)
+                    categoria = random.choice(cats_despesa_fazenda)
                     parcelas = random.choice([1, 1, 1, 2, 3, 4])
                     
                     try:
                         mov = Movimentacao.objects.create(
-                            tipo='despesa',
                             parceiros=parceiro,
                             categoria=categoria,
                             valor_total=Decimal(random.uniform(800, 15000)).quantize(Decimal('0.01')),
@@ -317,7 +349,7 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                             descricao=f'Despesa com {categoria.nome.lower()}',
                             data=data_mov.date(),
                             fazenda=fazenda,
-                            cadastrada_por=random.choice(users)
+                            cadastrada_por=admin
                         )
                         
                         combinacoes_usadas.add(combinacao)
@@ -337,8 +369,8 @@ def criar_movimentacoes(fazendas, parceiros, categorias, users):
                         continue  # Tentar novamente
     
     print(f"✅ Criadas {total_movimentacoes} movimentações financeiras")
-    print(f"   - Receitas: {Movimentacao.objects.filter(tipo='receita').count()}")
-    print(f"   - Despesas: {Movimentacao.objects.filter(tipo='despesa').count()}")
+    print(f"   - Receitas: {Movimentacao.objects.filter(categoria__tipo='receita').count()}")
+    print(f"   - Despesas: {Movimentacao.objects.filter(categoria__tipo='despesa').count()}")
     print(f"   - Total de parcelas: {Parcela.objects.count()}")
     print(f"   - Parcelas pagas: {Parcela.objects.filter(status_pagamento='Pago').count()}")
 
@@ -353,12 +385,12 @@ def main():
     limpar_banco()
     
     # Criar dados
-    users = criar_usuarios()
-    fazendas = criar_fazendas(users)
-    parceiros = criar_parceiros()
-    categorias = criar_categorias()
-    criar_medicamentos(fazendas, users)
-    criar_movimentacoes(fazendas, parceiros, categorias, users)
+    admin, funcionarios = criar_usuarios()
+    fazendas = criar_fazendas(admin, funcionarios)
+    parceiros = criar_parceiros(fazendas)
+    categorias = criar_categorias(fazendas)
+    criar_medicamentos(fazendas, admin)
+    criar_movimentacoes(fazendas, parceiros, categorias, admin)
     
     print("\n" + "=" * 60)
     print("✅ BANCO POPULADO COM SUCESSO!")

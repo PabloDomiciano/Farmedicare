@@ -612,7 +612,7 @@
           </tr>
         </thead>
         <tbody id="receitas-tbody">
-          {% for receita in receitas %}
+          {% for receita in page_obj %}
           <tr class="receita-row {% if receita.imposto_renda %}receita-ir{% endif %}"
               data-parcelas="{{ receita.parcelas }}"
               data-ir="{% if receita.imposto_renda %}sim{% else %}nao{% endif %}"

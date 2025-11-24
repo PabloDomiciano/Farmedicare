@@ -586,7 +586,7 @@
           </tr>
         </thead>
         <tbody id="despesas-tbody">
-          {% for despesa in despesas %}
+          {% for despesa in page_obj %}
           <tr class="despesa-row {% if despesa.valor_total >= 5000 %}despesa-alta{% endif %}"
               data-parcelas="{{ despesa.parcelas }}"
               data-valor="{{ despesa.valor_total }}"
